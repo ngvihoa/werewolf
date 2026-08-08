@@ -48,7 +48,7 @@ Khi step `SEER_INSPECT` active:
 4. Action được ghi vào history.
 5. Moderator xác nhận để queue tiếp tục.
 
-MVP nên dùng kết quả `exact role` để đơn giản hóa.
+MVP chỉ trả về team alignment: `WEREWOLF` hoặc `VILLAGE`.
 
 Ví dụ:
 
@@ -88,12 +88,11 @@ Poison Potion: Available
 [Skip]
 ```
 
-Các chi tiết như:
+Luật MVP đã chốt:
 
-- Witch có tự cứu được không.
-- Witch có dùng cả hai potion trong một đêm không.
-
-nên được đưa vào Game Settings và chốt trước khi code rule engine.
+- Witch được tự cứu.
+- Witch được dùng cả hai potion trong cùng một đêm.
+- Poison chỉ được chọn một player khác đang sống.
 
 ---
 

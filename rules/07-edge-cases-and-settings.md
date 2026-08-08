@@ -54,20 +54,20 @@ System không cho submit action đó lần nữa.
 
 ### Vote ngoài đời bị hòa
 
-MVP chưa cần hard-code một cách xử lý duy nhất.
+MVP cho vote lại đúng một lần. Nếu lần vote thứ hai tiếp tục hòa thì không ai bị loại.
 
 System hiển thị:
 
 ```text
 Vote tied.
 
-Suggested rule:
+First tie:
+Revote.
+
+Second tie:
 No elimination.
 
-Moderator:
-[No elimination]
-[Revote]
-[Custom]
+Moderator confirms the result.
 ```
 
 ---
@@ -101,7 +101,7 @@ Mọi override phải có:
 ### Reveal role on death
 
 ```text
-Yes / No
+No
 ```
 
 ### Dead player visibility
@@ -111,7 +111,7 @@ Public information only
 Reveal all roles
 ```
 
-Mặc định MVP đề xuất:
+Mặc định MVP đã chốt:
 
 ```text
 Public information only
@@ -120,21 +120,19 @@ Public information only
 ### Witch self-heal
 
 ```text
-Allowed / Not allowed
+Allowed
 ```
 
 ### Witch use both potions in one night
 
 ```text
-Allowed / Not allowed
+Allowed
 ```
 
 ### Vote tie rule
 
 ```text
-No elimination
-Revote
-Moderator decides
+Revote once, then no elimination
 ```
 
 ### Win condition
@@ -143,7 +141,7 @@ Moderator decides
 Werewolf wins when wolves >= villagers
 ```
 
-MVP nên chọn một cấu hình mặc định cố định trước, nhưng thiết kế data model để có thể đưa các rule này thành settings về sau.
+MVP dùng cấu hình mặc định cố định ở trên, nhưng data model vẫn có thể đưa các rule này thành settings về sau.
 
 ---
 

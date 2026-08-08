@@ -37,16 +37,16 @@ Exit criteria:
 
 Goal: encode deterministic game rules independently from UI and persistence.
 
-- [ ] Finalize default MVP settings from the open rule decisions.
-- [ ] Define game phase and queue-step transition tables.
+- [x] Finalize default MVP settings from the open rule decisions.
+- [x] Define game phase and queue-step transition tables.
 - [ ] Define typed commands, actions, decisions, results and events.
-- [ ] Implement role composition validation for five and six players.
-- [ ] Implement secure role randomization.
-- [ ] Implement target validation per role and queue step.
-- [ ] Implement Witch potion rules and ability consumption.
-- [ ] Implement night resolution without mutating state during action submission.
-- [ ] Implement vote resolution and tie behavior.
-- [ ] Complete win-condition rules.
+- [x] Implement role composition validation for five and six players.
+- [x] Implement secure role randomization.
+- [x] Implement target validation per role and queue step.
+- [x] Implement Witch potion rules and ability consumption.
+- [x] Implement night resolution without mutating state during action submission.
+- [x] Implement vote resolution and tie behavior.
+- [x] Complete win-condition rules.
 - [ ] Add table-driven unit tests for every transition and edge case.
 
 Exit criteria:

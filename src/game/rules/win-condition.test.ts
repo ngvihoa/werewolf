@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { getWinningTeam } from './win-condition'
+import { getWinningTeam, getWinningTeamFromPlayers } from './win-condition'
 
 describe('getWinningTeam', () => {
   it('returns village when no werewolf remains', () => {
@@ -13,5 +13,15 @@ describe('getWinningTeam', () => {
 
   it('keeps the game running otherwise', () => {
     expect(getWinningTeam({ villagers: 3, werewolves: 1 })).toBeNull()
+  })
+
+  it('counts only living players from domain state', () => {
+    expect(
+      getWinningTeamFromPlayers([
+        { id: 'wolf', role: 'WEREWOLF', alive: true },
+        { id: 'seer', role: 'SEER', alive: true },
+        { id: 'dead', role: 'VILLAGER', alive: false },
+      ]),
+    ).toBe('WEREWOLF')
   })
 })

@@ -21,6 +21,8 @@ pnpm dev
 
 Fill `.env` with a Supabase pooled PostgreSQL connection string, project URL and anon key.
 
+The playable MVP is developed and tested with local fake data first. Its domain rules do not connect to Supabase; the existing database integration is reserved for a later persistence phase.
+
 ## Commands
 
 ```bash
