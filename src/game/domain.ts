@@ -25,14 +25,16 @@ export type WitchResources = {
 }
 
 export type Player = BasePlayer &
-  ({
-    role: 'WITCH'
-    abilityState: WitchResources
-  } |
-  {
-    role: Exclude<Role, 'WITCH'>
-    abilityState: null
-  })
+  (
+    | {
+        role: 'WITCH'
+        abilityState: WitchResources
+      }
+    | {
+        role: Exclude<Role, 'WITCH'>
+        abilityState: null
+      }
+  )
 
 export type DomainErrorCode =
   | 'ABILITY_UNAVAILABLE'
