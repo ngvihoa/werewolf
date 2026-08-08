@@ -1,11 +1,4 @@
-import type {
-  Player,
-  QueueStep,
-  Result,
-  Role,
-  Team,
-  WitchResources,
-} from '../domain'
+import type { Player, QueueStep, Result, Role, Team } from '../domain'
 
 import { getRoleTeam } from '../domain'
 
@@ -36,7 +29,6 @@ type ValidationContext = {
   activeStep: QueueStep
   players: readonly Player[]
   werewolfTargetId?: string
-  witchResources?: WitchResources
 }
 
 function failure(code: Parameters<typeof makeError>[0], message: string) {
@@ -89,10 +81,10 @@ function validateWitchAction(
   actor: Player,
   context: ValidationContext,
 ): Result<NightAction> {
-  const resources = context.witchResources
-  if (!resources) {
-    return failure('INVALID_ACTION', 'Witch resources are required')
+  if (actor.role !== 'WITCH') {
+    return failure('ROLE_MISMATCH', 'Actor is not the Witch')
   }
+  const resources = actor.abilityState
   if (action.heal && !context.werewolfTargetId) {
     return failure('INVALID_ACTION', 'There is no Werewolf target to heal')
   }

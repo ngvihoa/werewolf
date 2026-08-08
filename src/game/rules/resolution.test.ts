@@ -5,9 +5,9 @@ import { describe, expect, it } from 'vitest'
 import { resolveNight, resolveVote } from './resolution'
 
 const players: Player[] = [
-  { id: 'a', role: 'VILLAGER', alive: true },
-  { id: 'b', role: 'VILLAGER', alive: true },
-  { id: 'wolf', role: 'WEREWOLF', alive: true },
+  { id: 'a', role: 'VILLAGER', alive: true, abilityState: null },
+  { id: 'b', role: 'VILLAGER', alive: true, abilityState: null },
+  { id: 'wolf', role: 'WEREWOLF', alive: true, abilityState: null },
 ]
 
 describe('night resolution', () => {

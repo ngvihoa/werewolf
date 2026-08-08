@@ -14,9 +14,8 @@ export type GamePhase =
 
 export type QueueStep = 'SEER_INSPECT' | 'WEREWOLF_ATTACK' | 'WITCH_ACTION'
 
-export type Player = {
+type BasePlayer = {
   id: string
-  role: Role
   alive: boolean
 }
 
@@ -24,6 +23,16 @@ export type WitchResources = {
   healingPotionAvailable: boolean
   poisonPotionAvailable: boolean
 }
+
+export type Player = BasePlayer &
+  ({
+    role: 'WITCH'
+    abilityState: WitchResources
+  } |
+  {
+    role: Exclude<Role, 'WITCH'>
+    abilityState: null
+  })
 
 export type DomainErrorCode =
   | 'ABILITY_UNAVAILABLE'

@@ -39,7 +39,7 @@ Goal: encode deterministic game rules independently from UI and persistence.
 
 - [x] Finalize default MVP settings from the open rule decisions.
 - [x] Define game phase and queue-step transition tables.
-- [ ] Define typed commands, actions, decisions, results and events.
+- [x] Define typed commands, actions, decisions, results and events.
 - [x] Implement role composition validation for five and six players.
 - [x] Implement secure role randomization.
 - [x] Implement target validation per role and queue step.

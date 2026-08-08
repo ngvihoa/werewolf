@@ -5,11 +5,19 @@ import { describe, expect, it } from 'vitest'
 import { getSeerResult, validateNightAction } from './night-actions'
 
 const players: Player[] = [
-  { id: 'seer', role: 'SEER', alive: true },
-  { id: 'wolf', role: 'WEREWOLF', alive: true },
-  { id: 'witch', role: 'WITCH', alive: true },
-  { id: 'villager', role: 'VILLAGER', alive: true },
-  { id: 'dead', role: 'VILLAGER', alive: false },
+  { id: 'seer', role: 'SEER', alive: true, abilityState: null },
+  { id: 'wolf', role: 'WEREWOLF', alive: true, abilityState: null },
+  {
+    id: 'witch',
+    role: 'WITCH',
+    alive: true,
+    abilityState: {
+      healingPotionAvailable: true,
+      poisonPotionAvailable: true,
+    },
+  },
+  { id: 'villager', role: 'VILLAGER', alive: true, abilityState: null },
+  { id: 'dead', role: 'VILLAGER', alive: false, abilityState: null },
 ]
 
 describe('night action validation', () => {
@@ -57,10 +65,6 @@ describe('night action validation', () => {
           activeStep: 'WITCH_ACTION',
           players,
           werewolfTargetId: 'witch',
-          witchResources: {
-            healingPotionAvailable: true,
-            poisonPotionAvailable: true,
-          },
         },
       ).ok,
     ).toBe(true)
@@ -78,10 +82,6 @@ describe('night action validation', () => {
         activeStep: 'WITCH_ACTION',
         players,
         werewolfTargetId: 'villager',
-        witchResources: {
-          healingPotionAvailable: true,
-          poisonPotionAvailable: true,
-        },
       },
     )
     expect(result.ok).toBe(false)
@@ -98,12 +98,18 @@ describe('night action validation', () => {
       },
       {
         activeStep: 'WITCH_ACTION',
-        players,
         werewolfTargetId: 'villager',
-        witchResources: {
-          healingPotionAvailable: false,
-          poisonPotionAvailable: true,
-        },
+        players: players.map((player) =>
+          player.role === 'WITCH'
+            ? {
+                ...player,
+                abilityState: {
+                  ...player.abilityState,
+                  healingPotionAvailable: false,
+                },
+              }
+            : player,
+        ),
       },
     )
     expect(result.ok).toBe(false)

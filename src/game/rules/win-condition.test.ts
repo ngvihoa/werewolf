@@ -18,9 +18,9 @@ describe('getWinningTeam', () => {
   it('counts only living players from domain state', () => {
     expect(
       getWinningTeamFromPlayers([
-        { id: 'wolf', role: 'WEREWOLF', alive: true },
-        { id: 'seer', role: 'SEER', alive: true },
-        { id: 'dead', role: 'VILLAGER', alive: false },
+        { id: 'wolf', role: 'WEREWOLF', alive: true, abilityState: null },
+        { id: 'seer', role: 'SEER', alive: true, abilityState: null },
+        { id: 'dead', role: 'VILLAGER', alive: false, abilityState: null },
       ]),
     ).toBe('WEREWOLF')
   })

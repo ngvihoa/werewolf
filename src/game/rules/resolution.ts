@@ -1,9 +1,10 @@
 import type { Player } from '../domain'
 
-export type DeathCause = 'WEREWOLF_ATTACK' | 'WITCH_POISON'
+export type EliminationCause =
+  'WEREWOLF_ATTACK' | 'WITCH_POISON' | 'VOTE' | 'MODERATOR_OVERRIDE'
 
 export type NightResolution = {
-  deaths: { playerId: string; causes: DeathCause[] }[]
+  deaths: { playerId: string; causes: EliminationCause[] }[]
   survivors: string[]
 }
 
@@ -15,7 +16,7 @@ type NightResolutionInput = {
 }
 
 export function resolveNight(input: NightResolutionInput): NightResolution {
-  const causesByPlayer = new Map<string, DeathCause[]>()
+  const causesByPlayer = new Map<string, EliminationCause[]>()
 
   if (input.werewolfTargetId && !input.witchHealed) {
     causesByPlayer.set(input.werewolfTargetId, ['WEREWOLF_ATTACK'])

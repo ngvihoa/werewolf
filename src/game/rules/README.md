@@ -44,7 +44,7 @@ Hàm gán role cho phép truyền random function riêng để caller có thể 
 - Werewolf chọn người để tấn công.
 - Witch dùng Healing Potion, Poison Potion hoặc cả hai.
 
-Validation kiểm tra active queue step, role và trạng thái của actor, target hợp lệ, cùng lượng potion còn lại. Module chỉ xác nhận action có hợp lệ; nó không làm player chết hoặc tiêu thụ potion trực tiếp.
+Validation kiểm tra active queue step, role và trạng thái của actor, target hợp lệ, cùng lượng potion trong ability state của Witch. Module chỉ xác nhận action có hợp lệ; nó không làm player chết hoặc tiêu thụ potion trực tiếp.
 
 `getSeerResult` chuyển role của target thành team alignment mà Seer được phép thấy.
 
