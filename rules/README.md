@@ -33,6 +33,7 @@ Hệ thống **không thay thế Quản trò**. Hệ thống chịu trách nhi�
 | `05-moderator-and-player-ui.md`    | Trách nhiệm và UI của Quản trò / người chơi       |
 | `06-state-history-and-events.md`   | Game state, lịch sử, event và audit               |
 | `07-edge-cases-and-settings.md`    | Edge case, override và các setting cần quyết định |
+| `08-mvp-rule-decisions.md`         | Checklist chốt luật và phương án đề xuất cho MVP  |
 
 ## Nguyên tắc thiết kế cốt lõi
 

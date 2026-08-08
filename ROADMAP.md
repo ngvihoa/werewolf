@@ -21,8 +21,8 @@ Goal: establish a deployable, typed and testable application base.
 - [x] Add a lazy Supabase browser client for Realtime.
 - [x] Add environment validation and `.env.example`.
 - [x] Add Vitest and the first domain rule test.
-- [ ] Create a Supabase project and populate local environment values.
-- [ ] Generate and apply the initial database migration.
+- [x] Create a Supabase project and populate local environment values.
+- [x] Generate and apply the initial database migration.
 - [ ] Configure CI to run check, test and build.
 - [ ] Deploy a preview environment.
 
