@@ -4,10 +4,10 @@ import type { NightAction } from '../rules/night-actions'
 import type { GameCommand } from './commands'
 import type { GameEvent } from './events'
 
+import { getSeerResult, validateNightAction } from '../rules/night-actions'
 import { getWinningTeamFromPlayers } from '../rules/win-condition'
 import { resolveNight, resolveVote } from '../rules/resolution'
 import { getNightQueue, STEP_ROLE } from '../rules/transitions'
-import { validateNightAction } from '../rules/night-actions'
 
 export type CommandOutcome = {
   state: GameState
@@ -106,6 +106,17 @@ function confirmStep(
   state.pendingNightAction = null
   consumeWitchResources(state, action)
   events.push({ type: 'NIGHT_ACTION_CONFIRMED', action })
+  if (action.type === 'SEER_INSPECT') {
+    const target = state.players.find((player) => player.id === action.targetId)
+    if (target) {
+      events.push({
+        type: 'SEER_RESULT_RECORDED',
+        seerPlayerId: action.actorId,
+        targetPlayerId: action.targetId,
+        result: getSeerResult(target.role),
+      })
+    }
+  }
   advanceNight(state, events)
   return success(state, events)
 }

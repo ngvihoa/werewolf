@@ -23,6 +23,7 @@ Thư mục này cung cấp persistence boundary tạm thời cho MVP chạy loca
 - Optimistic locking bằng `expectedVersion`.
 - Current state và append-only event history.
 - Detached snapshot để caller không mutate dữ liệu trong store.
+- Permission-aware game view theo fake session.
 - Reset toàn bộ local data.
 
 ### `local-game-store.ts`
@@ -35,6 +36,6 @@ Export singleton `localGameStore` để server functions và oRPC procedures dù
 - Session token được giữ raw trong memory, không hash.
 - Store chỉ an toàn trong một JavaScript process.
 - Không có transaction, cross-process locking hoặc realtime broadcast.
-- `getGame` trả raw server snapshot và không được gọi trực tiếp từ Player API.
+- `getGame` trả raw server snapshot và không được gọi trực tiếp từ Player API. Client-facing procedures phải dùng `getGameView`.
 
 Các giới hạn trên là chủ ý cho local MVP. Khi chuyển sang Supabase, API của orchestration và projection có thể giữ nguyên; persistence implementation sẽ được thay thế bằng Drizzle transactions.

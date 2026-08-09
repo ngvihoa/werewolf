@@ -74,6 +74,21 @@ describe('night orchestration', () => {
     ).toBe(false)
   })
 
+  it('records the Seer alignment when Moderator confirms', () => {
+    let state = createFirstNightState(fivePlayers)
+    state = run(state, {
+      type: 'SUBMIT_NIGHT_ACTION',
+      action: { type: 'SEER_INSPECT', actorId: 'seer', targetId: 'wolf' },
+    }).state
+    const confirmed = run(state, { type: 'CONFIRM_STEP' })
+    expect(confirmed.events).toContainEqual({
+      type: 'SEER_RESULT_RECORDED',
+      seerPlayerId: 'seer',
+      targetPlayerId: 'wolf',
+      result: 'WEREWOLF',
+    })
+  })
+
   it('consumes both Witch potions only after confirmation', () => {
     const players: Player[] = [
       ...fivePlayers,

@@ -82,14 +82,14 @@ Exit criteria:
 
 Goal: guarantee that hidden information never reaches an unauthorized client.
 
-- [ ] Define public Player view.
-- [ ] Define private owner view.
-- [ ] Define complete Moderator view.
-- [ ] Define Seer investigation-result visibility.
-- [ ] Define Witch context visibility.
-- [ ] Implement `getGameView` based on the current session.
+- [x] Define public Player view.
+- [x] Define private owner view.
+- [x] Define complete Moderator view.
+- [x] Define Seer investigation-result visibility.
+- [x] Define Witch context visibility.
+- [x] Implement `getGameView` based on the current session.
 - [ ] Implement filtered Moderator history queries.
-- [ ] Add negative tests proving that roles and actions do not leak.
+- [x] Add negative tests proving that roles and actions do not leak.
 
 Exit criteria:
 

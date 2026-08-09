@@ -12,7 +12,9 @@ import type {
 import type { GameCommand } from '../orchestration/commands'
 import type { Player, Role } from '../domain'
 import type { GameEvent } from '../orchestration/events'
+import type { GameView } from '../projections/model'
 
+import { projectGameView } from '../projections/project-game-view'
 import { assignRoles } from '../rules/role-assignment'
 import {
   createFirstNightState,
@@ -247,6 +249,21 @@ export class InMemoryGameStore {
     return game
       ? success(this.#snapshot(game))
       : failure('GAME_NOT_FOUND', 'Game does not exist')
+  }
+
+  getGameView(sessionToken: string): StoreResult<GameView> {
+    const resolved = this.#resolveSession(sessionToken)
+    if (!resolved.ok) return resolved
+    const { game, session } = resolved.value
+    const view = projectGameView(
+      game,
+      session.kind === 'MODERATOR'
+        ? { kind: 'MODERATOR', playerId: null }
+        : { kind: 'PLAYER', playerId: session.playerId ?? '' },
+    )
+    return view
+      ? success(view)
+      : failure('INVALID_GAME_STATE', 'Session player is missing')
   }
 
   getGameByRoomCode(roomCode: string): StoreResult<LocalGame> {

@@ -107,6 +107,22 @@ describe('InMemoryGameStore lobby', () => {
 })
 
 describe('InMemoryGameStore commands', () => {
+  it('resolves permission-aware views from fake sessions', () => {
+    const { store, created, players, game } = createStartedGame()
+    const playerView = store.getGameView(players[0].playerSessionToken)
+    const moderatorView = store.getGameView(created.moderatorSessionToken)
+
+    expect(playerView.ok).toBe(true)
+    if (playerView.ok && playerView.value.viewer === 'PLAYER') {
+      expect(playerView.value.me.id).toBe(players[0].playerId)
+      expect(playerView.value.players[0]).not.toHaveProperty('role')
+    }
+    expect(moderatorView.ok).toBe(true)
+    if (moderatorView.ok && moderatorView.value.viewer === 'MODERATOR') {
+      expect(moderatorView.value.game).toEqual(game)
+    }
+  })
+
   it('authorizes the role owner and appends orchestration events', () => {
     const { store, players, game } = createStartedGame()
     const seer = game.lobbyPlayers.find((player) => player.role === 'SEER')

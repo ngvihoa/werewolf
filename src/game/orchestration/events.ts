@@ -11,6 +11,12 @@ export type GameEvent =
   | { type: 'QUEUE_STEP_ACTIVATED'; step: QueueStep }
   | { type: 'NIGHT_ACTION_SUBMITTED'; action: NightAction }
   | { type: 'NIGHT_ACTION_CONFIRMED'; action: NightAction }
+  | {
+      type: 'SEER_RESULT_RECORDED'
+      seerPlayerId: string
+      targetPlayerId: string
+      result: Team
+    }
   | { type: 'NIGHT_ACTION_REJECTED'; action: NightAction; reason: string }
   | { type: 'QUEUE_STEP_SKIPPED'; step: QueueStep; reason: string }
   | { type: 'NIGHT_RESOLUTION_PREPARED'; resolution: NightResolution }
