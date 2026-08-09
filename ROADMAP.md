@@ -101,13 +101,13 @@ Exit criteria:
 
 Goal: allow a group to create and start a game from mobile devices.
 
-- [ ] Build create-game screen for Moderator.
-- [ ] Build room-code join flow for Player.
-- [ ] Build Moderator lobby and participant list.
+- [x] Build create-game screen for Moderator.
+- [x] Build room-code join flow for Player.
+- [x] Build Moderator lobby and participant list.
 - [ ] Build role-set and settings form.
-- [ ] Build private role reveal screen.
-- [ ] Build ready check.
-- [ ] Add loading, error, empty and reconnect states.
+- [x] Build private role reveal screen.
+- [x] Build ready check.
+- [x] Add loading, error, empty and reconnect states.
 - [ ] Verify mobile, tablet and desktop layouts.
 
 Exit criteria:

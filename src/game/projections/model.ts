@@ -12,6 +12,7 @@ export type PublicPlayerView = {
   id: string
   displayName: string
   alive: boolean
+  ready: boolean
 }
 
 export type PlayerPrivateView = {

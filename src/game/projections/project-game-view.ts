@@ -49,6 +49,7 @@ export function projectGameView(
     players: game.lobbyPlayers.map((player) => ({
       id: player.id,
       displayName: player.displayName,
+      ready: player.ready,
       alive:
         game.state?.players.find((candidate) => candidate.id === player.id)
           ?.alive ?? true,

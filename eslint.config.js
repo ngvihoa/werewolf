@@ -14,6 +14,7 @@ export default [
     ],
     rules: {
       'import-x/order': 'off',
+      'no-nested-ternary': 'off',
     },
   },
   {

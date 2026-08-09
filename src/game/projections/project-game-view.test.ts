@@ -108,6 +108,7 @@ describe('player projections', () => {
       id: 'witch',
       displayName: 'Witch',
       alive: true,
+      ready: true,
     })
     expect(JSON.stringify(view)).not.toContain('poisonPotionAvailable')
     expect(JSON.stringify(view)).not.toContain('secret rejected target')
