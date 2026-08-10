@@ -56,6 +56,52 @@ const startGame = procedure
     toOperationResult(localGameStore.startGame(input.sessionToken)),
   )
 
+const gameCommandSchema = z.discriminatedUnion('type', [
+  z.object({
+    type: z.literal('SUBMIT_NIGHT_ACTION'),
+    action: z.discriminatedUnion('type', [
+      z.object({
+        type: z.literal('SEER_INSPECT'),
+        actorId: z.string().min(1),
+        targetId: z.string().min(1),
+      }),
+      z.object({
+        type: z.literal('WEREWOLF_ATTACK'),
+        actorId: z.string().min(1),
+        targetId: z.string().min(1),
+      }),
+      z.object({
+        type: z.literal('WITCH_ACTION'),
+        actorId: z.string().min(1),
+        heal: z.boolean(),
+        poisonTargetId: z.string().min(1).nullable(),
+      }),
+    ]),
+  }),
+  z.object({ type: z.literal('CONFIRM_STEP') }),
+  z.object({ type: z.literal('REJECT_STEP'), reason: z.string().min(1) }),
+  z.object({ type: z.literal('SKIP_STEP'), reason: z.string().min(1) }),
+  z.object({ type: z.literal('CONFIRM_NIGHT_RESOLUTION') }),
+  z.object({ type: z.literal('START_VOTE') }),
+  z.object({
+    type: z.literal('SUBMIT_VOTE_RESULT'),
+    tied: z.boolean(),
+    selectedPlayerId: z.string().min(1).nullable(),
+  }),
+  z.object({ type: z.literal('CONFIRM_VOTE_RESULT') }),
+])
+
+const executeGameCommand = procedure
+  .input(
+    z.object({
+      gameId: z.string().min(1),
+      sessionToken: z.string().min(1),
+      expectedVersion: z.number().int().positive(),
+      command: gameCommandSchema,
+    }),
+  )
+  .handler(({ input }) => toOperationResult(localGameStore.execute(input)))
+
 export const appRouter = {
   health,
   lobby: {
@@ -65,6 +111,7 @@ export const appRouter = {
     setReady,
     assignRoles,
     startGame,
+    executeGameCommand,
   },
 }
 
@@ -78,10 +125,10 @@ function toOperationResult<T>(result: {
   return result.ok
     ? { ok: true as const }
     : {
-      ok: false as const,
-      error: result.error ?? {
-        code: 'UNKNOWN',
-        message: 'Unknown local store error',
-      },
-    }
+        ok: false as const,
+        error: result.error ?? {
+          code: 'UNKNOWN',
+          message: 'Unknown local store error',
+        },
+      }
 }
