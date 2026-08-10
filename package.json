@@ -18,7 +18,8 @@
     "test:watch": "vitest",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "dev:reset": "fuser -k 3000/tcp"
   },
   "dependencies": {
     "@orpc/client": "^1.14.15",
