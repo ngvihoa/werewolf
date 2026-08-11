@@ -10,7 +10,9 @@ import { AppLoading } from '#/components/AppLoading'
 import { PlayerList } from '#/components/PlayerList'
 import { RoomHeader } from '#/components/RoomHeader'
 import { orpcClient } from '#/orpc/client'
+import { STEP_ROLE } from '#/game/rules/transitions'
 
+import { GameHistorySheet } from './-components/GameHistorySheet'
 import { GameBoard } from './-components/GameBoard'
 
 export const Route = createFileRoute('/game')({ component: GamePage })
@@ -67,6 +69,29 @@ function GamePage() {
   const gameStarted = isModerator
     ? view.game.state !== null
     : view.phase !== 'LOBBY'
+  const playerNames = new Map(
+    players.map((player) => [player.id, player.displayName]),
+  )
+  const activeQueueItem = isModerator
+    ? view.game.state?.queue.find(
+        (item) =>
+          item.status === 'ACTIVE' ||
+          item.status === 'WAITING_MODERATOR_CONFIRMATION',
+      )
+    : null
+  const activeRole = activeQueueItem ? STEP_ROLE[activeQueueItem.step] : null
+  const pendingActorId = isModerator
+    ? view.game.state?.pendingNightAction?.actorId
+    : null
+  const activePlayerIds = new Set(
+    pendingActorId
+      ? [pendingActorId]
+      : isModerator && activeRole
+        ? view.game.state?.players
+            .filter((player) => player.alive && player.role === activeRole)
+            .map((player) => player.id)
+        : [],
+  )
 
   if (!gameStarted) return <Navigate to="/lobby" replace />
 
@@ -78,7 +103,18 @@ function GamePage() {
   return (
     <main className="isolate min-h-dvh px-5 py-6 sm:px-8 sm:py-8 lg:px-12">
       <div className="mx-auto flex max-w-6xl flex-col gap-10">
-        <RoomHeader isModerator={isModerator} onLeave={leaveSession} />
+        <RoomHeader
+          actions={
+            isModerator ? (
+              <GameHistorySheet
+                history={view.game.history}
+                names={playerNames}
+              />
+            ) : undefined
+          }
+          isModerator={isModerator}
+          onLeave={leaveSession}
+        />
         <section className="grid gap-10 lg:grid-cols-[3fr_2fr] lg:gap-16">
           <div className="flex min-w-0 flex-col gap-8">
             <RoomSummary gameStarted roomCode={roomCode} version={version} />
@@ -86,6 +122,7 @@ function GamePage() {
               players={players}
               isModerator={isModerator}
               rolesAssigned={rolesAssigned}
+              activePlayerIds={activePlayerIds}
             />
           </div>
           <aside className="min-w-0 border-t border-white/10 pt-8 lg:border-t-0 lg:border-l lg:pt-0 lg:pl-10">

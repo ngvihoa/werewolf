@@ -9,11 +9,16 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as homeRouteRouteImport } from './routes/(home)/route'
 import { Route as GameRouteRouteImport } from './routes/game/route'
 import { Route as LobbyRouteRouteImport } from './routes/lobby/route'
 import { Route as homeIndexRouteImport } from './routes/(home)/index'
 import { Route as ApiRpcSplatRouteImport } from './routes/api.rpc.$'
 
+const homeRouteRoute = homeRouteRouteImport.update({
+  id: '/(home)',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const GameRouteRoute = GameRouteRouteImport.update({
   id: '/game',
   path: '/game',
@@ -25,9 +30,9 @@ const LobbyRouteRoute = LobbyRouteRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const homeIndexRoute = homeIndexRouteImport.update({
-  id: '/(home)/',
+  id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => homeRouteRoute,
 } as any)
 const ApiRpcSplatRoute = ApiRpcSplatRouteImport.update({
   id: '/api/rpc/$',
@@ -49,6 +54,7 @@ export interface FileRoutesByTo {
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
+  '/(home)': typeof homeRouteRouteWithChildren
   '/game': typeof GameRouteRoute
   '/lobby': typeof LobbyRouteRoute
   '/(home)/': typeof homeIndexRoute
@@ -59,18 +65,25 @@ export interface FileRouteTypes {
   fullPaths: '/game' | '/lobby' | '/' | '/api/rpc/$'
   fileRoutesByTo: FileRoutesByTo
   to: '/game' | '/lobby' | '/' | '/api/rpc/$'
-  id: '__root__' | '/game' | '/lobby' | '/(home)/' | '/api/rpc/$'
+  id: '__root__' | '/(home)' | '/game' | '/lobby' | '/(home)/' | '/api/rpc/$'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
+  homeRouteRoute: typeof homeRouteRouteWithChildren
   GameRouteRoute: typeof GameRouteRoute
   LobbyRouteRoute: typeof LobbyRouteRoute
-  homeIndexRoute: typeof homeIndexRoute
   ApiRpcSplatRoute: typeof ApiRpcSplatRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/(home)': {
+      id: '/(home)'
+      path: ''
+      fullPath: ''
+      preLoaderRoute: typeof homeRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/game': {
       id: '/game'
       path: '/game'
@@ -90,7 +103,7 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof homeIndexRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof homeRouteRoute
     }
     '/api/rpc/$': {
       id: '/api/rpc/$'
@@ -102,10 +115,22 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface homeRouteRouteChildren {
+  homeIndexRoute: typeof homeIndexRoute
+}
+
+const homeRouteRouteChildren: homeRouteRouteChildren = {
+  homeIndexRoute: homeIndexRoute,
+}
+
+const homeRouteRouteWithChildren = homeRouteRoute._addFileChildren(
+  homeRouteRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
+  homeRouteRoute: homeRouteRouteWithChildren,
   GameRouteRoute: GameRouteRoute,
   LobbyRouteRoute: LobbyRouteRoute,
-  homeIndexRoute: homeIndexRoute,
   ApiRpcSplatRoute: ApiRpcSplatRoute,
 }
 export const routeTree = rootRouteImport

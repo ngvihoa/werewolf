@@ -11,7 +11,7 @@ import { ModeButton } from './-components/ModeButton'
 import { EntryStat } from './-components/EntryStat'
 import { TextField } from './-components/TextField'
 
-export const Route = createFileRoute('/(home)')({ component: EntryPage })
+export const Route = createFileRoute('/(home)/')({ component: EntryPage })
 
 function EntryPage() {
   const navigate = useNavigate()

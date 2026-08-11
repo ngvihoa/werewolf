@@ -1,8 +1,12 @@
+import type { ReactNode } from 'react'
+
 export function RoomHeader({
   isModerator,
+  actions,
   onLeave,
 }: {
   isModerator: boolean
+  actions?: ReactNode
   onLeave: () => void
 }) {
   return (
@@ -13,17 +17,20 @@ export function RoomHeader({
           {isModerator ? 'Moderator console' : 'Player room'}
         </p>
       </div>
-      <button
-        className="relative shrink-0 px-2 py-2 text-sm text-stone-400 transition-colors hover:text-stone-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500"
-        type="button"
-        onClick={onLeave}
-      >
-        Rời phòng
-        <span
-          className="pointer-fine:hidden absolute top-1/2 left-1/2 size-[max(100%,3rem)] -translate-1/2"
-          aria-hidden="true"
-        />
-      </button>
+      <div className="flex items-center gap-2">
+        {actions}
+        <button
+          className="relative shrink-0 px-2 py-2 text-sm text-stone-400 transition-colors hover:text-stone-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500"
+          type="button"
+          onClick={onLeave}
+        >
+          Rời phòng
+          <span
+            className="pointer-fine:hidden absolute top-1/2 left-1/2 size-[max(100%,3rem)] -translate-1/2"
+            aria-hidden="true"
+          />
+        </button>
+      </div>
     </header>
   )
 }

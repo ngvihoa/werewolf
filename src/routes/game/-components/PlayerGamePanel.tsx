@@ -3,6 +3,7 @@ import type { CommandHandler } from './types'
 
 import { phaseLabel, roleLabel } from '#/game/presentation/labels'
 import { InlineError } from '#/components/InlineError'
+import { RoleCard } from '#/components/RoleCard'
 
 import { playerName, playerWaitingTitle } from './game-copy'
 import { NightActionForm } from './NightActionForm'
@@ -45,6 +46,8 @@ export function PlayerGamePanel({
           trên màn hình này chỉ dành cho bạn.
         </p>
       </div>
+
+      {view.me.role ? <RoleCard role={view.me.role} /> : null}
 
       {view.turn.werewolfTargetId ? (
         <SecretNotice

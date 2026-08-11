@@ -13,10 +13,12 @@ export function PlayerList({
   players,
   isModerator,
   rolesAssigned,
+  activePlayerIds,
 }: {
   players: RoomPlayer[]
   isModerator: boolean
   rolesAssigned: boolean
+  activePlayerIds?: ReadonlySet<string>
 }) {
   return (
     <div className="flex flex-col">
@@ -28,27 +30,55 @@ export function PlayerList({
       </div>
       <ul className="divide-y divide-white/10" role="list">
         {players.length ? (
-          players.map((player, index) => (
-            <li
-              className="grid grid-cols-[auto_1fr_auto] items-center gap-4 py-4"
-              key={player.id}
-            >
-              <span className="grid size-10 place-items-center rounded-full bg-white/5 font-mono text-sm text-stone-400 ring-1 ring-white/10">
-                {String(index + 1).padStart(2, '0')}
-              </span>
-              <div className="min-w-0">
-                <p className="truncate text-base font-medium text-stone-100 sm:text-sm">
-                  {player.displayName}
-                </p>
-                <p className="truncate text-base/7 text-stone-500 sm:text-sm/6">
-                  {isModerator && player.role
-                    ? roleLabel(player.role)
-                    : 'Vai trò được giữ kín'}
-                </p>
-              </div>
-              <StatusBadge ready={player.ready} assigned={rolesAssigned} />
-            </li>
-          ))
+          players.map((player, index) => {
+            const active = activePlayerIds?.has(player.id) ?? false
+            return (
+              <li
+                aria-current={active ? 'step' : undefined}
+                className={`grid grid-cols-[auto_1fr_auto] items-center gap-4 rounded-lg px-3 py-4 transition-colors ${
+                  active
+                    ? 'bg-red-500/10 ring-1 ring-red-400/25'
+                    : 'ring-1 ring-transparent'
+                }`}
+                key={player.id}
+              >
+                <span
+                  className={`grid size-10 place-items-center overflow-hidden rounded-full font-mono text-sm ring-1 ${
+                    active
+                      ? 'bg-red-500/15 text-red-200 ring-red-400/40'
+                      : 'bg-white/5 text-stone-400 ring-white/10'
+                  }`}
+                >
+                  {isModerator && player.role ? (
+                    <img
+                      alt={`Vai ${roleLabel(player.role)}`}
+                      className="size-full object-cover"
+                      height={40}
+                      src={`/role/${player.role.toLowerCase()}.png`}
+                      width={40}
+                    />
+                  ) : (
+                    String(index + 1).padStart(2, '0')
+                  )}
+                </span>
+                <div className="min-w-0">
+                  <p className="truncate text-base font-medium text-stone-100 sm:text-sm">
+                    {player.displayName}
+                  </p>
+                  <p className="truncate text-base/7 text-stone-500 sm:text-sm/6">
+                    {isModerator && player.role
+                      ? roleLabel(player.role)
+                      : 'Vai trò được giữ kín'}
+                  </p>
+                </div>
+                <StatusBadge
+                  ready={player.ready}
+                  assigned={rolesAssigned}
+                  active={active}
+                />
+              </li>
+            )
+          })
         ) : (
           <li className="py-12 text-center text-base/7 text-stone-500 sm:text-sm/6">
             Chưa có người chơi. Room code đang chờ được nhập.
