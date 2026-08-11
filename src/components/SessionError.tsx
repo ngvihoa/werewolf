@@ -1,14 +1,4 @@
-export function AppLoading() {
-  return (
-    <main className="isolate grid min-h-dvh place-items-center px-6">
-      <p className="font-mono text-sm tracking-wide text-stone-500 uppercase">
-        Đang mở sổ ván chơi...
-      </p>
-    </main>
-  )
-}
-
-export function LobbyError({
+export function SessionError({
   message,
   onLeave,
 }: {
@@ -36,13 +26,5 @@ export function LobbyError({
         </button>
       </div>
     </main>
-  )
-}
-
-export function InlineError({ message }: { message: string }) {
-  return (
-    <p className="border-l-2 border-red-500 pl-3 text-base/7 text-red-300 sm:text-sm/6">
-      {message}
-    </p>
   )
 }

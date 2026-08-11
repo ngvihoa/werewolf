@@ -3,6 +3,23 @@ import { useSyncExternalStore } from 'react'
 const SESSION_STORAGE_KEY = 'werewolf.local-session'
 const SESSION_CHANGED_EVENT = 'werewolf:session-changed'
 
+function subscribeToSession(onStoreChange: () => void) {
+  window.addEventListener('storage', onStoreChange)
+  window.addEventListener(SESSION_CHANGED_EVENT, onStoreChange)
+  return () => {
+    window.removeEventListener('storage', onStoreChange)
+    window.removeEventListener(SESSION_CHANGED_EVENT, onStoreChange)
+  }
+}
+
+function getSessionSnapshot() {
+  return window.localStorage.getItem(SESSION_STORAGE_KEY)
+}
+
+function getServerSessionSnapshot() {
+  return null
+}
+
 export function useLocalSession() {
   const sessionToken = useSyncExternalStore(
     subscribeToSession,
@@ -21,21 +38,4 @@ export function useLocalSession() {
       window.dispatchEvent(new Event(SESSION_CHANGED_EVENT))
     },
   }
-}
-
-function subscribeToSession(onStoreChange: () => void) {
-  window.addEventListener('storage', onStoreChange)
-  window.addEventListener(SESSION_CHANGED_EVENT, onStoreChange)
-  return () => {
-    window.removeEventListener('storage', onStoreChange)
-    window.removeEventListener(SESSION_CHANGED_EVENT, onStoreChange)
-  }
-}
-
-function getSessionSnapshot() {
-  return window.localStorage.getItem(SESSION_STORAGE_KEY)
-}
-
-function getServerSessionSnapshot() {
-  return null
 }

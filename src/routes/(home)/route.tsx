@@ -1,21 +1,28 @@
-import type { FormEvent, InputHTMLAttributes, ReactNode } from 'react'
+import type { FormEvent } from 'react'
 
+import { createFileRoute, Navigate, useNavigate } from '@tanstack/react-router'
+import { useLocalSession } from '#/hooks/useLocalSession'
 import { useMutation } from '@tanstack/react-query'
 import { orpcClient } from '#/orpc/client'
 import { useState } from 'react'
 
-export function LobbyEntry({
-  onSessionCreated,
-}: {
-  onSessionCreated: (token: string) => void
-}) {
+import { PrimaryButton } from './-components/PrimaryButton'
+import { ModeButton } from './-components/ModeButton'
+import { EntryStat } from './-components/EntryStat'
+import { TextField } from './-components/TextField'
+
+export const Route = createFileRoute('/(home)/')({ component: EntryPage })
+
+function EntryPage() {
+  const navigate = useNavigate()
+  const { sessionToken, saveSession } = useLocalSession()
   const [mode, setMode] = useState<'CREATE' | 'JOIN'>('CREATE')
   const [error, setError] = useState<string | null>(null)
   const createMutation = useMutation({
     mutationFn: (moderatorName: string) =>
       orpcClient.lobby.createGame({ moderatorName }),
     onSuccess(result) {
-      if (result.ok) onSessionCreated(result.value.moderatorSessionToken)
+      if (result.ok) handleSessionCreated(result.value.moderatorSessionToken)
       else setError(result.error.message)
     },
     onError: () => setError('Không thể kết nối local server. Hãy thử lại.'),
@@ -24,12 +31,17 @@ export function LobbyEntry({
     mutationFn: (input: { roomCode: string; displayName: string }) =>
       orpcClient.lobby.joinGame(input),
     onSuccess(result) {
-      if (result.ok) onSessionCreated(result.value.playerSessionToken)
+      if (result.ok) handleSessionCreated(result.value.playerSessionToken)
       else setError(result.error.message)
     },
     onError: () => setError('Không thể kết nối local server. Hãy thử lại.'),
   })
   const isPending = createMutation.isPending || joinMutation.isPending
+
+  function handleSessionCreated(token: string) {
+    saveSession(token)
+    void navigate({ to: '/lobby' })
+  }
 
   function submitCreate(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -50,6 +62,8 @@ export function LobbyEntry({
       displayName: String(form.get('displayName') ?? ''),
     })
   }
+
+  if (sessionToken) return <Navigate to="/lobby" replace />
 
   return (
     <main className="isolate min-h-dvh overflow-hidden">
@@ -163,77 +177,5 @@ export function LobbyEntry({
         </section>
       </div>
     </main>
-  )
-}
-
-function EntryStat({ value, label }: { value: string; label: string }) {
-  return (
-    <div className="flex min-w-0 flex-col gap-1 px-4 first:pl-0 last:pr-0">
-      <p className="font-mono text-lg tabular-nums text-stone-200">{value}</p>
-      <p className="truncate text-sm text-stone-500">{label}</p>
-    </div>
-  )
-}
-
-function ModeButton({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean
-  onClick: () => void
-  children: ReactNode
-}) {
-  return (
-    <button
-      className={`border-b-2 px-2 py-3 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-red-700 ${active ? 'border-red-700 text-stone-950' : 'border-transparent text-stone-500 hover:text-stone-800'}`}
-      type="button"
-      onClick={onClick}
-    >
-      {children}
-    </button>
-  )
-}
-
-function TextField({
-  id,
-  label,
-  mono = false,
-  ...inputProps
-}: {
-  id: string
-  label: string
-  mono?: boolean
-} & InputHTMLAttributes<HTMLInputElement>) {
-  return (
-    <div className="flex flex-col gap-2">
-      <label className="text-sm font-medium text-stone-700" htmlFor={id}>
-        {label}
-      </label>
-      <input
-        {...inputProps}
-        className={`rounded-md bg-white px-3 py-2.5 text-base text-stone-950 shadow-sm ring-1 ring-stone-950/10 placeholder:text-stone-400 focus-visible:-outline-offset-1 focus-visible:outline-2 focus-visible:outline-red-700 sm:py-2 sm:text-sm ${mono ? 'font-mono tracking-[0.16em] uppercase' : ''}`}
-        id={id}
-        required
-      />
-    </div>
-  )
-}
-
-function PrimaryButton({
-  pending,
-  children,
-}: {
-  pending: boolean
-  children: ReactNode
-}) {
-  return (
-    <button
-      className="rounded-md bg-red-700 px-3 py-2.5 text-sm font-medium text-white ring-1 ring-red-700 transition-colors hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-700 sm:py-2"
-      type="submit"
-      disabled={pending}
-    >
-      {pending ? 'Đang xử lý...' : children}
-    </button>
   )
 }
