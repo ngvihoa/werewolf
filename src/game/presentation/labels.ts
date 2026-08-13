@@ -1,7 +1,6 @@
 import type { PlayerGameView } from '#/game/projections/model'
 import type { GameState } from '#/game/orchestration/model'
-
-type Role = 'VILLAGER' | 'WEREWOLF' | 'SEER' | 'WITCH'
+import type { Role } from '../domain'
 
 export function phaseLabel(phase: PlayerGameView['phase']) {
   return {

@@ -1,4 +1,4 @@
-import { createHash, randomBytes } from "node:crypto"
+import { createHash, randomBytes } from 'node:crypto'
 
 /**
  * Token chỉ tồn tại trong 24 giờ
@@ -21,10 +21,13 @@ export const hashSessionToken = (sessionToken: string) => {
 
 /**
  * Tạo thời gian expire của token
- * @param now 
- * @param duration 
- * @returns 
+ * @param now
+ * @param duration
+ * @returns
  */
-export const createSessionExpiry = (now: Date, duration = SESSION_DURATION_MS) => {
+export const createSessionExpiry = (
+    now: Date,
+    duration = SESSION_DURATION_MS,
+) => {
     return new Date(now.getTime() + duration)
 }

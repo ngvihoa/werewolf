@@ -20,6 +20,11 @@ import {
   text,
   uuid,
 } from 'drizzle-orm/pg-core'
+import {
+  GAME_PHASE_VALUES,
+  QUEUE_STEP_VALUES,
+  ROLE_VALUES,
+} from '#/game/schema'
 
 export const gameStatus = pgEnum('game_status', [
   'LOBBY',
@@ -27,30 +32,16 @@ export const gameStatus = pgEnum('game_status', [
   'GAME_OVER',
 ])
 
-export const gamePhase = pgEnum('game_phase', [
-  'SETUP',
-  'ROLE_REVEAL',
-  'READY_CHECK',
-  'NIGHT',
-  'NIGHT_RESOLUTION',
-  'DAY',
-  'VOTE',
-  'VOTE_RESOLUTION',
-  'GAME_OVER',
-])
+export const gamePhase = pgEnum('game_phase', GAME_PHASE_VALUES)
 
-export const role = pgEnum('role', ['VILLAGER', 'WEREWOLF', 'SEER', 'WITCH'])
+export const role = pgEnum('role', ROLE_VALUES)
 
 export const gameSessionKind = pgEnum('game_session_kind', [
   'MODERATOR',
   'PLAYER',
 ])
 
-export const queueStep = pgEnum('queue_step', [
-  'SEER_INSPECT',
-  'WEREWOLF_ATTACK',
-  'WITCH_ACTION',
-])
+export const queueStep = pgEnum('queue_step', QUEUE_STEP_VALUES)
 
 export const queueStepStatus = pgEnum('queue_step_status', [
   'PENDING',
