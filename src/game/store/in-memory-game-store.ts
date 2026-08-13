@@ -23,6 +23,8 @@ import {
   executeCommand,
 } from '../orchestration/game-orchestrator'
 
+import { createRoomCode } from './utils.room-code'
+
 type StoreDependencies = {
   createId?: () => string
   createRoomCode?: () => string
@@ -42,8 +44,7 @@ export class InMemoryGameStore implements GameStore {
 
   constructor(dependencies: StoreDependencies = {}) {
     this.#createId = dependencies.createId ?? (() => crypto.randomUUID())
-    this.#createRoomCode =
-      dependencies.createRoomCode ?? (() => createRandomRoomCode())
+    this.#createRoomCode = dependencies.createRoomCode ?? createRoomCode
     this.#now = dependencies.now ?? (() => new Date())
     this.#randomIndex = dependencies.randomIndex
   }
@@ -382,12 +383,6 @@ function authorizeCommand(
   return session.kind === 'MODERATOR'
     ? success(true)
     : failure('NOT_AUTHORIZED', 'Moderator session is required')
-}
-
-function createRandomRoomCode(): string {
-  const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
-  const bytes = crypto.getRandomValues(new Uint8Array(6))
-  return [...bytes].map((byte) => alphabet[byte % alphabet.length]).join('')
 }
 
 function success<T>(value: T): StoreResult<T> {
