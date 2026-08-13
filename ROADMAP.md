@@ -59,8 +59,8 @@ Exit criteria:
 
 Goal: expose secure transactional game operations.
 
-- [ ] Complete schema for settings, sessions, queue steps and actions.
-- [ ] Create migration and indexes.
+- [x] Complete schema for settings, sessions, queue steps and actions.
+- [x] Create migration and indexes.
 - [ ] Implement hashed Moderator and Player session tokens.
 - [ ] Add oRPC authentication and authorization middleware.
 - [ ] Implement `createGame`, `joinGame` and `setReady`.

@@ -52,6 +52,7 @@
     "drizzle-kit": "^0.31.10",
     "eslint": "^9.20.0",
     "prettier": "^3.8.1",
+    "supabase": "^2.114.0",
     "typescript": "^6.0.2",
     "vite": "^8.0.0",
     "vitest": "^4.1.10"

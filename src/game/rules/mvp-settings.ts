@@ -1,5 +1,14 @@
 import type { Role } from '../domain'
 
+export type MvpSettings = {
+  revealRoleOnDeath: boolean
+  seerResult: 'TEAM_ALIGNMENT'
+  voteTie: 'REVOTE_ONCE'
+  witchCanSelfHeal: boolean
+  witchCanUseBothPotions: boolean
+  witchCanSelfPoison: boolean
+}
+
 export const MVP_ROLE_COMPOSITIONS = {
   5: ['WEREWOLF', 'SEER', 'VILLAGER', 'VILLAGER', 'VILLAGER'],
   6: ['WEREWOLF', 'SEER', 'WITCH', 'VILLAGER', 'VILLAGER', 'VILLAGER'],
@@ -12,4 +21,4 @@ export const MVP_SETTINGS = {
   witchCanSelfHeal: true,
   witchCanUseBothPotions: true,
   witchCanSelfPoison: false,
-} as const
+} as const satisfies MvpSettings
