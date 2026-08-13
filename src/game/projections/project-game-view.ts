@@ -31,8 +31,8 @@ export function projectGameView(
   const werewolfTargetId =
     domainPlayer?.role === 'WITCH' && activeStep === 'WITCH_ACTION'
       ? (game.state?.confirmedNightActions.find(
-        (action) => action.type === 'WEREWOLF_ATTACK',
-      )?.targetId ?? null)
+          (action) => action.type === 'WEREWOLF_ATTACK',
+        )?.targetId ?? null)
       : null
 
   const history = game.history.map((entry) =>

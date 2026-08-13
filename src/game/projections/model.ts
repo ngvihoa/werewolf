@@ -45,10 +45,10 @@ export type PrivateHistoryEvent =
   | { type: 'OWN_NIGHT_ACTION_CONFIRMED'; action: NightAction }
   | { type: 'OWN_NIGHT_ACTION_REJECTED'; action: NightAction; reason: string }
   | {
-    type: 'SEER_RESULT_RECORDED'
-    targetPlayerId: string
-    result: Team
-  }
+      type: 'SEER_RESULT_RECORDED'
+      targetPlayerId: string
+      result: Team
+    }
 
 export type PrivateHistoryEntry = {
   sequence: number

@@ -120,17 +120,17 @@ Exit criteria:
 
 Goal: complete the playable night/day loop.
 
-- [ ] Build Player status and public player list.
-- [ ] Build waiting-for-turn state.
-- [ ] Build Seer target selection and private result.
-- [ ] Build Werewolf target selection.
-- [ ] Build Witch heal, poison and skip controls.
-- [ ] Build Moderator queue control panel.
-- [ ] Build confirm, reject, redo and skip flows.
-- [ ] Build night-resolution confirmation.
-- [ ] Build day discussion and vote-result input.
-- [ ] Build game-over view.
-- [ ] Prevent dead players from acting.
+- [x] Build Player status and public player list.
+- [x] Build waiting-for-turn state.
+- [x] Build Seer target selection and private result.
+- [x] Build Werewolf target selection.
+- [x] Build Witch heal, poison and skip controls.
+- [x] Build Moderator queue control panel.
+- [x] Build confirm, reject, redo and skip flows.
+- [x] Build night-resolution confirmation.
+- [x] Build day discussion and vote-result input.
+- [x] Build game-over view.
+- [x] Prevent dead players from acting.
 
 Exit criteria:
 
