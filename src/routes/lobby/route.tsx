@@ -25,7 +25,14 @@ function LobbyPage() {
     })
   const readyMutation = useMutation({
     mutationFn: (ready: boolean) =>
-      orpcClient.lobby.setReady({ sessionToken: activeSessionToken, ready }),
+      orpcClient.lobby.setReady({
+        sessionToken: activeSessionToken,
+        expectedVersion:
+          viewQuery.data?.viewer === 'MODERATOR'
+            ? viewQuery.data.game.version
+            : (viewQuery.data?.version ?? 0),
+        ready,
+      }),
     onSuccess: invalidateView,
   })
   const assignMutation = useMutation({

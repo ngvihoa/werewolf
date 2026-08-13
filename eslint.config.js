@@ -15,6 +15,14 @@ export default [
     rules: {
       'import-x/order': 'off',
       'no-nested-ternary': 'off',
+      'no-multiple-empty-lines': [
+        'error',
+        {
+          max: 1,
+          maxBOF: 0,
+          maxEOF: 0,
+        },
+      ],
     },
   },
   {

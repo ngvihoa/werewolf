@@ -1,6 +1,14 @@
+import type {
+  createdGameSchema,
+  gameMutationResultSchema,
+  joinedGameSchema,
+  storeErrorCodeSchema,
+  storeErrorSchema,
+} from './schema'
 import type { GameEvent } from '../orchestration/events'
 import type { GameState } from '../orchestration/model'
 import type { Role } from '../domain'
+import type { z } from 'zod'
 
 export type SessionKind = 'MODERATOR' | 'PLAYER'
 
@@ -45,33 +53,14 @@ export type LocalGame = {
   history: StoredEvent[]
 }
 
-export type StoreErrorCode =
-  | 'DUPLICATE_DISPLAY_NAME'
-  | 'GAME_ALREADY_STARTED'
-  | 'GAME_NOT_FOUND'
-  | 'INVALID_GAME_STATE'
-  | 'NOT_ALL_PLAYERS_READY'
-  | 'NOT_AUTHORIZED'
-  | 'ROLES_NOT_ASSIGNED'
-  | 'SESSION_NOT_FOUND'
-  | 'STALE_VERSION'
-
-export type StoreError = {
-  code: StoreErrorCode
-  message: string
-}
+// Các public boundary types được infer từ Zod schema để runtime validation
+// và TypeScript không thể lệch nhau khi có thay đổi sau này.
+export type StoreErrorCode = z.infer<typeof storeErrorCodeSchema>
+export type StoreError = z.infer<typeof storeErrorSchema>
 
 export type StoreResult<T> =
   { ok: true; value: T } | { ok: false; error: StoreError }
 
-export type CreatedGame = {
-  gameId: string
-  roomCode: string
-  moderatorSessionToken: string
-}
-
-export type JoinedGame = {
-  gameId: string
-  playerId: string
-  playerSessionToken: string
-}
+export type CreatedGame = z.infer<typeof createdGameSchema>
+export type JoinedGame = z.infer<typeof joinedGameSchema>
+export type GameMutationResult = z.infer<typeof gameMutationResultSchema>

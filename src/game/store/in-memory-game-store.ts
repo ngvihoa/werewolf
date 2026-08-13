@@ -1,5 +1,6 @@
 import type {
   CreatedGame,
+  GameMutationResult,
   JoinedGame,
   LocalGame,
   LocalSession,
@@ -9,6 +10,7 @@ import type {
   StoreErrorCode,
   StoreResult,
 } from './model'
+import type { ExecuteGameCommandInput, GameStore } from './game-store'
 import type { GameCommand } from '../orchestration/commands'
 import type { Player, Role } from '../domain'
 import type { GameEvent } from '../orchestration/events'
@@ -28,16 +30,9 @@ type StoreDependencies = {
   randomIndex?: (upperBound: number) => number
 }
 
-type CommandInput = {
-  gameId: string
-  sessionToken: string
-  expectedVersion: number
-  command: GameCommand
-}
-
 const PLAYER_COMMANDS = new Set<GameCommand['type']>(['SUBMIT_NIGHT_ACTION'])
 
-export class InMemoryGameStore {
+export class InMemoryGameStore implements GameStore {
   readonly #games = new Map<string, LocalGame>()
   readonly #sessions = new Map<string, LocalSession>()
   readonly #createId: () => string
@@ -127,13 +122,28 @@ export class InMemoryGameStore {
     }
   }
 
-  setReady(sessionToken: string, ready: boolean): StoreResult<LocalGame> {
+  setReady(
+    sessionToken: string,
+    expectedVersion: number,
+    ready: boolean,
+  ): StoreResult<GameMutationResult> {
+    // Sesion dùng để xác định ai đang thực hiện command
     const resolved = this.#resolveSession(sessionToken)
     if (!resolved.ok) return resolved
+
     const { game, session } = resolved.value
+
+    // Mọi mutation đều phải kiểm tra version trước khi thay đổi state
+    if (game.version !== expectedVersion) {
+      return failure('STALE_VERSION', 'Game version is stale')
+    }
+
+    // Hàm này chỉ tác dụng cho Player
     if (session.kind !== 'PLAYER' || !session.playerId) {
       return failure('NOT_AUTHORIZED', 'Only a player can change ready state')
     }
+
+    // Hàm này chỉ tác dụng khi game đang ở trạng thái Lobby
     if (game.state) {
       return failure('GAME_ALREADY_STARTED', 'Game has already started')
     }
@@ -144,12 +154,14 @@ export class InMemoryGameStore {
     if (!player) {
       return failure('INVALID_GAME_STATE', 'Session player is missing')
     }
+
     player.ready = ready
     game.version += 1
     this.#appendEvents(game, 'PLAYER', player.id, [
       { type: 'PLAYER_READY_CHANGED', playerId: player.id, ready },
     ])
-    return success(this.#snapshot(game))
+
+    return success({ gameId: game.id, version: game.version })
   }
 
   assignRoles(sessionToken: string): StoreResult<LocalGame> {
@@ -209,7 +221,7 @@ export class InMemoryGameStore {
     return success(this.#snapshot(game))
   }
 
-  execute(input: CommandInput): StoreResult<LocalGame> {
+  execute(input: ExecuteGameCommandInput): StoreResult<LocalGame> {
     const game = this.#games.get(input.gameId)
     if (!game) return failure('GAME_NOT_FOUND', 'Game does not exist')
     const session = this.#sessions.get(input.sessionToken)
@@ -339,14 +351,14 @@ export class InMemoryGameStore {
 function createDomainPlayer(id: string, role: Role): Player {
   return role === 'WITCH'
     ? {
-        id,
-        role,
-        alive: true,
-        abilityState: {
-          healingPotionAvailable: true,
-          poisonPotionAvailable: true,
-        },
-      }
+      id,
+      role,
+      alive: true,
+      abilityState: {
+        healingPotionAvailable: true,
+        poisonPotionAvailable: true,
+      },
+    }
     : { id, role, alive: true, abilityState: null }
 }
 

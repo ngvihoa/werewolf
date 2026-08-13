@@ -4,3 +4,4 @@ yarn.lock
 .agents
 .now
 drizzle/meta
+supabase/.temp

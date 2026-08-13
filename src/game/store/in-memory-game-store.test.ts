@@ -25,7 +25,16 @@ function createStartedGame() {
   const assigned = store.assignRoles(created.value.moderatorSessionToken)
   if (!assigned.ok) throw new Error(assigned.error.message)
   for (const player of players) {
-    const ready = store.setReady(player.playerSessionToken, true)
+    // Mỗi mutation tăng version, nên client kế tiếp phải dùng version mới nhất.
+    // Điều này mô phỏng việc UI refetch game view sau một mutation thành công.
+    const currentGame = store.getGame(created.value.gameId)
+    if (!currentGame.ok) throw new Error(currentGame.error.message)
+
+    const ready = store.setReady(
+      player.playerSessionToken,
+      currentGame.value.version,
+      true,
+    )
     if (!ready.ok) throw new Error(ready.error.message)
   }
   const started = store.startGame(created.value.moderatorSessionToken)
@@ -71,6 +80,31 @@ describe('InMemoryGameStore lobby', () => {
     if (!duplicate.ok) {
       expect(duplicate.error.code).toBe('DUPLICATE_DISPLAY_NAME')
     }
+  })
+
+  it('rejects a stale ready mutation without changing the player', () => {
+    const store = createStore()
+    const created = store.createGame('Moderator')
+    if (!created.ok) throw new Error(created.error.message)
+
+    const joined = store.joinGame(created.value.roomCode, 'An')
+    if (!joined.ok) throw new Error(joined.error.message)
+
+    const currentGame = store.getGame(created.value.gameId)
+    if (!currentGame.ok) throw new Error(currentGame.error.message)
+
+    // Client cố gửi version cũ hơn version đang nằm trên server.
+    // Store phải từ chối trước khi thay đổi ready state hoặc ghi event.
+    const stale = store.setReady(
+      joined.value.playerSessionToken,
+      currentGame.value.version - 1,
+      true,
+    )
+    const unchanged = store.getGame(created.value.gameId)
+
+    expect(stale.ok).toBe(false)
+    if (!stale.ok) expect(stale.error.code).toBe('STALE_VERSION')
+    expect(unchanged).toEqual(currentGame)
   })
 
   it('requires assignment and every player to be ready before start', () => {

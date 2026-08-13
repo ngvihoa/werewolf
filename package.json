@@ -23,6 +23,7 @@
   },
   "dependencies": {
     "@orpc/client": "^1.14.15",
+    "@orpc/contract": "1.14.15",
     "@orpc/server": "^1.14.15",
     "@orpc/tanstack-query": "^1.14.15",
     "@supabase/supabase-js": "^2.112.2",

@@ -1,6 +1,12 @@
-import type { CreatedGame, JoinedGame, LocalGame, StoreResult } from "./model"
-import type { GameCommand } from "../orchestration/commands"
-import type { GameView } from "../projections/model"
+import type {
+    CreatedGame,
+    GameMutationResult,
+    JoinedGame,
+    LocalGame,
+    StoreResult,
+} from './model'
+import type { GameCommand } from '../orchestration/commands'
+import type { GameView } from '../projections/model'
 
 export type Awaitable<T> = T | Promise<T>
 
@@ -8,9 +14,9 @@ export type Awaitable<T> = T | Promise<T>
  * Định nghĩa schema cho một lệnh thực thi trong game
  */
 export type ExecuteGameCommandInput = {
-    gameId: string,
+    gameId: string
     sessionToken: string
-    expectiveVersion: number
+    expectedVersion: number
     command: GameCommand
 }
 
@@ -32,7 +38,10 @@ export type GameStore = {
      * @param displayName Tên hiển thị
      * @returns Kết quả tham gia phòng
      */
-    joinGame(roomCode: string, displayName: string): Awaitable<StoreResult<JoinedGame>>
+    joinGame(
+        roomCode: string,
+        displayName: string,
+    ): Awaitable<StoreResult<JoinedGame>>
 
     /**
      * Lấy game view dựa trên session token
@@ -43,11 +52,17 @@ export type GameStore = {
 
     /**
      * Đặt trạng thái sẵn sàng cho người chơi
+     * Player mode
      * @param sessionToken Token phiên
+     * @param expectedVersion Phiên bản hiện tại của game
      * @param ready Trạng thái sẵn sàng
      * @returns Kết quả đặt trạng thái sẵn sàng
      */
-    setReady(sessionToken: string, ready: boolean): Awaitable<StoreResult<void>>
+    setReady(
+        sessionToken: string,
+        expectedVersion: number,
+        ready: boolean,
+    ): Awaitable<StoreResult<GameMutationResult>>
 
     /**
      * Gán vai trò cho người chơi

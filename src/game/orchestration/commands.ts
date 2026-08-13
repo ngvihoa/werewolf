@@ -1,15 +1,6 @@
-import type { NightAction } from '../rules/night-actions'
+import type { gameCommandSchema } from './schema'
+import type { z } from 'zod'
 
-export type GameCommand =
-  | { type: 'SUBMIT_NIGHT_ACTION'; action: NightAction }
-  | { type: 'CONFIRM_STEP' }
-  | { type: 'REJECT_STEP'; reason: string }
-  | { type: 'SKIP_STEP'; reason: string }
-  | { type: 'CONFIRM_NIGHT_RESOLUTION' }
-  | { type: 'START_VOTE' }
-  | {
-      type: 'SUBMIT_VOTE_RESULT'
-      tied: boolean
-      selectedPlayerId: string | null
-    }
-  | { type: 'CONFIRM_VOTE_RESULT' }
+// Schema là source of truth duy nhất.
+// Type dùng trong rule engine và UI được suy ra tự động từ runtime schema.
+export type GameCommand = z.infer<typeof gameCommandSchema>

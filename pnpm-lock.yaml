@@ -11,6 +11,9 @@ importers:
       '@orpc/client':
         specifier: ^1.14.15
         version: 1.14.15
+      '@orpc/contract':
+        specifier: 1.14.15
+        version: 1.14.15
       '@orpc/server':
         specifier: ^1.14.15
         version: 1.14.15(ws@8.21.3)
