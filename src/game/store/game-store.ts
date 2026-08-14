@@ -23,7 +23,8 @@ export type ExecuteGameCommandInput = {
 /**
  * Abstract layer cho game state management provider
  */
-export type GameStore = {
+// eslint-disable-next-line @typescript-eslint/consistent-type-definitions
+export interface GameStore {
     /**
      * Tạo một game mới
      * Moderator mode
