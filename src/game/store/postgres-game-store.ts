@@ -2,7 +2,6 @@ import type { StoreResult, CreatedGame } from './model'
 import type { GameStore } from './game-store'
 
 import { gameEvents, games, gameSessions } from '#/db/schema'
-import { ORPCError } from '@orpc/client'
 import { db } from '#/db/client'
 
 import {
@@ -81,10 +80,8 @@ export class PostgresGameStore implements Pick<GameStore, 'createGame'> {
                             })
 
                         if (!game) {
-                            throw new ORPCError('ALREADY_EXISTS', {
-                                message:
-                                    'Database did not return the created game or Room code already exists',
-                            })
+                            // Đây là lỗi invariant của persistence layer, không phải lỗi transport oRPC.
+                            throw new Error('Database did not return the created game')
                         }
 
                         // Tạo session token
@@ -145,13 +142,18 @@ function isRoomCodeCollision(error: unknown) {
         return false
     }
 
-    const postgresError = error as {
-        code?: unknown
-        constraint_name?: unknown
-    }
+    // DrizzleQueryError giữ lỗi gốc của postgres-js trong `cause`.
+    // Vẫn kiểm tra chính error để helper hoạt động cả khi nhận PostgresError trực tiếp.
+    const wrappedError = error as { cause?: unknown }
+    const candidates = [error, wrappedError.cause]
 
-    return (
-        postgresError.code === '23505' &&
-        postgresError.constraint_name === 'games_room_code_unique'
+    return candidates.some(
+        (candidate) =>
+            candidate !== null &&
+            typeof candidate === 'object' &&
+            'code' in candidate &&
+            candidate.code === '23505' &&
+            'constraint_name' in candidate &&
+            candidate.constraint_name === 'games_room_code_unique',
     )
 }
