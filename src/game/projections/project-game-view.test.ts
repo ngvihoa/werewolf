@@ -4,6 +4,7 @@ import type { GameState } from '../orchestration/model'
 
 import { describe, expect, it } from 'vitest'
 
+import { getGameViewResultSchema } from './schema'
 import { projectGameView } from './project-game-view'
 
 const state: GameState = {
@@ -195,5 +196,37 @@ describe('moderator projection', () => {
       view.game.state!.players[0].alive = false
     }
     expect(game.state!.players[0].alive).toBe(true)
+  })
+})
+
+describe('getGameView runtime output', () => {
+  it('strips injected role and action data from a player response', () => {
+    const view = projectGameView(createGame(), {
+      kind: 'PLAYER',
+      playerId: 'seer',
+    })
+    if (view?.viewer !== 'PLAYER') return
+
+    const unsafeOutput = {
+      ok: true as const,
+      value: {
+        ...view,
+        pendingNightAction: state.confirmedNightActions[0],
+        players: view.players.map((player) => ({
+          ...player,
+          role: 'WEREWOLF',
+          action: state.confirmedNightActions[0],
+        })),
+      },
+    }
+
+    const output = getGameViewResultSchema.parse(unsafeOutput)
+    expect(output.ok).toBe(true)
+    expect(JSON.stringify(output)).not.toContain('pendingNightAction')
+    expect(JSON.stringify(output)).not.toContain('WEREWOLF_ATTACK')
+    if (output.ok && output.value.viewer === 'PLAYER') {
+      expect(output.value.players[0]).not.toHaveProperty('role')
+      expect(output.value.players[0]).not.toHaveProperty('action')
+    }
   })
 })
