@@ -27,6 +27,14 @@ export const persistedGameEventSchema = z.discriminatedUnion('type', [
   ...gameEventSchema.options,
 ])
 
+export const EVENT_ACTOR_VALUES = [
+  'SYSTEM',
+  'MODERATOR',
+  'PLAYER',
+] as const
+
+export const eventActorSchema = z.enum(EVENT_ACTOR_VALUES)
+
 // Token schema chỉ xác nhận request có token.
 // Việc token có tồn tại, hết hạn hay bị revoke vẫn do GameStore kiểm tra.
 export const sessionTokenSchema = z.string().min(1)

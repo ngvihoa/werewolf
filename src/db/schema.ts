@@ -1,4 +1,4 @@
-import type { PersistedGameEvent } from '#/game/store/model'
+import type { EventActor, PersistedGameEvent } from '#/game/store/model'
 import type { WitchResources } from '#/game/domain'
 import type { MvpSettings } from '#/game/rules/mvp-settings'
 import type { GameState } from '#/game/orchestration/model'
@@ -375,7 +375,8 @@ export const gameEvents = pgTable(
       .$type<Record<string, unknown>>()
       .notNull()
       .default({}),
-    createdBy: text('created_by').notNull(),
+    // Database dùng text + CHECK; `$type` chỉ giúp Drizzle giữ đúng domain type.
+    createdBy: text('created_by').$type<EventActor>().notNull(),
     createdAt: timestamp('created_at', { withTimezone: true })
       .notNull()
       .defaultNow(),

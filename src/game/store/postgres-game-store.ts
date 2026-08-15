@@ -6,7 +6,9 @@ import type {
     StoreResult,
     JoinedGame,
     SessionKind,
+    LocalGame,
 } from './model'
+import type { GameView, ProjectionViewer } from '../projections/model'
 import type { GameStore } from './game-store'
 
 import { and, desc, eq, gt, isNull } from 'drizzle-orm'
@@ -20,6 +22,7 @@ import {
 } from '#/db/schema'
 
 import { createFirstNightState } from '../orchestration/game-orchestrator'
+import { projectGameView } from '../projections/project-game-view'
 import { playerSchema } from '../schema'
 import {
     createSessionExpiry,
@@ -31,8 +34,8 @@ import {
     assignRoles,
 } from '../rules/role-assignment'
 
-import { storeErrorCodeSchema } from './schema'
-import { serializeGameEvent } from './event-persistence'
+import { deserializeGameEvent, serializeGameEvent } from './event-persistence'
+import { eventActorSchema, storeErrorCodeSchema } from './schema'
 import { createRoomCode } from './utils.room-code'
 
 const MAX_ROOM_CODE_ATTEMPTS = 20
@@ -64,7 +67,7 @@ type GameVersionChanges = Partial<
 
 export class PostgresGameStore implements Omit<
     GameStore,
-    'execute' | 'getGameView'
+    'execute'
 > {
     readonly #database: NonNullable<PostgresGameStoreDependencies['database']>
     readonly #createRoomCode: NonNullable<
@@ -630,6 +633,105 @@ export class PostgresGameStore implements Omit<
                     gameId: game.id,
                     version: nextVersion,
                 },
+            }
+        })
+    }
+
+    async getGameView(sessionToken: string): Promise<StoreResult<GameView>> {
+        const sessionHash = this.#hashSessionToken(sessionToken)
+        const now = this.#now()
+
+        return this.#database.transaction(async transaction => {
+            const session = await findActiveSession(
+                transaction,
+                sessionHash,
+                now,
+            )
+
+            if (!session) {
+                return failure(
+                    STORE_ERROR_CODE.SESSION_NOT_FOUND,
+                    'Session does not exist or is no longer active',
+                )
+            }
+
+            const [game] = await transaction.select().from(games).where(eq(games.id, session.gameId)).limit(1)
+
+            if (!game) {
+                return failure(
+                    STORE_ERROR_CODE.GAME_NOT_FOUND,
+                    'Game not found',
+                )
+            }
+
+            const players = await transaction
+                .select({
+                    id: gamePlayers.id,
+                    role: gamePlayers.role,
+                    alive: gamePlayers.isAlive,
+                    isReady: gamePlayers.isReady,
+                    displayName: gamePlayers.displayName,
+                    isModerator: gamePlayers.isModerator,
+                    abilityState: gamePlayers.abilityState,
+                })
+                .from(gamePlayers)
+                .where(eq(gamePlayers.gameId, game.id))
+
+            const viewer: ProjectionViewer = session.kind === 'MODERATOR' ? {
+                kind: 'MODERATOR',
+                playerId: null,
+            } : {
+                kind: 'PLAYER',
+                playerId: session.playerId || '',
+            }
+
+            const events = await transaction
+                .select()
+                .from(gameEvents)
+                .where(eq(gameEvents.gameId, game.id))
+                .orderBy(desc(gameEvents.sequence))
+                .limit(200)
+
+            const history = events.map(row => ({
+                id: row.id,
+                sequence: row.sequence,
+                gameId: row.gameId,
+                actor: eventActorSchema.parse(row.createdBy),
+                actorPlayerId: row.actorPlayerId,
+                createdAt: row.createdAt.toISOString(),
+                event: deserializeGameEvent(row.type, row.payload),
+            }))
+
+            const localGame: LocalGame = {
+                id: game.id,
+                roomCode: game.roomCode,
+                version: game.version,
+                moderatorName: game.moderatorName,
+                lobbyPlayers: players.map(p => ({
+                    id: p.id,
+                    role: p.role,
+                    alive: p.alive,
+                    abilityState: p.abilityState,
+                    isModerator: p.isModerator,
+                    displayName: p.displayName,
+                    ready: p.isReady,
+                })),
+                state: game.state,
+                history,
+            }
+
+            const gameView = projectGameView(localGame, viewer)
+
+            if (!gameView) {
+                return failure(
+                    STORE_ERROR_CODE.INVALID_GAME_STATE,
+                    'Failed to project game view',
+                )
+            }
+
+            return {
+                ok: true as const,
+                value: gameView,
             }
         })
     }

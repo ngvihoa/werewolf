@@ -1,5 +1,6 @@
 import type {
   createdGameSchema,
+  eventActorSchema,
   gameMutationResultSchema,
   joinedGameSchema,
   persistedGameEventSchema,
@@ -11,7 +12,11 @@ import type { GameState } from '../orchestration/model'
 import type { Role } from '../domain'
 import type { z } from 'zod'
 
-export type SessionKind = 'MODERATOR' | 'PLAYER'
+// Type được infer từ runtime schema để validation và TypeScript luôn đồng bộ.
+export type EventActor = z.infer<typeof eventActorSchema>
+
+// Session không thể thuộc SYSTEM, nên tái sử dụng EventActor thay vì lặp enum.
+export type SessionKind = Exclude<EventActor, 'SYSTEM'>
 
 export type LocalSession = {
   token: string
@@ -34,7 +39,7 @@ export type StoredEvent = {
   sequence: number
   id: string
   gameId: string
-  actor: SessionKind | 'SYSTEM'
+  actor: EventActor
   actorPlayerId: string | null
   createdAt: string
   event: PersistedGameEvent
