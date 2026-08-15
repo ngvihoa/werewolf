@@ -6,6 +6,7 @@ import { db } from '#/db/client'
 import {
   gameQueueSteps,
   gameSessions,
+  gameActions,
   gamePlayers,
   gameEvents,
   games,
@@ -678,6 +679,193 @@ describe('PostgresGameStore.getGameView', () => {
     expect(
       moderatorResult.value.game.lobbyPlayers.map(player => player.role),
     ).toEqual(['SEER', 'WEREWOLF'])
+  })
+})
+
+describe('PostgresGameStore.execute', () => {
+  it('persists an authorized command and its confirmation atomically', async () => {
+    const roomCode = createTestRoomCode()
+    createdRoomCodes.push(roomCode)
+
+    const store = new PostgresGameStore({ createRoomCode: () => roomCode })
+    const created = await store.createGame('Test Moderator')
+    if (!created.ok) throw new Error('Expected createGame to succeed')
+
+    const joinedPlayers: Array<{
+      playerId: string
+      playerSessionToken: string
+    }> = []
+    for (const displayName of ['Seer', 'Wolf', 'An', 'Binh', 'Cuong']) {
+      const joined = await store.joinGame(roomCode, displayName)
+      if (!joined.ok) throw new Error('Expected player to join')
+      joinedPlayers.push(joined.value)
+    }
+
+    const roles = [
+      'SEER',
+      'WEREWOLF',
+      'VILLAGER',
+      'VILLAGER',
+      'VILLAGER',
+    ] as const
+
+    // Seed role và ready để fixture tập trung kiểm tra execute, không kiểm tra
+    // lại assignRoles/setReady đã có integration tests riêng.
+    for (const [index, player] of joinedPlayers.entries()) {
+      await db
+        .update(gamePlayers)
+        .set({ role: roles[index], isReady: true })
+        .where(eq(gamePlayers.id, player.playerId))
+    }
+
+    const [lobbyGame] = await db
+      .select({ version: games.version })
+      .from(games)
+      .where(eq(games.id, created.value.gameId))
+    if (!lobbyGame) throw new Error('Expected game to exist')
+
+    const started = await store.startGame(
+      created.value.moderatorSessionToken,
+      lobbyGame.version,
+    )
+    if (!started.ok) throw new Error('Expected game to start')
+
+    const seer = joinedPlayers[0]
+    const wolf = joinedPlayers[1]
+    if (!seer || !wolf) throw new Error('Expected Seer and Werewolf fixtures')
+
+    const command = {
+      type: 'SUBMIT_NIGHT_ACTION' as const,
+      action: {
+        type: 'SEER_INSPECT' as const,
+        actorId: seer.playerId,
+        targetId: wolf.playerId,
+      },
+    }
+
+    // Moderator không thể giả danh Player dù command payload chứa actor hợp lệ.
+    const unauthorized = await store.execute({
+      gameId: created.value.gameId,
+      sessionToken: created.value.moderatorSessionToken,
+      expectedVersion: started.value.version,
+      command,
+    })
+    expect(unauthorized).toMatchObject({
+      ok: false,
+      error: { code: 'NOT_AUTHORIZED' },
+    })
+
+    const submitted = await store.execute({
+      gameId: created.value.gameId,
+      sessionToken: seer.playerSessionToken,
+      expectedVersion: started.value.version,
+      command,
+    })
+    expect(submitted).toEqual({
+      ok: true,
+      value: {
+        gameId: created.value.gameId,
+        version: started.value.version + 1,
+      },
+    })
+    if (!submitted.ok) throw new Error('Expected action submission to succeed')
+
+    // Cùng expectedVersion cũ phải bị từ chối trước khi rule engine chạy lại.
+    const stale = await store.execute({
+      gameId: created.value.gameId,
+      sessionToken: seer.playerSessionToken,
+      expectedVersion: started.value.version,
+      command,
+    })
+    expect(stale).toMatchObject({
+      ok: false,
+      error: { code: 'STALE_VERSION' },
+    })
+
+    const rejected = await store.execute({
+      gameId: created.value.gameId,
+      sessionToken: created.value.moderatorSessionToken,
+      expectedVersion: submitted.value.version,
+      command: { type: 'REJECT_STEP', reason: 'Please choose again' },
+    })
+    if (!rejected.ok) throw new Error('Expected rejection to succeed')
+
+    // Rejected action không còn giữ partial unique slot, nên cùng queue step
+    // có thể nhận attempt tiếp theo.
+    const resubmitted = await store.execute({
+      gameId: created.value.gameId,
+      sessionToken: seer.playerSessionToken,
+      expectedVersion: rejected.value.version,
+      command,
+    })
+    if (!resubmitted.ok) throw new Error('Expected resubmission to succeed')
+
+    const confirmed = await store.execute({
+      gameId: created.value.gameId,
+      sessionToken: created.value.moderatorSessionToken,
+      expectedVersion: resubmitted.value.version,
+      command: { type: 'CONFIRM_STEP' },
+    })
+    expect(confirmed).toEqual({
+      ok: true,
+      value: {
+        gameId: created.value.gameId,
+        version: resubmitted.value.version + 1,
+      },
+    })
+
+    const [storedGame] = await db
+      .select({ state: games.state, version: games.version })
+      .from(games)
+      .where(eq(games.id, created.value.gameId))
+    const storedSteps = await db
+      .select({ step: gameQueueSteps.step, status: gameQueueSteps.status })
+      .from(gameQueueSteps)
+      .where(eq(gameQueueSteps.gameId, created.value.gameId))
+      .orderBy(asc(gameQueueSteps.position))
+    const storedActions = await db
+      .select()
+      .from(gameActions)
+      .where(eq(gameActions.gameId, created.value.gameId))
+      .orderBy(asc(gameActions.attempt))
+    const commandEvents = await db
+      .select({ type: gameEvents.type, createdBy: gameEvents.createdBy })
+      .from(gameEvents)
+      .where(eq(gameEvents.gameId, created.value.gameId))
+      .orderBy(asc(gameEvents.sequence))
+
+    expect(storedGame).toMatchObject({
+      version: started.value.version + 4,
+      state: { pendingNightAction: null },
+    })
+    expect(storedSteps).toEqual([
+      { step: 'SEER_INSPECT', status: 'COMPLETED' },
+      { step: 'WEREWOLF_ATTACK', status: 'ACTIVE' },
+    ])
+    expect(storedActions).toMatchObject([
+      {
+        actorPlayerId: seer.playerId,
+        attempt: 1,
+        type: 'SEER_INSPECT',
+        status: 'REJECTED',
+        rejectionReason: 'Please choose again',
+      },
+      {
+        actorPlayerId: seer.playerId,
+        attempt: 2,
+        type: 'SEER_INSPECT',
+        payload: { actorId: seer.playerId, targetId: wolf.playerId },
+        status: 'CONFIRMED',
+      },
+    ])
+    expect(commandEvents.slice(-6)).toEqual([
+      { type: 'NIGHT_ACTION_SUBMITTED', createdBy: 'PLAYER' },
+      { type: 'NIGHT_ACTION_REJECTED', createdBy: 'MODERATOR' },
+      { type: 'NIGHT_ACTION_SUBMITTED', createdBy: 'PLAYER' },
+      { type: 'NIGHT_ACTION_CONFIRMED', createdBy: 'MODERATOR' },
+      { type: 'SEER_RESULT_RECORDED', createdBy: 'MODERATOR' },
+      { type: 'QUEUE_STEP_ACTIVATED', createdBy: 'MODERATOR' },
+    ])
   })
 })
 

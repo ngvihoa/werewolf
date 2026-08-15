@@ -8,20 +8,23 @@ import type {
     SessionKind,
     LocalGame,
 } from './model'
+import type { ExecuteGameCommandInput, GameStore } from './game-store'
 import type { GameView, ProjectionViewer } from '../projections/model'
-import type { GameStore } from './game-store'
+import type { GameCommand } from '../orchestration/commands'
+import type { GameState } from '../orchestration/model'
+import type { GameEvent } from '../orchestration/events'
 
 import { and, desc, eq, gt, isNull } from 'drizzle-orm'
 import { db } from '#/db/client'
 import {
     gameQueueSteps,
     gameSessions,
+    gameActions,
     gamePlayers,
     gameEvents,
     games,
 } from '#/db/schema'
 
-import { createFirstNightState } from '../orchestration/game-orchestrator'
 import { projectGameView } from '../projections/project-game-view'
 import { playerSchema } from '../schema'
 import {
@@ -30,12 +33,17 @@ import {
     hashSessionToken,
 } from '../auth/session-token'
 import {
+    createFirstNightState,
+    executeCommand,
+} from '../orchestration/game-orchestrator'
+import {
     validateRoleComposition,
     assignRoles,
 } from '../rules/role-assignment'
 
 import { deserializeGameEvent, serializeGameEvent } from './event-persistence'
 import { eventActorSchema, storeErrorCodeSchema } from './schema'
+import { authorizeCommand } from './command-authorization'
 import { createRoomCode } from './utils.room-code'
 
 const MAX_ROOM_CODE_ATTEMPTS = 20
@@ -65,10 +73,7 @@ type GameVersionChanges = Partial<
     >
 >
 
-export class PostgresGameStore implements Omit<
-    GameStore,
-    'execute'
-> {
+export class PostgresGameStore implements GameStore {
     readonly #database: NonNullable<PostgresGameStoreDependencies['database']>
     readonly #createRoomCode: NonNullable<
         PostgresGameStoreDependencies['createRoomCode']
@@ -747,6 +752,115 @@ export class PostgresGameStore implements Omit<
             isolationLevel: 'repeatable read',
         })
     }
+
+    async execute(
+        input: ExecuteGameCommandInput,
+    ): Promise<StoreResult<GameMutationResult>> {
+        const sessionHash = this.#hashSessionToken(input.sessionToken)
+        const now = this.#now()
+
+        return this.#database.transaction(async transaction => {
+            const session = await findActiveSession(
+                transaction,
+                sessionHash,
+                now,
+            )
+            // Token thuộc game khác cũng trả SESSION_NOT_FOUND để không làm lộ game.
+            if (!session || session.gameId !== input.gameId) {
+                return failure(
+                    STORE_ERROR_CODE.SESSION_NOT_FOUND,
+                    'Session does not exist for this game',
+                )
+            }
+
+            const game = await lockGame(transaction, input.gameId)
+
+            if (!game) {
+                return failure(
+                    STORE_ERROR_CODE.GAME_NOT_FOUND,
+                    'Game not found',
+                )
+            }
+
+            if (game.version !== input.expectedVersion) {
+                return failure(
+                    STORE_ERROR_CODE.STALE_VERSION,
+                    'Game version is stale',
+                )
+            }
+
+            if (!game.state || game.status !== 'IN_PROGRESS') {
+                return failure(
+                    STORE_ERROR_CODE.INVALID_GAME_STATE,
+                    'Game has not started or has already ended',
+                )
+            }
+
+            const authorization = authorizeCommand(session, input.command)
+            if (!authorization.ok) return authorization
+
+            // Rule engine không biết database; nó chỉ nhận state cũ và trả
+            // state + events mới hoặc domain error.
+            const outcome = executeCommand(game.state, input.command)
+            if (!outcome.ok) {
+                return failure(
+                    STORE_ERROR_CODE.INVALID_GAME_STATE,
+                    outcome.error.message,
+                )
+            }
+
+            await persistGameAction(transaction, {
+                gameId: game.id,
+                previousState: game.state,
+                command: input.command,
+                sessionId: session.id,
+                now,
+            })
+
+            await syncGamePlayers(transaction, game.id, outcome.value.state)
+            await syncGameQueue(transaction, game.id, outcome.value.state, now)
+
+            const nextVersion = await updateGameAndIncrementVersion(
+                transaction,
+                game,
+                now,
+                {
+                    state: outcome.value.state,
+                    status:
+                        outcome.value.state.phase === 'GAME_OVER'
+                            ? 'GAME_OVER'
+                            : 'IN_PROGRESS',
+                    phase: outcome.value.state.phase,
+                    round: outcome.value.state.round,
+                },
+            )
+
+            // Event append cùng transaction nên state, version và audit history
+            // luôn cùng thành công hoặc cùng rollback.
+            for (const event of outcome.value.events) {
+                await appendGameEvent(transaction, {
+                    game: {
+                        id: game.id,
+                        phase: outcome.value.state.phase,
+                        round: outcome.value.state.round,
+                    },
+                    createdBy: session.kind,
+                    actorPlayerId: session.playerId,
+                    targetPlayerId: getEventTargetPlayerId(event),
+                    createdAt: now,
+                    event,
+                })
+            }
+
+            return {
+                ok: true as const,
+                value: {
+                    gameId: game.id,
+                    version: nextVersion,
+                },
+            }
+        })
+    }
 }
 
 /**************************** Helper Functions ****************************/
@@ -764,6 +878,7 @@ async function findActiveSession(
     // Helper chỉ resolve session; từng mutation vẫn tự kiểm tra quyền cụ thể.
     const [session] = await transaction
         .select({
+            id: gameSessions.id,
             gameId: gameSessions.gameId,
             playerId: gameSessions.playerId,
             kind: gameSessions.kind,
@@ -815,6 +930,199 @@ function validateLobbyMutation(
     }
 
     return { ok: true, value: game }
+}
+
+async function persistGameAction(
+    transaction: DatabaseTransaction,
+    input: {
+        gameId: string
+        previousState: GameState
+        command: GameCommand
+        sessionId: string
+        now: Date
+    },
+): Promise<void> {
+    // For players
+    if (input.command.type === 'SUBMIT_NIGHT_ACTION') {
+        const action = input.command.action
+        const [queueStep] = await transaction
+            .select({ id: gameQueueSteps.id })
+            .from(gameQueueSteps)
+            .where(
+                and(
+                    eq(gameQueueSteps.gameId, input.gameId),
+                    eq(gameQueueSteps.round, input.previousState.round),
+                    eq(gameQueueSteps.step, action.type),
+                ),
+            )
+            .limit(1)
+
+        if (!queueStep) {
+            throw new Error('Active queue step is missing from the database')
+        }
+
+        const [latestAttempt] = await transaction
+            .select({ attempt: gameActions.attempt })
+            .from(gameActions)
+            .where(eq(gameActions.queueStepId, queueStep.id))
+            .orderBy(desc(gameActions.attempt))
+            .limit(1)
+
+        // `type` đã có cột riêng; JSONB chỉ giữ phần payload của action.
+        const { type, ...payload } = action
+        await transaction.insert(gameActions).values({
+            gameId: input.gameId,
+            queueStepId: queueStep.id,
+            actorPlayerId: action.actorId,
+            attempt: (latestAttempt?.attempt ?? 0) + 1,
+            type,
+            payload,
+            status: 'SUBMITTED',
+            submittedAt: input.now,
+        })
+        return
+    }
+
+    if (
+        input.command.type !== 'CONFIRM_STEP' &&
+        input.command.type !== 'REJECT_STEP'
+    ) {
+        return
+    }
+
+    // For moderator confirms/rejects
+
+    const pendingAction = input.previousState.pendingNightAction
+    if (!pendingAction) {
+        throw new Error('Pending action is missing from game state')
+    }
+
+    const [storedAction] = await transaction
+        .select({ id: gameActions.id })
+        .from(gameActions)
+        .where(
+            and(
+                eq(gameActions.gameId, input.gameId),
+                eq(gameActions.type, pendingAction.type),
+                eq(gameActions.status, 'SUBMITTED'),
+            ),
+        )
+        .orderBy(desc(gameActions.attempt))
+        .limit(1)
+
+    if (!storedAction) {
+        throw new Error('Submitted action is missing from the database')
+    }
+
+    const decision =
+        input.command.type === 'REJECT_STEP'
+            ? {
+                status: 'REJECTED' as const,
+                rejectionReason: input.command.reason.trim(),
+            }
+            : { status: 'CONFIRMED' as const, rejectionReason: null }
+
+    await transaction
+        .update(gameActions)
+        .set({
+            ...decision,
+            decidedBySessionId: input.sessionId,
+            decidedAt: input.now,
+        })
+        .where(eq(gameActions.id, storedAction.id))
+}
+
+async function syncGamePlayers(
+    transaction: DatabaseTransaction,
+    gameId: string,
+    state: GameState,
+): Promise<void> {
+    // Player count nhỏ (MVP 5-6 người); update rõ từng row giữ code dễ kiểm tra.
+    for (const player of state.players) {
+        await transaction
+            .update(gamePlayers)
+            .set({
+                isAlive: player.alive,
+                abilityState: player.abilityState,
+            })
+            .where(
+                and(
+                    eq(gamePlayers.gameId, gameId),
+                    eq(gamePlayers.id, player.id),
+                ),
+            )
+    }
+}
+
+async function syncGameQueue(
+    transaction: DatabaseTransaction,
+    gameId: string,
+    state: GameState,
+    now: Date,
+): Promise<void> {
+    const storedSteps = await transaction
+        .select()
+        .from(gameQueueSteps)
+        .where(
+            and(
+                eq(gameQueueSteps.gameId, gameId),
+                eq(gameQueueSteps.round, state.round),
+            ),
+        )
+
+    const storedStepByType = new Map(
+        storedSteps.map(step => [step.step, step]),
+    )
+
+    for (const [index, item] of state.queue.entries()) {
+        const storedStep = storedStepByType.get(item.step)
+        const active = item.status !== 'PENDING'
+        const finished = item.status === 'COMPLETED' || item.status === 'SKIPPED'
+        const lifecycle = {
+            status: item.status,
+            skipReason: item.skipReason,
+            activatedAt: active ? (storedStep?.activatedAt ?? now) : null,
+            completedAt: finished ? (storedStep?.completedAt ?? now) : null,
+        }
+
+        if (storedStep) {
+            await transaction
+                .update(gameQueueSteps)
+                .set(lifecycle)
+                .where(eq(gameQueueSteps.id, storedStep.id))
+            continue
+        }
+
+        // Khi sang đêm mới, rule engine tạo queue mới và persistence insert
+        // toàn bộ step của round đó trong transaction hiện tại.
+        await transaction.insert(gameQueueSteps).values({
+            gameId,
+            round: state.round,
+            position: index + 1,
+            step: item.step,
+            ...lifecycle,
+            createdAt: now,
+        })
+    }
+}
+
+function getEventTargetPlayerId(event: GameEvent): string | null {
+    switch (event.type) {
+        case 'NIGHT_ACTION_SUBMITTED':
+        case 'NIGHT_ACTION_CONFIRMED':
+        case 'NIGHT_ACTION_REJECTED':
+            return event.action.type === 'WITCH_ACTION'
+                ? event.action.poisonTargetId
+                : event.action.targetId
+        case 'SEER_RESULT_RECORDED':
+            return event.targetPlayerId
+        case 'PLAYER_DIED':
+            return event.playerId
+        case 'VOTE_SUBMITTED':
+            return event.selectedPlayerId
+        default:
+            return null
+    }
 }
 
 async function appendGameEvent(

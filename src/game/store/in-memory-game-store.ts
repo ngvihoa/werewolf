@@ -11,7 +11,6 @@ import type {
   StoreResult,
 } from './model'
 import type { ExecuteGameCommandInput, GameStore } from './game-store'
-import type { GameCommand } from '../orchestration/commands'
 import type { Player, Role } from '../domain'
 import type { GameEvent } from '../orchestration/events'
 import type { GameView } from '../projections/model'
@@ -23,6 +22,7 @@ import {
   executeCommand,
 } from '../orchestration/game-orchestrator'
 
+import { authorizeCommand } from './command-authorization'
 import { createRoomCode } from './utils.room-code'
 
 type StoreDependencies = {
@@ -31,8 +31,6 @@ type StoreDependencies = {
   now?: () => Date
   randomIndex?: (upperBound: number) => number
 }
-
-const PLAYER_COMMANDS = new Set<GameCommand['type']>(['SUBMIT_NIGHT_ACTION'])
 
 export class InMemoryGameStore implements GameStore {
   readonly #games = new Map<string, LocalGame>()
@@ -240,7 +238,7 @@ export class InMemoryGameStore implements GameStore {
     return success({ gameId: game.id, version: game.version })
   }
 
-  execute(input: ExecuteGameCommandInput): StoreResult<LocalGame> {
+  execute(input: ExecuteGameCommandInput): StoreResult<GameMutationResult> {
     const game = this.#games.get(input.gameId)
     if (!game) return failure('GAME_NOT_FOUND', 'Game does not exist')
     const session = this.#sessions.get(input.sessionToken)
@@ -272,7 +270,10 @@ export class InMemoryGameStore implements GameStore {
       session.playerId,
       outcome.value.events,
     )
-    return success(this.#snapshot(game))
+    return success({
+      gameId: game.id,
+      version: game.version,
+    })
   }
 
   getGame(gameId: string): StoreResult<LocalGame> {
@@ -379,28 +380,6 @@ function createDomainPlayer(id: string, role: Role): Player {
       },
     }
     : { id, role, alive: true, abilityState: null }
-}
-
-function authorizeCommand(
-  session: LocalSession,
-  command: GameCommand,
-): StoreResult<true> {
-  if (PLAYER_COMMANDS.has(command.type)) {
-    if (session.kind !== 'PLAYER' || !session.playerId) {
-      return failure('NOT_AUTHORIZED', 'Player session is required')
-    }
-    if (
-      command.type === 'SUBMIT_NIGHT_ACTION' &&
-      command.action.actorId !== session.playerId
-    ) {
-      return failure('NOT_AUTHORIZED', 'Player cannot act for another player')
-    }
-    return success(true)
-  }
-
-  return session.kind === 'MODERATOR'
-    ? success(true)
-    : failure('NOT_AUTHORIZED', 'Moderator session is required')
 }
 
 function success<T>(value: T): StoreResult<T> {

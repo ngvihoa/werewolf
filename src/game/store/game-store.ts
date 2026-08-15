@@ -2,7 +2,6 @@ import type {
     CreatedGame,
     GameMutationResult,
     JoinedGame,
-    LocalGame,
     StoreResult,
 } from './model'
 import type { GameCommand } from '../orchestration/commands'
@@ -92,5 +91,5 @@ export interface GameStore {
      * @param input Thông tin lệnh
      * @returns Kết quả thực thi lệnh
      */
-    execute(input: ExecuteGameCommandInput): Awaitable<StoreResult<LocalGame>>
+    execute(input: ExecuteGameCommandInput): Awaitable<StoreResult<GameMutationResult>>
 }

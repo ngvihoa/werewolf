@@ -215,10 +215,16 @@ describe('InMemoryGameStore commands', () => {
     expect(executed.ok).toBe(true)
     if (executed.ok) {
       expect(executed.value.version).toBe(game.version + 1)
-      expect(executed.value.history.at(-1)?.event.type).toBe(
-        'NIGHT_ACTION_SUBMITTED',
-      )
     }
+
+    const updatedGame = store.getGame(game.id)
+    if (!updatedGame.ok) {
+      throw new Error('Expected updated game to exist')
+    }
+
+    expect(updatedGame.value.history.at(-1)?.event.type).toBe(
+      'NIGHT_ACTION_SUBMITTED',
+    )
   })
 
   it('prevents a player from acting for another player', () => {
