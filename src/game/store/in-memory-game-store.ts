@@ -165,10 +165,19 @@ export class InMemoryGameStore implements GameStore {
     return success({ gameId: game.id, version: game.version })
   }
 
-  assignRoles(sessionToken: string): StoreResult<LocalGame> {
+  assignRoles(
+    sessionToken: string,
+    expectedVersion: number,
+  ): StoreResult<GameMutationResult> {
     const resolved = this.#resolveModerator(sessionToken)
     if (!resolved.ok) return resolved
     const game = resolved.value
+
+    // Request được tạo từ version cũ không được phép randomize role lần nữa.
+    if (game.version !== expectedVersion) {
+      return failure('STALE_VERSION', 'Game version is stale')
+    }
+
     if (game.state) {
       return failure('GAME_ALREADY_STARTED', 'Game has already started')
     }
@@ -186,7 +195,7 @@ export class InMemoryGameStore implements GameStore {
     }
     game.version += 1
     this.#appendEvents(game, 'MODERATOR', null, [{ type: 'ROLES_ASSIGNED' }])
-    return success(this.#snapshot(game))
+    return success({ gameId: game.id, version: game.version })
   }
 
   startGame(sessionToken: string): StoreResult<LocalGame> {

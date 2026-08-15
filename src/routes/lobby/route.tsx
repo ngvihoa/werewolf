@@ -36,8 +36,11 @@ function LobbyPage() {
     onSuccess: invalidateView,
   })
   const assignMutation = useMutation({
-    mutationFn: () =>
-      orpcClient.lobby.assignRoles({ sessionToken: activeSessionToken }),
+    mutationFn: (expectedVersion: number) =>
+      orpcClient.lobby.assignRoles({
+        sessionToken: activeSessionToken,
+        expectedVersion,
+      }),
     onSuccess: invalidateView,
   })
   const startMutation = useMutation({
@@ -106,7 +109,8 @@ function LobbyPage() {
                 assigning={assignMutation.isPending}
                 starting={startMutation.isPending}
                 error={mutationError}
-                onAssign={() => assignMutation.mutate()}
+                // Lấy version tại thời điểm click để server phát hiện request cũ.
+                onAssign={() => assignMutation.mutate(version)}
                 onStart={() => startMutation.mutate()}
               />
             ) : (

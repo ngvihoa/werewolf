@@ -35,6 +35,13 @@ export const sessionTokenSchema = z.string().min(1)
 // Server từ chối mutation nếu version này đã cũ.
 export const expectedVersionSchema = z.number().int().positive()
 
+// Các mutation thay đổi game cần cả danh tính session và version mà client đã đọc.
+// Schema dùng chung giúp mọi contract mutation giữ cùng optimistic-locking shape.
+export const versionedSessionInputSchema = z.object({
+  sessionToken: sessionTokenSchema,
+  expectedVersion: expectedVersionSchema,
+})
+
 // Runtime schema là source of truth cho toàn bộ lỗi nghiệp vụ của store.
 // TypeScript types trong model.ts sẽ được infer từ schema này.
 export const storeErrorCodeSchema = z.enum([

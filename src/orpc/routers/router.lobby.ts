@@ -34,7 +34,10 @@ export const lobbyRouter = baseRouter.lobby.router({
     }),
 
     assignRoles: baseRouter.lobby.assignRoles.handler(async ({ input }) => {
-        const result = await localGameStore.assignRoles(input.sessionToken)
+        const result = await localGameStore.assignRoles(
+            input.sessionToken,
+            input.expectedVersion,
+        )
         return toOperationResult(result)
     }),
 

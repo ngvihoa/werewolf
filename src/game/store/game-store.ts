@@ -71,7 +71,10 @@ export interface GameStore {
      * @param sessionToken Token phiên
      * @returns Kết quả là thông tin của Game ở trang thái Local
      */
-    assignRoles(sessionToken: string): Awaitable<StoreResult<LocalGame>>
+    assignRoles(
+        sessionToken: string,
+        expectedVersion: number,
+    ): Awaitable<StoreResult<GameMutationResult>>
 
     /**
      * Bắt đầu game

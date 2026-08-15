@@ -22,7 +22,7 @@ function createStartedGame() {
     if (!joined.ok) throw new Error(joined.error.message)
     return joined.value
   })
-  const assigned = store.assignRoles(created.value.moderatorSessionToken)
+  const assigned = store.assignRoles(created.value.moderatorSessionToken, 6)
   if (!assigned.ok) throw new Error(assigned.error.message)
   for (const player of players) {
     // Mỗi mutation tăng version, nên client kế tiếp phải dùng version mới nhất.
@@ -107,6 +107,27 @@ describe('InMemoryGameStore lobby', () => {
     expect(unchanged).toEqual(currentGame)
   })
 
+  it('rejects stale role assignment without changing the game', () => {
+    const store = createStore()
+    const created = store.createGame('Moderator')
+    if (!created.ok) throw new Error(created.error.message)
+
+    for (const name of ['An', 'Binh', 'Cuong', 'Dung', 'Hoa']) {
+      store.joinGame(created.value.roomCode, name)
+    }
+
+    // Sau năm lượt join, version hiện tại là 6 nên version 5 đã stale.
+    const beforeAssignment = store.getGame(created.value.gameId)
+    const result = store.assignRoles(created.value.moderatorSessionToken, 5)
+    const afterAssignment = store.getGame(created.value.gameId)
+
+    expect(result).toMatchObject({
+      ok: false,
+      error: { code: 'STALE_VERSION' },
+    })
+    expect(afterAssignment).toEqual(beforeAssignment)
+  })
+
   it('requires assignment and every player to be ready before start', () => {
     const store = createStore()
     const created = store.createGame('Moderator')
@@ -123,7 +144,7 @@ describe('InMemoryGameStore lobby', () => {
       expect(beforeAssignment.error.code).toBe('ROLES_NOT_ASSIGNED')
     }
 
-    store.assignRoles(created.value.moderatorSessionToken)
+    store.assignRoles(created.value.moderatorSessionToken, 6)
     const beforeReady = store.startGame(created.value.moderatorSessionToken)
     expect(beforeReady.ok).toBe(false)
     if (!beforeReady.ok) {

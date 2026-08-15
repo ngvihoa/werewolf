@@ -5,6 +5,7 @@ import { gameCommandSchema } from '#/game/orchestration/schema'
 import { type } from '@orpc/contract'
 import { z } from 'zod'
 import {
+    versionedSessionInputSchema,
     createGameResultSchema,
     expectedVersionSchema,
     joinGameResultSchema,
@@ -42,7 +43,7 @@ export const lobbyContract = {
         )
         .output(operationResultSchema),
     assignRoles: oc
-        .input(z.object({ sessionToken: sessionTokenSchema }))
+        .input(versionedSessionInputSchema)
         .output(operationResultSchema),
     startGame: oc
         .input(z.object({ sessionToken: sessionTokenSchema }))

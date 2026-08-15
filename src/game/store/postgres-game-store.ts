@@ -5,6 +5,7 @@ import { gameEvents, gamePlayers, games, gameSessions } from '#/db/schema'
 import { and, desc, eq, gt, isNull } from 'drizzle-orm'
 import { db } from '#/db/client'
 
+import { assignRoles } from '../rules/role-assignment'
 import {
     createSessionExpiry,
     createSessionToken,
@@ -428,7 +429,6 @@ export class PostgresGameStore implements Pick<
             const nextSequence = (latestEvent?.sequence ?? 0) + 1
             const nextVersion = game.version + 1
 
-            // Schema giữ discriminator và payload đồng bộ trước khi ghi JSONB.
             const readyChangedEvent = serializeGameEvent({
                 type: 'PLAYER_READY_CHANGED',
                 playerId: player.id,
@@ -463,6 +463,190 @@ export class PostgresGameStore implements Pick<
                     version: nextVersion,
                 },
             }
+        })
+    }
+
+    async assignRoles(
+        sessionToken: string,
+        expectedVersion: number,
+    ): Promise<StoreResult<GameMutationResult>> {
+        const sessionTokenHash = this.#hashSessionToken(sessionToken)
+        const now = this.#now()
+
+        return this.#database.transaction(async (transaction) => {
+            const [session] = await transaction
+                .select({
+                    gameId: gameSessions.gameId,
+                    playerId: gameSessions.playerId,
+                    kind: gameSessions.kind,
+                })
+                .from(gameSessions)
+                .where(
+                    and(
+                        eq(gameSessions.tokenHash, sessionTokenHash),
+                        isNull(gameSessions.revokedAt),
+                        gt(gameSessions.expiresAt, now),
+                    ),
+                )
+                .limit(1)
+
+            if (!session) {
+                return {
+                    ok: false as const,
+                    error: {
+                        code: STORE_ERROR_CODE.SESSION_NOT_FOUND,
+                        message: 'Session does not exist or is no longer active',
+                    }
+                }
+            }
+
+            // Chỉ Moderator mới được quyền phân vai.
+            if (session.kind !== 'MODERATOR') {
+                return {
+                    ok: false as const,
+                    error: {
+                        code: STORE_ERROR_CODE.NOT_AUTHORIZED,
+                        message: 'Moderator session is required',
+                    },
+                }
+            }
+
+            const [game] = await transaction
+                .select()
+                .from(games)
+                .where(eq(games.id, session.gameId))
+                .limit(1)
+                .for('update')
+
+            if (!game) {
+                return {
+                    ok: false as const,
+                    error: {
+                        code: STORE_ERROR_CODE.GAME_NOT_FOUND,
+                        message: 'Game not found',
+                    },
+                }
+            }
+
+            // Đây chỉ là so sánh object đã đọc, không phát sinh query database mới.
+            if (game.version !== expectedVersion) {
+                return {
+                    ok: false as const,
+                    error: {
+                        code: STORE_ERROR_CODE.STALE_VERSION,
+                        message: 'Game version is stale',
+                    },
+                }
+            }
+
+            // Phân vai chỉ hợp lệ khi game vẫn còn trong lobby.
+            if (game.status !== 'LOBBY') {
+                return {
+                    ok: false as const,
+                    error: {
+                        code: STORE_ERROR_CODE.GAME_ALREADY_STARTED,
+                        message: 'Game has already started',
+                    },
+                }
+            }
+
+            const players = await transaction
+                .select({
+                    id: gamePlayers.id,
+                })
+                .from(gamePlayers)
+                .where(
+                    and(
+                        eq(gamePlayers.gameId, game.id),
+                        eq(gamePlayers.isModerator, false),
+                    ),
+                )
+
+            const assignment = assignRoles(
+                players.map((player) => player.id)
+            )
+
+            if (!assignment.ok) {
+                return {
+                    ok: false as const,
+                    error: {
+                        code: STORE_ERROR_CODE.INVALID_GAME_STATE,
+                        message: assignment.error.message,
+                    },
+                }
+            }
+
+            for (const player of players) {
+                // player.id là UUID string lấy từ kết quả SELECT.
+                const role = assignment.value.get(player.id)
+
+                if (!role) {
+                    // Đây là persistence invariant: mọi player phải được assign một role.
+                    throw new Error(`Role assignment is missing player ${player.id}`)
+                }
+
+                await transaction
+                    .update(gamePlayers)
+                    .set({
+                        role,
+                        abilityState:
+                            role === 'WITCH'
+                                ? {
+                                    healingPotionAvailable: true,
+                                    poisonPotionAvailable: true,
+                                }
+                                : null,
+                        isReady: false,
+                    })
+                    .where(
+                        and(
+                            eq(gamePlayers.gameId, game.id),
+                            eq(gamePlayers.id, player.id),
+                        ),
+                    )
+            }
+
+            const [latestEvent] = await transaction
+                .select({ sequence: gameEvents.sequence })
+                .from(gameEvents)
+                .where(eq(gameEvents.gameId, game.id))
+                .orderBy(desc(gameEvents.sequence))
+                .limit(1)
+
+            const nextSequence = (latestEvent?.sequence ?? 0) + 1
+            const nextVersion = game.version + 1
+
+            const rolesAssignedEvent = serializeGameEvent({
+                type: 'ROLES_ASSIGNED',
+            })
+
+            await transaction.insert(gameEvents).values({
+                gameId: game.id,
+                round: game.round,
+                phase: game.phase,
+                sequence: nextSequence,
+                type: rolesAssignedEvent.type,
+                payload: rolesAssignedEvent.payload,
+                createdAt: now,
+                createdBy: 'MODERATOR',
+                targetPlayerId: null,
+                actorPlayerId: null,
+            })
+
+            await transaction.update(games).set({
+                version: nextVersion,
+                updatedAt: now,
+            })
+                .where(eq(games.id, game.id))
+
+            return {
+                ok: true as const,
+                value: {
+                    gameId: game.id,
+                    version: nextVersion,
+                }
+            }
+
         })
     }
 }
