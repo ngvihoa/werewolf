@@ -6,9 +6,7 @@ type CommandSession = {
   playerId: string | null
 }
 
-const PLAYER_COMMANDS = new Set<GameCommand['type']>([
-  'SUBMIT_NIGHT_ACTION',
-])
+const PLAYER_COMMANDS = new Set<GameCommand['type']>(['SUBMIT_NIGHT_ACTION'])
 
 // Authorization là application policy dùng chung cho mọi GameStore.
 // Rule engine phía sau chỉ kiểm tra luật chơi, không xác thực session.

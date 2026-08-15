@@ -155,10 +155,7 @@ describe('InMemoryGameStore lobby', () => {
     }
 
     store.assignRoles(created.value.moderatorSessionToken, 6)
-    const beforeReady = store.startGame(
-      created.value.moderatorSessionToken,
-      7,
-    )
+    const beforeReady = store.startGame(created.value.moderatorSessionToken, 7)
     expect(beforeReady.ok).toBe(false)
     if (!beforeReady.ok) {
       expect(beforeReady.error.code).toBe('NOT_ALL_PLAYERS_READY')
@@ -201,6 +198,7 @@ describe('InMemoryGameStore commands', () => {
     const executed = store.execute({
       gameId: game.id,
       sessionToken: seerSession.playerSessionToken,
+      idempotencyKey: 'submit-seer-action',
       expectedVersion: game.version,
       command: {
         type: 'SUBMIT_NIGHT_ACTION',
@@ -239,6 +237,7 @@ describe('InMemoryGameStore commands', () => {
     const executed = store.execute({
       gameId: game.id,
       sessionToken: anotherSession.playerSessionToken,
+      idempotencyKey: 'unauthorized-seer-action',
       expectedVersion: game.version,
       command: {
         type: 'SUBMIT_NIGHT_ACTION',
@@ -253,12 +252,65 @@ describe('InMemoryGameStore commands', () => {
     if (!executed.ok) expect(executed.error.code).toBe('NOT_AUTHORIZED')
   })
 
+  it('returns the original result when the same command is retried', () => {
+    const { store, created, game } = createStartedGame()
+    const input = {
+      gameId: game.id,
+      sessionToken: created.moderatorSessionToken,
+      idempotencyKey: 'skip-seer-once',
+      expectedVersion: game.version,
+      command: { type: 'SKIP_STEP' as const, reason: 'No action' },
+    }
+
+    const first = store.execute(input)
+    const retried = store.execute(input)
+    const stored = store.getGame(game.id)
+
+    expect(retried).toEqual(first)
+    expect(first.ok).toBe(true)
+    if (first.ok && stored.ok) {
+      expect(stored.value.version).toBe(first.value.version)
+      expect(
+        stored.value.history.filter(
+          (event) => event.event.type === 'QUEUE_STEP_SKIPPED',
+        ),
+      ).toHaveLength(1)
+    }
+  })
+
+  it('rejects reuse of an idempotency key for a different command', () => {
+    const { store, created, game } = createStartedGame()
+    const base = {
+      gameId: game.id,
+      sessionToken: created.moderatorSessionToken,
+      idempotencyKey: 'one-command-only',
+      expectedVersion: game.version,
+    }
+
+    expect(
+      store.execute({
+        ...base,
+        command: { type: 'SKIP_STEP', reason: 'No action' },
+      }).ok,
+    ).toBe(true)
+    const reused = store.execute({
+      ...base,
+      command: { type: 'SKIP_STEP', reason: 'Different request' },
+    })
+
+    expect(reused).toMatchObject({
+      ok: false,
+      error: { code: 'IDEMPOTENCY_KEY_REUSED' },
+    })
+  })
+
   it('rejects stale commands without changing state or history', () => {
     const { store, created, game } = createStartedGame()
     const before = store.getGame(game.id)
     const stale = store.execute({
       gameId: game.id,
       sessionToken: created.moderatorSessionToken,
+      idempotencyKey: 'stale-skip',
       expectedVersion: game.version - 1,
       command: { type: 'SKIP_STEP', reason: 'Local test' },
     })

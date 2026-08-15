@@ -1,4 +1,4 @@
-import { z } from 'zod'
+import z from 'zod'
 
 // NightAction là dữ liệu đi qua command và event, vì vậy cần schema dùng chung
 // để hai boundary không tự định nghĩa lại cùng một cấu trúc.

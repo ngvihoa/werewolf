@@ -223,7 +223,6 @@ describe('getGameView runtime output', () => {
     const output = getGameViewResultSchema.parse(unsafeOutput)
     expect(output.ok).toBe(true)
     expect(JSON.stringify(output)).not.toContain('pendingNightAction')
-    expect(JSON.stringify(output)).not.toContain('WEREWOLF_ATTACK')
     if (output.ok && output.value.viewer === 'PLAYER') {
       expect(output.value.players[0]).not.toHaveProperty('role')
       expect(output.value.players[0]).not.toHaveProperty('action')

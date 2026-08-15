@@ -1,5 +1,5 @@
 import { storeErrorSchema } from '#/game/store/schema'
-import { z } from 'zod'
+import z from 'zod'
 
 // API mutation cố tình bỏ internal value của StoreResult.
 // Sau khi thành công, browser refetch permission-aware GameView.

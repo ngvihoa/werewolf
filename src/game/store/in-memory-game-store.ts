@@ -15,6 +15,7 @@ import type { Player, Role } from '../domain'
 import type { GameEvent } from '../orchestration/events'
 import type { GameView } from '../projections/model'
 
+import { gameCommandSchema } from '../orchestration/schema'
 import { projectGameView } from '../projections/project-game-view'
 import { assignRoles } from '../rules/role-assignment'
 import {
@@ -35,6 +36,10 @@ type StoreDependencies = {
 export class InMemoryGameStore implements GameStore {
   readonly #games = new Map<string, LocalGame>()
   readonly #sessions = new Map<string, LocalSession>()
+  readonly #commandReceipts = new Map<
+    string,
+    { request: string; result: GameMutationResult }
+  >()
   readonly #createId: () => string
   readonly #createRoomCode: () => string
   readonly #now: () => Date
@@ -248,6 +253,20 @@ export class InMemoryGameStore implements GameStore {
         'Session does not exist for this game',
       )
     }
+    const receiptKey = `${session.token}:${input.idempotencyKey}`
+    const request = JSON.stringify({
+      expectedVersion: input.expectedVersion,
+      command: gameCommandSchema.parse(input.command),
+    })
+    const receipt = this.#commandReceipts.get(receiptKey)
+    if (receipt) {
+      return receipt.request === request
+        ? success(structuredClone(receipt.result))
+        : failure(
+            'IDEMPOTENCY_KEY_REUSED',
+            'Idempotency key was already used for another command',
+          )
+    }
     if (game.version !== input.expectedVersion) {
       return failure('STALE_VERSION', 'Game version is stale')
     }
@@ -270,10 +289,12 @@ export class InMemoryGameStore implements GameStore {
       session.playerId,
       outcome.value.events,
     )
-    return success({
+    const result = {
       gameId: game.id,
       version: game.version,
-    })
+    }
+    this.#commandReceipts.set(receiptKey, { request, result })
+    return success(result)
   }
 
   getGame(gameId: string): StoreResult<LocalGame> {
@@ -310,6 +331,7 @@ export class InMemoryGameStore implements GameStore {
   reset(): void {
     this.#games.clear()
     this.#sessions.clear()
+    this.#commandReceipts.clear()
   }
 
   #resolveSession(
@@ -371,14 +393,14 @@ export class InMemoryGameStore implements GameStore {
 function createDomainPlayer(id: string, role: Role): Player {
   return role === 'WITCH'
     ? {
-      id,
-      role,
-      alive: true,
-      abilityState: {
-        healingPotionAvailable: true,
-        poisonPotionAvailable: true,
-      },
-    }
+        id,
+        role,
+        alive: true,
+        abilityState: {
+          healingPotionAvailable: true,
+          poisonPotionAvailable: true,
+        },
+      }
     : { id, role, alive: true, abilityState: null }
 }
 

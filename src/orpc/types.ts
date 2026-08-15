@@ -1,6 +1,6 @@
 import type {
-    InferContractRouterInputs,
-    InferContractRouterOutputs,
+  InferContractRouterInputs,
+  InferContractRouterOutputs,
 } from '@orpc/contract'
 import type { appContract } from './contracts'
 

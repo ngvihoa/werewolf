@@ -1,4 +1,4 @@
-import { z } from 'zod'
+import z from 'zod'
 
 // Các mảng literal là nguồn giá trị duy nhất cho Zod và PostgreSQL enums.
 // `as const` giữ từng phần tử thành literal type thay vì string chung chung.

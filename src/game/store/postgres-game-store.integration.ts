@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { and, asc, desc, eq, inArray } from 'drizzle-orm'
 import { db } from '#/db/client'
 import {
+  commandReceipts,
   gameQueueSteps,
   gameSessions,
   gameActions,
@@ -326,7 +327,11 @@ describe('PostgresGameStore.setReady', () => {
     if (!joined.ok) throw new Error('Expected joinGame to succeed')
 
     // createGame tạo version 1 và joinGame tăng thành version 2.
-    const result = await store.setReady(joined.value.playerSessionToken, 2, true)
+    const result = await store.setReady(
+      joined.value.playerSessionToken,
+      2,
+      true,
+    )
 
     expect(result).toEqual({
       ok: true,
@@ -383,7 +388,11 @@ describe('PostgresGameStore.setReady', () => {
     if (!joined.ok) throw new Error('Expected joinGame to succeed')
 
     // Client gửi version 1 trong khi joinGame đã tăng database lên version 2.
-    const result = await store.setReady(joined.value.playerSessionToken, 1, true)
+    const result = await store.setReady(
+      joined.value.playerSessionToken,
+      1,
+      true,
+    )
 
     expect(result).toEqual({
       ok: false,
@@ -534,10 +543,7 @@ describe('PostgresGameStore.startGame', () => {
       })),
     )
 
-    const result = await store.startGame(
-      created.value.moderatorSessionToken,
-      1,
-    )
+    const result = await store.startGame(created.value.moderatorSessionToken, 1)
 
     expect(result).toEqual({
       ok: true,
@@ -667,17 +673,17 @@ describe('PostgresGameStore.getGameView', () => {
 
     // DESC + LIMIT lấy đúng các event mới nhất, nhưng response vẫn theo timeline.
     expect(
-      playerResult.value.publicHistory.map(event => event.sequence),
+      playerResult.value.publicHistory.map((event) => event.sequence),
     ).toEqual([1, 2, 3])
 
     if (!moderatorResult.ok || moderatorResult.value.viewer !== 'MODERATOR') {
       throw new Error('Expected a Moderator game view')
     }
     expect(
-      moderatorResult.value.game.history.map(event => event.sequence),
+      moderatorResult.value.game.history.map((event) => event.sequence),
     ).toEqual([1, 2, 3])
     expect(
-      moderatorResult.value.game.lobbyPlayers.map(player => player.role),
+      moderatorResult.value.game.lobbyPlayers.map((player) => player.role),
     ).toEqual(['SEER', 'WEREWOLF'])
   })
 })
@@ -747,6 +753,7 @@ describe('PostgresGameStore.execute', () => {
     const unauthorized = await store.execute({
       gameId: created.value.gameId,
       sessionToken: created.value.moderatorSessionToken,
+      idempotencyKey: 'unauthorized-seer-action',
       expectedVersion: started.value.version,
       command,
     })
@@ -758,6 +765,7 @@ describe('PostgresGameStore.execute', () => {
     const submitted = await store.execute({
       gameId: created.value.gameId,
       sessionToken: seer.playerSessionToken,
+      idempotencyKey: 'submit-seer-action',
       expectedVersion: started.value.version,
       command,
     })
@@ -770,10 +778,26 @@ describe('PostgresGameStore.execute', () => {
     })
     if (!submitted.ok) throw new Error('Expected action submission to succeed')
 
+    const retried = await store.execute({
+      gameId: created.value.gameId,
+      sessionToken: seer.playerSessionToken,
+      idempotencyKey: 'submit-seer-action',
+      expectedVersion: started.value.version,
+      command,
+    })
+    expect(retried).toEqual(submitted)
+
+    const receipts = await db
+      .select()
+      .from(commandReceipts)
+      .where(eq(commandReceipts.gameId, created.value.gameId))
+    expect(receipts).toHaveLength(1)
+
     // Cùng expectedVersion cũ phải bị từ chối trước khi rule engine chạy lại.
     const stale = await store.execute({
       gameId: created.value.gameId,
       sessionToken: seer.playerSessionToken,
+      idempotencyKey: 'stale-seer-action',
       expectedVersion: started.value.version,
       command,
     })
@@ -785,6 +809,7 @@ describe('PostgresGameStore.execute', () => {
     const rejected = await store.execute({
       gameId: created.value.gameId,
       sessionToken: created.value.moderatorSessionToken,
+      idempotencyKey: 'reject-seer-action',
       expectedVersion: submitted.value.version,
       command: { type: 'REJECT_STEP', reason: 'Please choose again' },
     })
@@ -795,6 +820,7 @@ describe('PostgresGameStore.execute', () => {
     const resubmitted = await store.execute({
       gameId: created.value.gameId,
       sessionToken: seer.playerSessionToken,
+      idempotencyKey: 'resubmit-seer-action',
       expectedVersion: rejected.value.version,
       command,
     })
@@ -803,6 +829,7 @@ describe('PostgresGameStore.execute', () => {
     const confirmed = await store.execute({
       gameId: created.value.gameId,
       sessionToken: created.value.moderatorSessionToken,
+      idempotencyKey: 'confirm-seer-action',
       expectedVersion: resubmitted.value.version,
       command: { type: 'CONFIRM_STEP' },
     })

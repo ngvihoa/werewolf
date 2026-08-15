@@ -27,13 +27,20 @@ function GamePage() {
       queryKey: gameViewQueryKey(activeSessionToken),
     })
   const commandMutation = useMutation({
-    mutationFn: (command: GameCommand) =>
+    mutationFn: ({
+      command,
+      idempotencyKey,
+    }: {
+      command: GameCommand
+      idempotencyKey: string
+    }) =>
       orpcClient.lobby.executeGameCommand({
         gameId:
           viewQuery.data?.viewer === 'MODERATOR'
             ? viewQuery.data.game.id
             : (viewQuery.data?.gameId ?? ''),
         sessionToken: activeSessionToken,
+        idempotencyKey,
         expectedVersion:
           viewQuery.data?.viewer === 'MODERATOR'
             ? viewQuery.data.game.version
@@ -130,7 +137,12 @@ function GamePage() {
               view={view}
               pending={commandMutation.isPending}
               error={mutationError}
-              onCommand={(command) => commandMutation.mutate(command)}
+              onCommand={(command) =>
+                commandMutation.mutate({
+                  command,
+                  idempotencyKey: crypto.randomUUID(),
+                })
+              }
             />
           </aside>
         </section>

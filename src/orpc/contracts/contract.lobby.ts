@@ -1,13 +1,14 @@
 import { getGameViewResultSchema } from '#/game/projections/schema'
 import { gameCommandSchema } from '#/game/orchestration/schema'
-import { z } from 'zod'
 import {
   versionedSessionInputSchema,
   createGameResultSchema,
   expectedVersionSchema,
+  idempotencyKeySchema,
   joinGameResultSchema,
   sessionTokenSchema,
 } from '#/game/store/schema'
+import z from 'zod'
 
 import { operationResultSchema } from './shared'
 import { oc } from './base'
@@ -50,6 +51,7 @@ export const lobbyContract = {
       z.object({
         gameId: z.string().min(1),
         sessionToken: sessionTokenSchema,
+        idempotencyKey: idempotencyKeySchema,
         expectedVersion: expectedVersionSchema,
         command: gameCommandSchema,
       }),

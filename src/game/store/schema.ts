@@ -1,4 +1,4 @@
-import { z } from 'zod'
+import z from 'zod'
 
 import { gameEventSchema } from '../orchestration/schema'
 
@@ -27,11 +27,7 @@ export const persistedGameEventSchema = z.discriminatedUnion('type', [
   ...gameEventSchema.options,
 ])
 
-export const EVENT_ACTOR_VALUES = [
-  'SYSTEM',
-  'MODERATOR',
-  'PLAYER',
-] as const
+export const EVENT_ACTOR_VALUES = ['SYSTEM', 'MODERATOR', 'PLAYER'] as const
 
 export const eventActorSchema = z.enum(EVENT_ACTOR_VALUES)
 
@@ -42,6 +38,8 @@ export const sessionTokenSchema = z.string().min(1)
 // Version dương được dùng cho optimistic locking.
 // Server từ chối mutation nếu version này đã cũ.
 export const expectedVersionSchema = z.number().int().positive()
+
+export const idempotencyKeySchema = z.string().trim().min(1).max(100)
 
 // Các mutation thay đổi game cần cả danh tính session và version mà client đã đọc.
 // Schema dùng chung giúp mọi contract mutation giữ cùng optimistic-locking shape.
@@ -56,6 +54,7 @@ export const storeErrorCodeSchema = z.enum([
   'DUPLICATE_DISPLAY_NAME',
   'GAME_ALREADY_STARTED',
   'GAME_NOT_FOUND',
+  'IDEMPOTENCY_KEY_REUSED',
   'INVALID_GAME_STATE',
   'NOT_ALL_PLAYERS_READY',
   'NOT_AUTHORIZED',
