@@ -12,6 +12,7 @@ import {
 } from '../auth/session-token'
 
 import { storeErrorCodeSchema } from './schema'
+import { serializeGameEvent } from './event-persistence'
 import { createRoomCode } from './utils.room-code'
 
 const MAX_ROOM_CODE_ATTEMPTS = 20
@@ -103,14 +104,19 @@ export class PostgresGameStore implements Pick<
                             lastSeenAt: now,
                         })
 
+                        // Validate event trước khi tách thành type và JSONB payload.
+                        const createdEvent = serializeGameEvent({
+                            type: 'GAME_CREATED',
+                        })
+
                         // Tạo event đầu tiên
                         await transaction.insert(gameEvents).values({
                             gameId: game.id,
                             round: 0,
                             phase: 'SETUP',
                             sequence: 1,
-                            type: 'GAME_CREATED',
-                            payload: {},
+                            type: createdEvent.type,
+                            payload: createdEvent.payload,
                             createdAt: now,
                             createdBy: 'SYSTEM',
                             targetPlayerId: null,
@@ -232,16 +238,20 @@ export class PostgresGameStore implements Pick<
 
                 const nextSequence = (lastestEvent?.sequence ?? 0) + 1
 
+                // Schema xác nhận PLAYER_JOINED luôn có đúng playerId và displayName.
+                const joinedEvent = serializeGameEvent({
+                    type: 'PLAYER_JOINED',
+                    playerId: player.id,
+                    displayName: player.displayName,
+                })
+
                 await transaction.insert(gameEvents).values({
                     gameId: game.id,
                     round: game.round,
                     phase: game.phase,
                     sequence: nextSequence,
-                    type: 'PLAYER_JOINED',
-                    payload: {
-                        playerId: player.id,
-                        displayName: player.displayName,
-                    },
+                    type: joinedEvent.type,
+                    payload: joinedEvent.payload,
                     createdAt: now,
                     createdBy: 'PLAYER',
                     targetPlayerId: null,
@@ -418,16 +428,20 @@ export class PostgresGameStore implements Pick<
             const nextSequence = (latestEvent?.sequence ?? 0) + 1
             const nextVersion = game.version + 1
 
+            // Schema giữ discriminator và payload đồng bộ trước khi ghi JSONB.
+            const readyChangedEvent = serializeGameEvent({
+                type: 'PLAYER_READY_CHANGED',
+                playerId: player.id,
+                ready,
+            })
+
             await transaction.insert(gameEvents).values({
                 gameId: game.id,
                 round: game.round,
                 phase: game.phase,
                 sequence: nextSequence,
-                type: 'PLAYER_READY_CHANGED',
-                payload: {
-                    playerId: player.id,
-                    ready,
-                },
+                type: readyChangedEvent.type,
+                payload: readyChangedEvent.payload,
                 createdAt: now,
                 createdBy: 'PLAYER',
                 targetPlayerId: null,

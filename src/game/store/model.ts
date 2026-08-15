@@ -2,10 +2,11 @@ import type {
   createdGameSchema,
   gameMutationResultSchema,
   joinedGameSchema,
+  persistedGameEventSchema,
+  setupEventSchema,
   storeErrorCodeSchema,
   storeErrorSchema,
 } from './schema'
-import type { GameEvent } from '../orchestration/events'
 import type { GameState } from '../orchestration/model'
 import type { Role } from '../domain'
 import type { z } from 'zod'
@@ -26,12 +27,8 @@ export type LobbyPlayer = {
   role: Role | null
 }
 
-export type SetupEvent =
-  | { type: 'GAME_CREATED' }
-  | { type: 'PLAYER_JOINED'; playerId: string; displayName: string }
-  | { type: 'PLAYER_READY_CHANGED'; playerId: string; ready: boolean }
-  | { type: 'ROLES_ASSIGNED' }
-  | { type: 'GAME_STARTED' }
+export type SetupEvent = z.infer<typeof setupEventSchema>
+export type PersistedGameEvent = z.infer<typeof persistedGameEventSchema>
 
 export type StoredEvent = {
   sequence: number
@@ -40,7 +37,7 @@ export type StoredEvent = {
   actor: SessionKind | 'SYSTEM'
   actorPlayerId: string | null
   createdAt: string
-  event: SetupEvent | GameEvent
+  event: PersistedGameEvent
 }
 
 export type LocalGame = {

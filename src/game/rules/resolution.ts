@@ -1,12 +1,14 @@
+import type {
+  eliminationCauseSchema,
+  nightResolutionSchema,
+  voteResolutionSchema,
+} from './schema'
 import type { Player } from '../domain'
+import type { z } from 'zod'
 
-export type EliminationCause =
-  'WEREWOLF_ATTACK' | 'WITCH_POISON' | 'VOTE' | 'MODERATOR_OVERRIDE'
-
-export type NightResolution = {
-  deaths: { playerId: string; causes: EliminationCause[] }[]
-  survivors: string[]
-}
+// Resolution được persist trong event payload nên schema runtime là source of truth.
+export type EliminationCause = z.infer<typeof eliminationCauseSchema>
+export type NightResolution = z.infer<typeof nightResolutionSchema>
 
 type NightResolutionInput = {
   players: readonly Player[]
@@ -41,10 +43,7 @@ export function resolveNight(input: NightResolutionInput): NightResolution {
   }
 }
 
-export type VoteResolution =
-  | { outcome: 'ELIMINATED'; playerId: string }
-  | { outcome: 'REVOTE'; nextAttempt: 2 }
-  | { outcome: 'NO_ELIMINATION' }
+export type VoteResolution = z.infer<typeof voteResolutionSchema>
 
 export function resolveVote(
   tied: boolean,

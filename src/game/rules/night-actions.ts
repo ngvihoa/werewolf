@@ -1,29 +1,16 @@
 import type { Player, QueueStep, Result, Role, Team } from '../domain'
+import type { nightActionSchema } from './schema'
+import type { z } from 'zod'
 
 import { getRoleTeam } from '../domain'
 
 import { STEP_ROLE } from './transitions'
 
-export type SeerAction = {
-  type: 'SEER_INSPECT'
-  actorId: string
-  targetId: string
-}
-
-export type WerewolfAction = {
-  type: 'WEREWOLF_ATTACK'
-  actorId: string
-  targetId: string
-}
-
-export type WitchAction = {
-  type: 'WITCH_ACTION'
-  actorId: string
-  heal: boolean
-  poisonTargetId: string | null
-}
-
-export type NightAction = SeerAction | WerewolfAction | WitchAction
+// Rule types được infer từ runtime schema để command và event luôn đồng bộ.
+export type NightAction = z.infer<typeof nightActionSchema>
+export type SeerAction = Extract<NightAction, { type: 'SEER_INSPECT' }>
+export type WerewolfAction = Extract<NightAction, { type: 'WEREWOLF_ATTACK' }>
+export type WitchAction = Extract<NightAction, { type: 'WITCH_ACTION' }>
 
 type ValidationContext = {
   activeStep: QueueStep

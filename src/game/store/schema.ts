@@ -1,5 +1,32 @@
 import { z } from 'zod'
 
+import { gameEventSchema } from '../orchestration/schema'
+
+// Setup events tồn tại trước khi rule engine bắt đầu chạy nhưng vẫn được lưu
+// chung trong game_events, nên chúng cũng cần runtime schema.
+export const setupEventSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('GAME_CREATED') }),
+  z.object({
+    type: z.literal('PLAYER_JOINED'),
+    playerId: z.string().min(1),
+    displayName: z.string().min(1),
+  }),
+  z.object({
+    type: z.literal('PLAYER_READY_CHANGED'),
+    playerId: z.string().min(1),
+    ready: z.boolean(),
+  }),
+  z.object({ type: z.literal('ROLES_ASSIGNED') }),
+  z.object({ type: z.literal('GAME_STARTED') }),
+])
+
+// Hai nhóm event có cùng discriminator nên có thể ghép thành một schema duy nhất
+// tại persistence boundary.
+export const persistedGameEventSchema = z.discriminatedUnion('type', [
+  ...setupEventSchema.options,
+  ...gameEventSchema.options,
+])
+
 // Token schema chỉ xác nhận request có token.
 // Việc token có tồn tại, hết hạn hay bị revoke vẫn do GameStore kiểm tra.
 export const sessionTokenSchema = z.string().min(1)

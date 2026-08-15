@@ -1,3 +1,4 @@
+import type { PersistedGameEvent } from '#/game/store/model'
 import type { WitchResources } from '#/game/domain'
 import type { MvpSettings } from '#/game/rules/mvp-settings'
 import type { GameState } from '#/game/orchestration/model'
@@ -366,7 +367,8 @@ export const gameEvents = pgTable(
     sequence: integer('sequence').notNull(),
     round: integer('round').notNull(),
     phase: gamePhase('phase').notNull(),
-    type: text('type').notNull(),
+    // `$type` chỉ tăng type-safety cho Drizzle; Zod vẫn validate type + payload runtime.
+    type: text('type').$type<PersistedGameEvent['type']>().notNull(),
     actorPlayerId: uuid('actor_player_id'),
     targetPlayerId: uuid('target_player_id'),
     payload: jsonb('payload')

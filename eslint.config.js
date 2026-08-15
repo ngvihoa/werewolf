@@ -5,6 +5,17 @@ import config from '@ngvihoa/eslint-config-best-practices'
 export default [
   ...config.react,
   {
+    files: ['**/*.{ts,mts,cts,tsx}'],
+    languageOptions: {
+      parserOptions: {
+        // Preset dùng process.cwd(), nhưng ESLint extension không luôn khởi động
+        // tại project root. Cố định root giúp type-aware rules resolve cùng tsconfig.
+        projectService: true,
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
+  },
+  {
     ignores: [
       '.output/**',
       '.tanstack/**',
