@@ -1,9 +1,15 @@
 import { randomUUID } from 'node:crypto'
 
-import { gameEvents, gamePlayers, games, gameSessions } from '#/db/schema'
 import { afterEach, describe, expect, it } from 'vitest'
 import { and, asc, desc, eq, inArray } from 'drizzle-orm'
 import { db } from '#/db/client'
+import {
+  gameQueueSteps,
+  gameSessions,
+  gamePlayers,
+  gameEvents,
+  games,
+} from '#/db/schema'
 
 import { createSessionExpiry, hashSessionToken } from '../auth/session-token'
 
@@ -489,6 +495,111 @@ describe('PostgresGameStore.assignRoles', () => {
       type: 'ROLES_ASSIGNED',
       createdBy: 'MODERATOR',
       payload: {},
+    })
+  })
+})
+
+describe('PostgresGameStore.startGame', () => {
+  it('persists initial state, queue, event and version atomically', async () => {
+    const roomCode = createTestRoomCode()
+    const now = new Date('2026-08-15T03:00:00.000Z')
+    createdRoomCodes.push(roomCode)
+
+    const store = new PostgresGameStore({
+      createRoomCode: () => roomCode,
+      now: () => now,
+    })
+    const created = await store.createGame('Test Moderator')
+    if (!created.ok) throw new Error('Expected createGame to succeed')
+
+    const playerSeeds = [
+      ['An', 'WEREWOLF'],
+      ['Binh', 'SEER'],
+      ['Cuong', 'VILLAGER'],
+      ['Dung', 'VILLAGER'],
+      ['Hoa', 'VILLAGER'],
+    ] as const
+
+    // Seed một lobby hợp lệ để test riêng transaction startGame.
+    await db.insert(gamePlayers).values(
+      playerSeeds.map(([displayName, role]) => ({
+        gameId: created.value.gameId,
+        displayName,
+        role,
+        abilityState: null,
+        isReady: true,
+        isAlive: true,
+        joinedAt: now,
+      })),
+    )
+
+    const result = await store.startGame(
+      created.value.moderatorSessionToken,
+      1,
+    )
+
+    expect(result).toEqual({
+      ok: true,
+      value: { gameId: created.value.gameId, version: 2 },
+    })
+
+    const [storedGame] = await db
+      .select()
+      .from(games)
+      .where(eq(games.id, created.value.gameId))
+    const storedQueue = await db
+      .select({
+        position: gameQueueSteps.position,
+        step: gameQueueSteps.step,
+        status: gameQueueSteps.status,
+        activatedAt: gameQueueSteps.activatedAt,
+      })
+      .from(gameQueueSteps)
+      .where(eq(gameQueueSteps.gameId, created.value.gameId))
+      .orderBy(asc(gameQueueSteps.position))
+    const [latestEvent] = await db
+      .select({
+        sequence: gameEvents.sequence,
+        round: gameEvents.round,
+        phase: gameEvents.phase,
+        type: gameEvents.type,
+        createdBy: gameEvents.createdBy,
+      })
+      .from(gameEvents)
+      .where(eq(gameEvents.gameId, created.value.gameId))
+      .orderBy(desc(gameEvents.sequence))
+      .limit(1)
+
+    expect(storedGame).toMatchObject({
+      status: 'IN_PROGRESS',
+      phase: 'NIGHT',
+      round: 1,
+      version: 2,
+      state: {
+        phase: 'NIGHT',
+        round: 1,
+      },
+    })
+    expect(storedQueue).toEqual([
+      {
+        position: 1,
+        step: 'SEER_INSPECT',
+        status: 'ACTIVE',
+        activatedAt: now,
+      },
+      {
+        position: 2,
+        step: 'WEREWOLF_ATTACK',
+        status: 'PENDING',
+        activatedAt: null,
+      },
+    ])
+    expect(latestEvent).toEqual({
+      sequence: 2,
+      round: 1,
+      phase: 'NIGHT',
+      type: 'GAME_STARTED',
+      createdBy: 'MODERATOR',
     })
   })
 })

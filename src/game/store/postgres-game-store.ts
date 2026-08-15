@@ -9,16 +9,27 @@ import type {
 } from './model'
 import type { GameStore } from './game-store'
 
-import { gameEvents, gamePlayers, games, gameSessions } from '#/db/schema'
 import { and, desc, eq, gt, isNull } from 'drizzle-orm'
 import { db } from '#/db/client'
+import {
+    gameQueueSteps,
+    gameSessions,
+    gamePlayers,
+    gameEvents,
+    games,
+} from '#/db/schema'
 
-import { assignRoles } from '../rules/role-assignment'
+import { createFirstNightState } from '../orchestration/game-orchestrator'
+import { playerSchema } from '../schema'
 import {
     createSessionExpiry,
     createSessionToken,
     hashSessionToken,
 } from '../auth/session-token'
+import {
+    validateRoleComposition,
+    assignRoles,
+} from '../rules/role-assignment'
 
 import { storeErrorCodeSchema } from './schema'
 import { serializeGameEvent } from './event-persistence'
@@ -38,15 +49,22 @@ type PostgresGameStoreDependencies = {
     now?: () => Date
 }
 
-type DatabaseTransaction = Parameters<
-    Parameters<typeof db.transaction>[0]
->[0]
+type DatabaseTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0]
 
 type GameRow = typeof games.$inferSelect
 
-export class PostgresGameStore implements Pick<
+// Caller chỉ patch các cột state có thể thay đổi trong một game mutation.
+// `version` và `updatedAt` luôn do updateGameAndIncrementVersion quản lý.
+type GameVersionChanges = Partial<
+    Pick<
+        typeof games.$inferInsert,
+        'settings' | 'state' | 'status' | 'phase' | 'round'
+    >
+>
+
+export class PostgresGameStore implements Omit<
     GameStore,
-    'createGame' | 'joinGame' | 'setReady' | 'assignRoles'
+    'execute' | 'getGameView'
 > {
     readonly #database: NonNullable<PostgresGameStoreDependencies['database']>
     readonly #createRoomCode: NonNullable<
@@ -191,10 +209,7 @@ export class PostgresGameStore implements Pick<
                     .for('update')
 
                 if (!game) {
-                    return failure(
-                        STORE_ERROR_CODE.GAME_NOT_FOUND,
-                        'Room not found',
-                    )
+                    return failure(STORE_ERROR_CODE.GAME_NOT_FOUND, 'Room not found')
                 }
 
                 if (game.status !== 'LOBBY') {
@@ -248,7 +263,7 @@ export class PostgresGameStore implements Pick<
                 })
 
                 // Cập nhật version của game trong cùng transaction.
-                await incrementGameVersion(transaction, game, now)
+                await updateGameAndIncrementVersion(transaction, game, now)
 
                 return {
                     ok: true as const,
@@ -337,10 +352,7 @@ export class PostgresGameStore implements Pick<
                 .update(gamePlayers)
                 .set({ isReady: ready })
                 .where(
-                    and(
-                        eq(gamePlayers.gameId, game.id),
-                        eq(gamePlayers.id, player.id),
-                    ),
+                    and(eq(gamePlayers.gameId, game.id), eq(gamePlayers.id, player.id)),
                 )
 
             await appendGameEvent(transaction, {
@@ -355,7 +367,7 @@ export class PostgresGameStore implements Pick<
                 },
             })
 
-            const nextVersion = await incrementGameVersion(
+            const nextVersion = await updateGameAndIncrementVersion(
                 transaction,
                 game,
                 now,
@@ -420,9 +432,7 @@ export class PostgresGameStore implements Pick<
                     ),
                 )
 
-            const assignment = assignRoles(
-                players.map((player) => player.id)
-            )
+            const assignment = assignRoles(players.map((player) => player.id))
 
             if (!assignment.ok) {
                 return failure(
@@ -454,10 +464,7 @@ export class PostgresGameStore implements Pick<
                         isReady: false,
                     })
                     .where(
-                        and(
-                            eq(gamePlayers.gameId, game.id),
-                            eq(gamePlayers.id, player.id),
-                        ),
+                        and(eq(gamePlayers.gameId, game.id), eq(gamePlayers.id, player.id)),
                     )
             }
 
@@ -469,7 +476,7 @@ export class PostgresGameStore implements Pick<
                 event: { type: 'ROLES_ASSIGNED' },
             })
 
-            const nextVersion = await incrementGameVersion(
+            const nextVersion = await updateGameAndIncrementVersion(
                 transaction,
                 game,
                 now,
@@ -480,19 +487,157 @@ export class PostgresGameStore implements Pick<
                 value: {
                     gameId: game.id,
                     version: nextVersion,
-                }
+                },
+            }
+        })
+    }
+
+    async startGame(
+        sessionToken: string,
+        expectedVersion: number,
+    ): Promise<StoreResult<GameMutationResult>> {
+        const sessionTokenHash = this.#hashSessionToken(sessionToken)
+        const now = this.#now()
+
+        return this.#database.transaction(async (transaction) => {
+            const session = await findActiveSession(
+                transaction,
+                sessionTokenHash,
+                now,
+            )
+
+            if (!session) {
+                return failure(
+                    STORE_ERROR_CODE.SESSION_NOT_FOUND,
+                    'Session does not exist or is no longer active',
+                )
             }
 
+            // Chỉ Moderator mới được quyền phân vai.
+            if (session.kind !== 'MODERATOR') {
+                return failure(
+                    STORE_ERROR_CODE.NOT_AUTHORIZED,
+                    'Moderator session is required',
+                )
+            }
+
+            const gameResult = validateLobbyMutation(
+                await lockGame(transaction, session.gameId),
+                expectedVersion,
+            )
+            if (!gameResult.ok) return gameResult
+
+            const game = gameResult.value
+
+            const players = await transaction
+                .select({
+                    id: gamePlayers.id,
+                    role: gamePlayers.role,
+                    alive: gamePlayers.isAlive,
+                    isReady: gamePlayers.isReady,
+                    displayName: gamePlayers.displayName,
+                    abilityState: gamePlayers.abilityState,
+                })
+                .from(gamePlayers)
+                .where(
+                    and(
+                        eq(gamePlayers.gameId, game.id),
+                        eq(gamePlayers.isModerator, false),
+                    ),
+                )
+
+            if (players.length === 0 || players.some((player) => !player.role)) {
+                return failure(
+                    STORE_ERROR_CODE.ROLES_NOT_ASSIGNED,
+                    'Roles must be assigned before starting',
+                )
+            }
+
+            if (players.some((player) => !player.isReady)) {
+                return failure(
+                    STORE_ERROR_CODE.NOT_ALL_PLAYERS_READY,
+                    'Every player must be ready before starting',
+                )
+            }
+
+            const domainPlayers = players.map((player) => {
+                return playerSchema.parse({
+                    id: player.id,
+                    role: player.role,
+                    alive: player.alive,
+                    abilityState: player.abilityState,
+                })
+            })
+
+            const composition = validateRoleComposition(
+                domainPlayers.map((player) => player.role),
+            )
+            if (!composition.ok) {
+                return failure(
+                    STORE_ERROR_CODE.INVALID_GAME_STATE,
+                    composition.error.message,
+                )
+            }
+
+            const state = createFirstNightState(domainPlayers)
+
+            await transaction.insert(gameQueueSteps).values(
+                state.queue.map((item, index) => {
+                    return {
+                        gameId: game.id,
+                        round: state.round,
+                        position: index + 1,
+                        step: item.step,
+                        status: item.status,
+                        skipReason: item.skipReason,
+                        activatedAt: item.status === 'PENDING' ? null : now,
+                        completedAt:
+                            item.status === 'COMPLETED' || item.status === 'SKIPPED'
+                                ? now
+                                : null,
+                        createdAt: now,
+                    }
+                }),
+            )
+
+            const nextVersion = await updateGameAndIncrementVersion(
+                transaction,
+                game,
+                now,
+                {
+                    state,
+                    status: 'IN_PROGRESS',
+                    phase: state.phase,
+                    round: state.round,
+                },
+            )
+
+            await appendGameEvent(transaction, {
+                game: {
+                    id: game.id,
+                    phase: state.phase,
+                    round: state.round,
+                },
+                createdBy: 'MODERATOR',
+                actorPlayerId: null,
+                createdAt: now,
+                event: { type: 'GAME_STARTED' },
+            })
+
+            return {
+                ok: true as const,
+                value: {
+                    gameId: game.id,
+                    version: nextVersion,
+                },
+            }
         })
     }
 }
 
 /**************************** Helper Functions ****************************/
 
-function failure(
-    code: StoreErrorCode,
-    message: string,
-): StoreResult<never> {
+function failure(code: StoreErrorCode, message: string): StoreResult<never> {
     // Mọi business error của store dùng chung một representation.
     return { ok: false, error: { code, message } }
 }
@@ -596,17 +741,18 @@ async function appendGameEvent(
     return nextSequence
 }
 
-async function incrementGameVersion(
+async function updateGameAndIncrementVersion(
     transaction: DatabaseTransaction,
     game: Pick<GameRow, 'id' | 'version'>,
     now: Date,
+    changes: GameVersionChanges = {},
 ): Promise<number> {
     const nextVersion = game.version + 1
 
     // Version thay đổi trong cùng transaction với state và event tương ứng.
     await transaction
         .update(games)
-        .set({ version: nextVersion, updatedAt: now })
+        .set({ ...changes, version: nextVersion, updatedAt: now })
         .where(eq(games.id, game.id))
 
     return nextVersion

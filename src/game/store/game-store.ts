@@ -82,7 +82,10 @@ export interface GameStore {
      * @param sessionToken Token phiên
      * @returns Kết quả là thông tin của Game ở trang thái Local
      */
-    startGame(sessionToken: string): Awaitable<StoreResult<LocalGame>>
+    startGame(
+        sessionToken: string,
+        expectedVersion: number,
+    ): Awaitable<StoreResult<GameMutationResult>>
 
     /**
      * Thực thi một lệnh bất kỳ xảy ra trong một đêm

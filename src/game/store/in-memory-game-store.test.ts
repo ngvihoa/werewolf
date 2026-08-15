@@ -37,10 +37,19 @@ function createStartedGame() {
     )
     if (!ready.ok) throw new Error(ready.error.message)
   }
-  const started = store.startGame(created.value.moderatorSessionToken)
+  const beforeStart = store.getGame(created.value.gameId)
+  if (!beforeStart.ok) throw new Error(beforeStart.error.message)
+
+  const started = store.startGame(
+    created.value.moderatorSessionToken,
+    beforeStart.value.version,
+  )
   if (!started.ok) throw new Error(started.error.message)
 
-  return { store, created: created.value, players, game: started.value }
+  const startedGame = store.getGame(created.value.gameId)
+  if (!startedGame.ok) throw new Error(startedGame.error.message)
+
+  return { store, created: created.value, players, game: startedGame.value }
 }
 
 describe('InMemoryGameStore lobby', () => {
@@ -138,6 +147,7 @@ describe('InMemoryGameStore lobby', () => {
 
     const beforeAssignment = store.startGame(
       created.value.moderatorSessionToken,
+      6,
     )
     expect(beforeAssignment.ok).toBe(false)
     if (!beforeAssignment.ok) {
@@ -145,7 +155,10 @@ describe('InMemoryGameStore lobby', () => {
     }
 
     store.assignRoles(created.value.moderatorSessionToken, 6)
-    const beforeReady = store.startGame(created.value.moderatorSessionToken)
+    const beforeReady = store.startGame(
+      created.value.moderatorSessionToken,
+      7,
+    )
     expect(beforeReady.ok).toBe(false)
     if (!beforeReady.ok) {
       expect(beforeReady.error.code).toBe('NOT_ALL_PLAYERS_READY')

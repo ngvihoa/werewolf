@@ -42,7 +42,10 @@ export const lobbyRouter = baseRouter.lobby.router({
     }),
 
     startGame: baseRouter.lobby.startGame.handler(async ({ input }) => {
-        const result = await localGameStore.startGame(input.sessionToken)
+        const result = await localGameStore.startGame(
+            input.sessionToken,
+            input.expectedVersion,
+        )
         return toOperationResult(result)
     }),
 

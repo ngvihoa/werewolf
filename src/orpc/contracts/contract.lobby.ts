@@ -46,7 +46,7 @@ export const lobbyContract = {
         .input(versionedSessionInputSchema)
         .output(operationResultSchema),
     startGame: oc
-        .input(z.object({ sessionToken: sessionTokenSchema }))
+        .input(versionedSessionInputSchema)
         .output(operationResultSchema),
     executeGameCommand: oc
         .input(

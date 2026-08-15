@@ -198,10 +198,19 @@ export class InMemoryGameStore implements GameStore {
     return success({ gameId: game.id, version: game.version })
   }
 
-  startGame(sessionToken: string): StoreResult<LocalGame> {
+  startGame(
+    sessionToken: string,
+    expectedVersion: number,
+  ): StoreResult<GameMutationResult> {
     const resolved = this.#resolveModerator(sessionToken)
     if (!resolved.ok) return resolved
     const game = resolved.value
+
+    // In-memory adapter phải giữ cùng optimistic-locking contract với PostgreSQL.
+    if (game.version !== expectedVersion) {
+      return failure('STALE_VERSION', 'Game version is stale')
+    }
+
     if (game.state) {
       return failure('GAME_ALREADY_STARTED', 'Game has already started')
     }
@@ -228,7 +237,7 @@ export class InMemoryGameStore implements GameStore {
     game.state = createFirstNightState(players)
     game.version += 1
     this.#appendEvents(game, 'MODERATOR', null, [{ type: 'GAME_STARTED' }])
-    return success(this.#snapshot(game))
+    return success({ gameId: game.id, version: game.version })
   }
 
   execute(input: ExecuteGameCommandInput): StoreResult<LocalGame> {

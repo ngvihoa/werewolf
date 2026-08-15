@@ -44,8 +44,11 @@ function LobbyPage() {
     onSuccess: invalidateView,
   })
   const startMutation = useMutation({
-    mutationFn: () =>
-      orpcClient.lobby.startGame({ sessionToken: activeSessionToken }),
+    mutationFn: (expectedVersion: number) =>
+      orpcClient.lobby.startGame({
+        sessionToken: activeSessionToken,
+        expectedVersion,
+      }),
     onSuccess: invalidateView,
   })
 
@@ -111,7 +114,8 @@ function LobbyPage() {
                 error={mutationError}
                 // Lấy version tại thời điểm click để server phát hiện request cũ.
                 onAssign={() => assignMutation.mutate(version)}
-                onStart={() => startMutation.mutate()}
+                // Start game cũng dùng optimistic locking như các lobby mutation khác.
+                onStart={() => startMutation.mutate(version)}
               />
             ) : (
               <PlayerControls
