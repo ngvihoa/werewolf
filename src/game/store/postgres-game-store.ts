@@ -1,7 +1,8 @@
-import type { StoreResult, CreatedGame } from './model'
+import type { StoreResult, CreatedGame, JoinedGame } from './model'
 import type { GameStore } from './game-store'
 
-import { gameEvents, games, gameSessions } from '#/db/schema'
+import { gameEvents, gamePlayers, games, gameSessions } from '#/db/schema'
+import { desc, eq } from 'drizzle-orm'
 import { db } from '#/db/client'
 
 import {
@@ -10,6 +11,7 @@ import {
     hashSessionToken,
 } from '../auth/session-token'
 
+import { storeErrorCodeSchema } from './schema'
 import { createRoomCode } from './utils.room-code'
 
 const MAX_ROOM_CODE_ATTEMPTS = 20
@@ -23,7 +25,10 @@ type PostgresGameStoreDependencies = {
     now?: () => Date
 }
 
-export class PostgresGameStore implements Pick<GameStore, 'createGame'> {
+export class PostgresGameStore implements Pick<
+    GameStore,
+    'createGame' | 'joinGame'
+> {
     readonly #database: NonNullable<PostgresGameStoreDependencies['database']>
     readonly #createRoomCode: NonNullable<
         PostgresGameStoreDependencies['createRoomCode']
@@ -135,9 +140,164 @@ export class PostgresGameStore implements Pick<GameStore, 'createGame'> {
             `Could not create a unique room code after ${MAX_ROOM_CODE_ATTEMPTS} attempts`,
         )
     }
+
+    async joinGame(
+        _roomCode: string,
+        _displayName: string,
+    ): Promise<StoreResult<JoinedGame>> {
+        const roomCode = _roomCode.trim().toUpperCase()
+        const displayName = _displayName.trim()
+
+        // Chuẩn bị token bên ngoài để transaction chỉ chứa thao tác database.
+        const now = this.#now()
+        const rawSessionToken = this.#createSessionToken()
+        const hashedSessionToken = this.#hashSessionToken(rawSessionToken)
+        const expiresAt = this.#createSessionExpiry(now)
+
+        try {
+            // Player, session, event và version phải cùng thành công hoặc cùng rollback.
+            return await this.#database.transaction(async (transaction) => {
+                // Tìm game bằng room code.
+                const [game] = await transaction
+                    .select()
+                    .from(games)
+                    .where(eq(games.roomCode, roomCode))
+                    .orderBy(desc(games.createdAt))
+                    .limit(1)
+                    .for('update')
+
+                if (!game) {
+                    return {
+                        ok: false as const,
+                        error: {
+                            code: storeErrorCodeSchema.enum['GAME_NOT_FOUND'],
+                            message: 'Room not found',
+                        },
+                    }
+                }
+
+                if (game.status !== 'LOBBY') {
+                    return {
+                        ok: false as const,
+                        error: {
+                            code: storeErrorCodeSchema.enum['GAME_ALREADY_STARTED'],
+                            message: 'Game already started',
+                        },
+                    }
+                }
+
+                // Tạo player mới và lấy id do PostgreSQL sinh ra.
+                const [player] = await transaction
+                    .insert(gamePlayers)
+                    .values({
+                        gameId: game.id,
+                        displayName,
+                        isModerator: false,
+                        isReady: false,
+                        isAlive: true,
+                        joinedAt: now,
+                    })
+                    .returning({
+                        id: gamePlayers.id,
+                        displayName: gamePlayers.displayName,
+                    })
+
+                if (!player) {
+                    throw new Error('Database did not return the created player')
+                }
+
+                // Lưu session của player trong cùng transaction.
+                await transaction.insert(gameSessions).values({
+                    gameId: game.id,
+                    playerId: player.id,
+                    kind: 'PLAYER',
+                    tokenHash: hashedSessionToken,
+                    expiresAt,
+                    createdAt: now,
+                    lastSeenAt: now,
+                })
+
+                // Tạo sequence event
+                const [lastestEvent] = await transaction
+                    .select({
+                        sequence: gameEvents.sequence,
+                    })
+                    .from(gameEvents)
+                    .where(eq(gameEvents.gameId, game.id))
+                    .orderBy(desc(gameEvents.sequence))
+                    .limit(1)
+
+                const nextSequence = (lastestEvent?.sequence ?? 0) + 1
+
+                await transaction.insert(gameEvents).values({
+                    gameId: game.id,
+                    round: game.round,
+                    phase: game.phase,
+                    sequence: nextSequence,
+                    type: 'PLAYER_JOINED',
+                    payload: {
+                        playerId: player.id,
+                        displayName: player.displayName,
+                    },
+                    createdAt: now,
+                    createdBy: 'SYSTEM',
+                    targetPlayerId: null,
+                    actorPlayerId: player.id,
+                })
+
+                // Cập nhật version của game trong cùng transaction.
+                await transaction
+                    .update(games)
+                    .set({
+                        version: game.version + 1,
+                        updatedAt: now,
+                    })
+                    .where(eq(games.id, game.id))
+
+                return {
+                    ok: true as const,
+                    value: {
+                        gameId: game.id,
+                        playerId: player.id,
+                        playerSessionToken: rawSessionToken,
+                    },
+                }
+            })
+        } catch (error) {
+            if (isDuplicateDisplayNameCollision(error)) {
+                return {
+                    ok: false,
+                    error: {
+                        code: 'DUPLICATE_DISPLAY_NAME',
+                        message: 'Display name is already in use',
+                    },
+                }
+            }
+
+            throw error
+        }
+    }
 }
 
+/**************************** Helper Functions ****************************/
+
 function isRoomCodeCollision(error: unknown) {
+    return isPostgresConstraintViolation(error, '23505', 'games_room_code_unique')
+}
+
+function isDuplicateDisplayNameCollision(error: unknown) {
+    return isPostgresConstraintViolation(
+        error,
+        '23505',
+        'game_players_game_display_name_unique_idx',
+    )
+}
+
+function isPostgresConstraintViolation(
+    error: unknown,
+    code: string,
+    constraintName: string,
+) {
     if (!error || typeof error !== 'object') {
         return false
     }
@@ -152,8 +312,8 @@ function isRoomCodeCollision(error: unknown) {
             candidate !== null &&
             typeof candidate === 'object' &&
             'code' in candidate &&
-            candidate.code === '23505' &&
+            candidate.code === code &&
             'constraint_name' in candidate &&
-            candidate.constraint_name === 'games_room_code_unique',
+            candidate.constraint_name === constraintName,
     )
 }

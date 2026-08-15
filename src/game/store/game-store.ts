@@ -36,7 +36,7 @@ export interface GameStore {
     /**
      * Tham gia một game
      * @param roomCode Mã phòng
-     * @param displayName Tên hiển thị
+     * @param displayName Tên hiển thị của player
      * @returns Kết quả tham gia phòng
      */
     joinGame(

@@ -1,8 +1,8 @@
 import { randomUUID } from 'node:crypto'
 
-import { gameEvents, games, gameSessions } from '#/db/schema'
+import { gameEvents, gamePlayers, games, gameSessions } from '#/db/schema'
 import { afterEach, describe, expect, it } from 'vitest'
-import { eq, inArray } from 'drizzle-orm'
+import { and, asc, eq, inArray } from 'drizzle-orm'
 import { db } from '#/db/client'
 
 import { createSessionExpiry, hashSessionToken } from '../auth/session-token'
@@ -151,6 +151,96 @@ describe('PostgresGameStore.createGame', () => {
       value: { roomCode: availableRoomCode },
     })
     expect(roomCodeAttempt).toBe(2)
+  })
+})
+
+describe('PostgresGameStore.joinGame', () => {
+  it('assigns consecutive event sequences when two players join concurrently', async () => {
+    const roomCode = createTestRoomCode()
+    createdRoomCodes.push(roomCode)
+
+    const store = new PostgresGameStore({ createRoomCode: () => roomCode })
+    const created = await store.createGame('Test Moderator')
+    if (!created.ok) throw new Error('Expected createGame to succeed')
+
+    // Chạy đồng thời để kiểm tra FOR UPDATE thực sự tuần tự hóa mutation của cùng game.
+    const [firstJoin, secondJoin] = await Promise.all([
+      store.joinGame(roomCode, 'An'),
+      store.joinGame(roomCode, 'Binh'),
+    ])
+
+    expect(firstJoin.ok).toBe(true)
+    expect(secondJoin.ok).toBe(true)
+
+    // Cả hai player và session phải được lưu sau khi hai transaction commit.
+    const storedPlayers = await db
+      .select({ id: gamePlayers.id })
+      .from(gamePlayers)
+      .where(eq(gamePlayers.gameId, created.value.gameId))
+    const storedPlayerSessions = await db
+      .select({ id: gameSessions.id })
+      .from(gameSessions)
+      .where(
+        and(
+          eq(gameSessions.gameId, created.value.gameId),
+          eq(gameSessions.kind, 'PLAYER'),
+        ),
+      )
+    const [storedGame] = await db
+      .select({ version: games.version })
+      .from(games)
+      .where(eq(games.id, created.value.gameId))
+    const storedEvents = await db
+      .select({
+        sequence: gameEvents.sequence,
+        type: gameEvents.type,
+      })
+      .from(gameEvents)
+      .where(eq(gameEvents.gameId, created.value.gameId))
+      .orderBy(asc(gameEvents.sequence))
+
+    expect(storedPlayers).toHaveLength(2)
+    expect(storedPlayerSessions).toHaveLength(2)
+    expect(storedGame?.version).toBe(3)
+
+    // GAME_CREATED dùng sequence 1; hai lần join tiếp theo phải nhận 2 và 3.
+    expect(storedEvents).toEqual([
+      { sequence: 1, type: 'GAME_CREATED' },
+      { sequence: 2, type: 'PLAYER_JOINED' },
+      { sequence: 3, type: 'PLAYER_JOINED' },
+    ])
+  })
+
+  it('returns a typed error when the display name already exists', async () => {
+    const roomCode = createTestRoomCode()
+    createdRoomCodes.push(roomCode)
+
+    const store = new PostgresGameStore({ createRoomCode: () => roomCode })
+    const created = await store.createGame('Test Moderator')
+    if (!created.ok) throw new Error('Expected createGame to succeed')
+
+    // Unique index dùng lower(btrim(display_name)), nên khoảng trắng và hoa thường vẫn trùng.
+    await db.insert(gamePlayers).values({
+      gameId: created.value.gameId,
+      displayName: 'An',
+    })
+
+    const duplicate = await store.joinGame(roomCode, '  an  ')
+
+    expect(duplicate).toEqual({
+      ok: false,
+      error: {
+        code: 'DUPLICATE_DISPLAY_NAME',
+        message: 'Display name is already in use',
+      },
+    })
+
+    // Insert lỗi không được tạo thêm player thứ hai.
+    const storedPlayers = await db
+      .select({ id: gamePlayers.id })
+      .from(gamePlayers)
+      .where(eq(gamePlayers.gameId, created.value.gameId))
+    expect(storedPlayers).toHaveLength(1)
   })
 })
 
