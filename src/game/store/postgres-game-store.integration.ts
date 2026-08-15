@@ -423,6 +423,76 @@ describe('PostgresGameStore.setReady', () => {
   })
 })
 
+describe('PostgresGameStore.assignRoles', () => {
+  it('persists a valid role composition, event and next version atomically', async () => {
+    const roomCode = createTestRoomCode()
+    createdRoomCodes.push(roomCode)
+
+    const store = new PostgresGameStore({ createRoomCode: () => roomCode })
+    const created = await store.createGame('Test Moderator')
+    if (!created.ok) throw new Error('Expected createGame to succeed')
+
+    // Sáu lượt join đưa game từ version 1 lên version 7.
+    for (const name of ['An', 'Binh', 'Cuong', 'Dung', 'Hoa', 'Lan']) {
+      const joined = await store.joinGame(roomCode, name)
+      if (!joined.ok) throw new Error('Expected joinGame to succeed')
+    }
+
+    const result = await store.assignRoles(
+      created.value.moderatorSessionToken,
+      7,
+    )
+
+    expect(result).toEqual({
+      ok: true,
+      value: { gameId: created.value.gameId, version: 8 },
+    })
+
+    const storedPlayers = await db
+      .select({
+        role: gamePlayers.role,
+        abilityState: gamePlayers.abilityState,
+        isReady: gamePlayers.isReady,
+      })
+      .from(gamePlayers)
+      .where(eq(gamePlayers.gameId, created.value.gameId))
+
+    // Composition phải đúng MVP và chỉ Witch có ability state.
+    expect(storedPlayers.map((player) => player.role).sort()).toEqual(
+      ['SEER', 'VILLAGER', 'VILLAGER', 'VILLAGER', 'WEREWOLF', 'WITCH'].sort(),
+    )
+    expect(storedPlayers.every((player) => !player.isReady)).toBe(true)
+    expect(
+      storedPlayers.find((player) => player.role === 'WITCH')?.abilityState,
+    ).toEqual({
+      healingPotionAvailable: true,
+      poisonPotionAvailable: true,
+    })
+    expect(
+      storedPlayers
+        .filter((player) => player.role !== 'WITCH')
+        .every((player) => player.abilityState === null),
+    ).toBe(true)
+
+    const [latestEvent] = await db
+      .select({
+        type: gameEvents.type,
+        createdBy: gameEvents.createdBy,
+        payload: gameEvents.payload,
+      })
+      .from(gameEvents)
+      .where(eq(gameEvents.gameId, created.value.gameId))
+      .orderBy(desc(gameEvents.sequence))
+      .limit(1)
+
+    expect(latestEvent).toEqual({
+      type: 'ROLES_ASSIGNED',
+      createdBy: 'MODERATOR',
+      payload: {},
+    })
+  })
+})
+
 function createTestRoomCode(): string {
   // UUID chỉ chứa ký tự hexadecimal; lấy 6 ký tự đầu vẫn khớp DB constraint A-Z0-9.
   return randomUUID().replaceAll('-', '').slice(0, 6).toUpperCase()
