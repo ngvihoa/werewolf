@@ -604,6 +604,83 @@ describe('PostgresGameStore.startGame', () => {
   })
 })
 
+describe('PostgresGameStore.getGameView', () => {
+  it('rejects a session token that does not exist', async () => {
+    const store = new PostgresGameStore()
+
+    const result = await store.getGameView(`missing-${randomUUID()}`)
+
+    expect(result).toEqual({
+      ok: false,
+      error: {
+        code: 'SESSION_NOT_FOUND',
+        message: 'Session does not exist or is no longer active',
+      },
+    })
+  })
+
+  it('projects permission-aware views with chronological history', async () => {
+    const roomCode = createTestRoomCode()
+    createdRoomCodes.push(roomCode)
+
+    const store = new PostgresGameStore({ createRoomCode: () => roomCode })
+    const created = await store.createGame('Test Moderator')
+    if (!created.ok) throw new Error('Expected createGame to succeed')
+
+    const firstPlayer = await store.joinGame(roomCode, 'An')
+    const secondPlayer = await store.joinGame(roomCode, 'Binh')
+    if (!firstPlayer.ok || !secondPlayer.ok) {
+      throw new Error('Expected both players to join')
+    }
+
+    // Gán hai role khác nhau để chứng minh Player chỉ nhận role của chính mình.
+    await db
+      .update(gamePlayers)
+      .set({ role: 'SEER' })
+      .where(eq(gamePlayers.id, firstPlayer.value.playerId))
+    await db
+      .update(gamePlayers)
+      .set({ role: 'WEREWOLF' })
+      .where(eq(gamePlayers.id, secondPlayer.value.playerId))
+
+    const playerResult = await store.getGameView(
+      firstPlayer.value.playerSessionToken,
+    )
+    const moderatorResult = await store.getGameView(
+      created.value.moderatorSessionToken,
+    )
+
+    if (!playerResult.ok || playerResult.value.viewer !== 'PLAYER') {
+      throw new Error('Expected a Player game view')
+    }
+    expect(playerResult.value.me).toMatchObject({
+      id: firstPlayer.value.playerId,
+      role: 'SEER',
+    })
+
+    // Public player list không được chứa role của bất kỳ người chơi nào.
+    for (const player of playerResult.value.players) {
+      expect(player).not.toHaveProperty('role')
+    }
+    expect(JSON.stringify(playerResult.value)).not.toContain('WEREWOLF')
+
+    // DESC + LIMIT lấy đúng các event mới nhất, nhưng response vẫn theo timeline.
+    expect(
+      playerResult.value.publicHistory.map(event => event.sequence),
+    ).toEqual([1, 2, 3])
+
+    if (!moderatorResult.ok || moderatorResult.value.viewer !== 'MODERATOR') {
+      throw new Error('Expected a Moderator game view')
+    }
+    expect(
+      moderatorResult.value.game.history.map(event => event.sequence),
+    ).toEqual([1, 2, 3])
+    expect(
+      moderatorResult.value.game.lobbyPlayers.map(player => player.role),
+    ).toEqual(['SEER', 'WEREWOLF'])
+  })
+})
+
 function createTestRoomCode(): string {
   // UUID chỉ chứa ký tự hexadecimal; lấy 6 ký tự đầu vẫn khớp DB constraint A-Z0-9.
   return randomUUID().replaceAll('-', '').slice(0, 6).toUpperCase()

@@ -655,6 +655,22 @@ export class PostgresGameStore implements Omit<
                 )
             }
 
+            // Player session bắt buộc phải gắn với player id. Không dùng chuỗi rỗng
+            // làm fallback vì nó sẽ che mất dữ liệu vi phạm DB invariant.
+            const viewer: ProjectionViewer | null =
+                session.kind === 'MODERATOR'
+                    ? { kind: 'MODERATOR', playerId: null }
+                    : session.playerId
+                        ? { kind: 'PLAYER', playerId: session.playerId }
+                        : null
+
+            if (!viewer) {
+                return failure(
+                    STORE_ERROR_CODE.INVALID_GAME_STATE,
+                    'Session is not valid',
+                )
+            }
+
             const [game] = await transaction.select().from(games).where(eq(games.id, session.gameId)).limit(1)
 
             if (!game) {
@@ -677,14 +693,6 @@ export class PostgresGameStore implements Omit<
                 .from(gamePlayers)
                 .where(eq(gamePlayers.gameId, game.id))
 
-            const viewer: ProjectionViewer = session.kind === 'MODERATOR' ? {
-                kind: 'MODERATOR',
-                playerId: null,
-            } : {
-                kind: 'PLAYER',
-                playerId: session.playerId || '',
-            }
-
             const events = await transaction
                 .select()
                 .from(gameEvents)
@@ -692,7 +700,7 @@ export class PostgresGameStore implements Omit<
                 .orderBy(desc(gameEvents.sequence))
                 .limit(200)
 
-            const history = events.map(row => ({
+            const history = events.reverse().map(row => ({
                 id: row.id,
                 sequence: row.sequence,
                 gameId: row.gameId,
@@ -733,6 +741,10 @@ export class PostgresGameStore implements Omit<
                 ok: true as const,
                 value: gameView,
             }
+        }, {
+            // Các query game, players và events phải dùng chung một snapshot.
+            accessMode: 'read only',
+            isolationLevel: 'repeatable read',
         })
     }
 }
