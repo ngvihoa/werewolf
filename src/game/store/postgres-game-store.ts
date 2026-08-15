@@ -1,8 +1,8 @@
-import type { StoreResult, CreatedGame, JoinedGame } from './model'
+import type { StoreResult, CreatedGame, JoinedGame, GameMutationResult } from './model'
 import type { GameStore } from './game-store'
 
 import { gameEvents, gamePlayers, games, gameSessions } from '#/db/schema'
-import { desc, eq } from 'drizzle-orm'
+import { and, desc, eq, gt, isNull } from 'drizzle-orm'
 import { db } from '#/db/client'
 
 import {
@@ -16,6 +16,9 @@ import { createRoomCode } from './utils.room-code'
 
 const MAX_ROOM_CODE_ATTEMPTS = 20
 
+// Runtime schema là source of truth cho mọi error code được trả qua StoreResult.
+const STORE_ERROR_CODE = storeErrorCodeSchema.enum
+
 type PostgresGameStoreDependencies = {
     database?: typeof db
     createRoomCode?: () => string
@@ -27,7 +30,7 @@ type PostgresGameStoreDependencies = {
 
 export class PostgresGameStore implements Pick<
     GameStore,
-    'createGame' | 'joinGame'
+    'createGame' | 'joinGame' | 'setReady'
 > {
     readonly #database: NonNullable<PostgresGameStoreDependencies['database']>
     readonly #createRoomCode: NonNullable<
@@ -170,7 +173,7 @@ export class PostgresGameStore implements Pick<
                     return {
                         ok: false as const,
                         error: {
-                            code: storeErrorCodeSchema.enum['GAME_NOT_FOUND'],
+                            code: STORE_ERROR_CODE.GAME_NOT_FOUND,
                             message: 'Room not found',
                         },
                     }
@@ -180,7 +183,7 @@ export class PostgresGameStore implements Pick<
                     return {
                         ok: false as const,
                         error: {
-                            code: storeErrorCodeSchema.enum['GAME_ALREADY_STARTED'],
+                            code: STORE_ERROR_CODE.GAME_ALREADY_STARTED,
                             message: 'Game already started',
                         },
                     }
@@ -240,7 +243,7 @@ export class PostgresGameStore implements Pick<
                         displayName: player.displayName,
                     },
                     createdAt: now,
-                    createdBy: 'SYSTEM',
+                    createdBy: 'PLAYER',
                     targetPlayerId: null,
                     actorPlayerId: player.id,
                 })
@@ -268,7 +271,7 @@ export class PostgresGameStore implements Pick<
                 return {
                     ok: false,
                     error: {
-                        code: 'DUPLICATE_DISPLAY_NAME',
+                        code: STORE_ERROR_CODE.DUPLICATE_DISPLAY_NAME,
                         message: 'Display name is already in use',
                     },
                 }
@@ -276,6 +279,177 @@ export class PostgresGameStore implements Pick<
 
             throw error
         }
+    }
+
+    async setReady(
+        sessionToken: string,
+        expectedVersion: number,
+        ready: boolean,
+    ): Promise<StoreResult<GameMutationResult>> {
+        const sessionTokenHash = this.#hashSessionToken(sessionToken)
+        const now = this.#now()
+
+        return this.#database.transaction(async (transaction) => {
+            // Tìm active session trước, nhưng chưa giới hạn kind để phân biệt
+            // token không tồn tại với token moderator không có quyền set ready.
+            const [session] = await transaction
+                .select({
+                    gameId: gameSessions.gameId,
+                    playerId: gameSessions.playerId,
+                    kind: gameSessions.kind,
+                })
+                .from(gameSessions)
+                .where(
+                    and(
+                        eq(gameSessions.tokenHash, sessionTokenHash),
+                        isNull(gameSessions.revokedAt),
+                        gt(gameSessions.expiresAt, now),
+                    ),
+                )
+                .limit(1)
+
+            if (!session) {
+                return {
+                    ok: false as const,
+                    error: {
+                        code: STORE_ERROR_CODE.SESSION_NOT_FOUND,
+                        message: 'Session does not exist or is no longer active',
+                    },
+                }
+            }
+
+            if (session.kind !== 'PLAYER' || !session.playerId) {
+                return {
+                    ok: false as const,
+                    error: {
+                        code: STORE_ERROR_CODE.NOT_AUTHORIZED,
+                        message: 'Only a player can change ready state',
+                    },
+                }
+            }
+
+            // Mọi mutation của cùng game lock chung một row để tuần tự hóa version và event.
+            const [game] = await transaction
+                .select()
+                .from(games)
+                .where(eq(games.id, session.gameId))
+                .limit(1)
+                .for('update')
+
+            if (!game) {
+                return {
+                    ok: false as const,
+                    error: {
+                        code: STORE_ERROR_CODE.GAME_NOT_FOUND,
+                        message: 'Game not found',
+                    },
+                }
+            }
+
+            if (game.version !== expectedVersion) {
+                return {
+                    ok: false as const,
+                    error: {
+                        code: STORE_ERROR_CODE.STALE_VERSION,
+                        message: 'Game version is stale',
+                    },
+                }
+            }
+
+            if (game.status !== 'LOBBY') {
+                return {
+                    ok: false as const,
+                    error: {
+                        code: STORE_ERROR_CODE.GAME_ALREADY_STARTED,
+                        message: 'Game has already started',
+                    },
+                }
+            }
+
+            const [player] = await transaction
+                .select()
+                .from(gamePlayers)
+                .where(
+                    and(
+                        eq(gamePlayers.gameId, game.id),
+                        eq(gamePlayers.id, session.playerId),
+                    ),
+                )
+                .limit(1)
+
+            if (!player) {
+                return {
+                    ok: false as const,
+                    error: {
+                        code: STORE_ERROR_CODE.INVALID_GAME_STATE,
+                        message: 'Session player is missing',
+                    },
+                }
+            }
+
+            if (player.isModerator) {
+                return {
+                    ok: false as const,
+                    error: {
+                        code: STORE_ERROR_CODE.NOT_AUTHORIZED,
+                        message: 'Only a player can change ready state',
+                    },
+                }
+            }
+
+            await transaction
+                .update(gamePlayers)
+                .set({ isReady: ready })
+                .where(
+                    and(
+                        eq(gamePlayers.gameId, game.id),
+                        eq(gamePlayers.id, player.id),
+                    ),
+                )
+
+            // Game row đang bị lock nên sequence kế tiếp an toàn với mutation đồng thời.
+            const [latestEvent] = await transaction
+                .select({ sequence: gameEvents.sequence })
+                .from(gameEvents)
+                .where(eq(gameEvents.gameId, game.id))
+                .orderBy(desc(gameEvents.sequence))
+                .limit(1)
+
+            const nextSequence = (latestEvent?.sequence ?? 0) + 1
+            const nextVersion = game.version + 1
+
+            await transaction.insert(gameEvents).values({
+                gameId: game.id,
+                round: game.round,
+                phase: game.phase,
+                sequence: nextSequence,
+                type: 'PLAYER_READY_CHANGED',
+                payload: {
+                    playerId: player.id,
+                    ready,
+                },
+                createdAt: now,
+                createdBy: 'PLAYER',
+                targetPlayerId: null,
+                actorPlayerId: player.id,
+            })
+
+            await transaction
+                .update(games)
+                .set({
+                    version: nextVersion,
+                    updatedAt: now,
+                })
+                .where(eq(games.id, game.id))
+
+            return {
+                ok: true as const,
+                value: {
+                    gameId: game.id,
+                    version: nextVersion,
+                },
+            }
+        })
     }
 }
 

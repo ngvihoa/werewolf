@@ -11,6 +11,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "lint": "eslint",
+    "lint:fix": "eslint --fix",
     "format": "prettier --write . && eslint --fix",
     "check": "prettier --check . && eslint && tsc --noEmit",
     "typecheck": "tsc --noEmit",

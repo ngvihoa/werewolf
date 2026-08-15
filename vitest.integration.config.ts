@@ -8,5 +8,9 @@ export default defineConfig({
     include: ['src/**/*.integration.ts'],
     environment: 'node',
     fileParallelism: false,
+
+    // Remote PostgreSQL có thể chậm hơn ngưỡng mặc định 5 giây của unit test.
+    testTimeout: 15_000,
+    hookTimeout: 15_000,
   },
 })

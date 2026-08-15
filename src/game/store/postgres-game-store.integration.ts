@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 
 import { gameEvents, gamePlayers, games, gameSessions } from '#/db/schema'
 import { afterEach, describe, expect, it } from 'vitest'
-import { and, asc, eq, inArray } from 'drizzle-orm'
+import { and, asc, desc, eq, inArray } from 'drizzle-orm'
 import { db } from '#/db/client'
 
 import { createSessionExpiry, hashSessionToken } from '../auth/session-token'
@@ -194,6 +194,8 @@ describe('PostgresGameStore.joinGame', () => {
       .select({
         sequence: gameEvents.sequence,
         type: gameEvents.type,
+        createdBy: gameEvents.createdBy,
+        actorPlayerId: gameEvents.actorPlayerId,
       })
       .from(gameEvents)
       .where(eq(gameEvents.gameId, created.value.gameId))
@@ -204,11 +206,71 @@ describe('PostgresGameStore.joinGame', () => {
     expect(storedGame?.version).toBe(3)
 
     // GAME_CREATED dùng sequence 1; hai lần join tiếp theo phải nhận 2 và 3.
-    expect(storedEvents).toEqual([
-      { sequence: 1, type: 'GAME_CREATED' },
-      { sequence: 2, type: 'PLAYER_JOINED' },
-      { sequence: 3, type: 'PLAYER_JOINED' },
+    expect(
+      storedEvents.map(({ sequence, type, createdBy }) => ({
+        sequence,
+        type,
+        createdBy,
+      })),
+    ).toEqual([
+      { sequence: 1, type: 'GAME_CREATED', createdBy: 'SYSTEM' },
+      { sequence: 2, type: 'PLAYER_JOINED', createdBy: 'PLAYER' },
+      { sequence: 3, type: 'PLAYER_JOINED', createdBy: 'PLAYER' },
     ])
+
+    // Mỗi event PLAYER_JOINED phải chỉ đúng player đã thực hiện hành động.
+    const joinedActorIds = storedEvents
+      .filter((event) => event.type === 'PLAYER_JOINED')
+      .map((event) => event.actorPlayerId)
+    expect(new Set(joinedActorIds)).toEqual(
+      new Set(storedPlayers.map((player) => player.id)),
+    )
+  })
+
+  it('returns GAME_NOT_FOUND when the room code does not exist', async () => {
+    const store = new PostgresGameStore()
+
+    const result = await store.joinGame(createTestRoomCode(), 'An')
+
+    expect(result).toEqual({
+      ok: false,
+      error: {
+        code: 'GAME_NOT_FOUND',
+        message: 'Room not found',
+      },
+    })
+  })
+
+  it('returns GAME_ALREADY_STARTED when the game is no longer in the lobby', async () => {
+    const roomCode = createTestRoomCode()
+    createdRoomCodes.push(roomCode)
+
+    const store = new PostgresGameStore({ createRoomCode: () => roomCode })
+    const created = await store.createGame('Test Moderator')
+    if (!created.ok) throw new Error('Expected createGame to succeed')
+
+    // Mô phỏng game đã bắt đầu trước khi player gửi request join.
+    await db
+      .update(games)
+      .set({ status: 'IN_PROGRESS' })
+      .where(eq(games.id, created.value.gameId))
+
+    const result = await store.joinGame(roomCode, 'An')
+
+    expect(result).toEqual({
+      ok: false,
+      error: {
+        code: 'GAME_ALREADY_STARTED',
+        message: 'Game already started',
+      },
+    })
+
+    // Error path không được tạo player ngoài ý muốn.
+    const storedPlayers = await db
+      .select({ id: gamePlayers.id })
+      .from(gamePlayers)
+      .where(eq(gamePlayers.gameId, created.value.gameId))
+    expect(storedPlayers).toEqual([])
   })
 
   it('returns a typed error when the display name already exists', async () => {
@@ -241,6 +303,123 @@ describe('PostgresGameStore.joinGame', () => {
       .from(gamePlayers)
       .where(eq(gamePlayers.gameId, created.value.gameId))
     expect(storedPlayers).toHaveLength(1)
+  })
+})
+
+describe('PostgresGameStore.setReady', () => {
+  it('updates player readiness, game version and audit event atomically', async () => {
+    const roomCode = createTestRoomCode()
+    createdRoomCodes.push(roomCode)
+
+    const store = new PostgresGameStore({ createRoomCode: () => roomCode })
+    const created = await store.createGame('Test Moderator')
+    if (!created.ok) throw new Error('Expected createGame to succeed')
+
+    const joined = await store.joinGame(roomCode, 'An')
+    if (!joined.ok) throw new Error('Expected joinGame to succeed')
+
+    // createGame tạo version 1 và joinGame tăng thành version 2.
+    const result = await store.setReady(joined.value.playerSessionToken, 2, true)
+
+    expect(result).toEqual({
+      ok: true,
+      value: {
+        gameId: created.value.gameId,
+        version: 3,
+      },
+    })
+
+    const [storedPlayer] = await db
+      .select({ isReady: gamePlayers.isReady })
+      .from(gamePlayers)
+      .where(eq(gamePlayers.id, joined.value.playerId))
+    const [storedGame] = await db
+      .select({ version: games.version })
+      .from(games)
+      .where(eq(games.id, created.value.gameId))
+    const [latestEvent] = await db
+      .select({
+        sequence: gameEvents.sequence,
+        type: gameEvents.type,
+        payload: gameEvents.payload,
+        createdBy: gameEvents.createdBy,
+        actorPlayerId: gameEvents.actorPlayerId,
+      })
+      .from(gameEvents)
+      .where(eq(gameEvents.gameId, created.value.gameId))
+      .orderBy(desc(gameEvents.sequence))
+      .limit(1)
+
+    expect(storedPlayer?.isReady).toBe(true)
+    expect(storedGame?.version).toBe(3)
+    expect(latestEvent).toEqual({
+      sequence: 3,
+      type: 'PLAYER_READY_CHANGED',
+      payload: {
+        playerId: joined.value.playerId,
+        ready: true,
+      },
+      createdBy: 'PLAYER',
+      actorPlayerId: joined.value.playerId,
+    })
+  })
+
+  it('returns STALE_VERSION without changing player state', async () => {
+    const roomCode = createTestRoomCode()
+    createdRoomCodes.push(roomCode)
+
+    const store = new PostgresGameStore({ createRoomCode: () => roomCode })
+    const created = await store.createGame('Test Moderator')
+    if (!created.ok) throw new Error('Expected createGame to succeed')
+
+    const joined = await store.joinGame(roomCode, 'An')
+    if (!joined.ok) throw new Error('Expected joinGame to succeed')
+
+    // Client gửi version 1 trong khi joinGame đã tăng database lên version 2.
+    const result = await store.setReady(joined.value.playerSessionToken, 1, true)
+
+    expect(result).toEqual({
+      ok: false,
+      error: {
+        code: 'STALE_VERSION',
+        message: 'Game version is stale',
+      },
+    })
+
+    const [storedPlayer] = await db
+      .select({ isReady: gamePlayers.isReady })
+      .from(gamePlayers)
+      .where(eq(gamePlayers.id, joined.value.playerId))
+    const [storedGame] = await db
+      .select({ version: games.version })
+      .from(games)
+      .where(eq(games.id, created.value.gameId))
+
+    expect(storedPlayer?.isReady).toBe(false)
+    expect(storedGame?.version).toBe(2)
+  })
+
+  it('returns NOT_AUTHORIZED for a moderator session', async () => {
+    const roomCode = createTestRoomCode()
+    createdRoomCodes.push(roomCode)
+
+    const store = new PostgresGameStore({ createRoomCode: () => roomCode })
+    const created = await store.createGame('Test Moderator')
+    if (!created.ok) throw new Error('Expected createGame to succeed')
+
+    const result = await store.setReady(
+      created.value.moderatorSessionToken,
+      1,
+      true,
+    )
+
+    expect(result).toEqual({
+      ok: false,
+      error: {
+        code: 'NOT_AUTHORIZED',
+        message: 'Only a player can change ready state',
+      },
+    })
   })
 })
 
