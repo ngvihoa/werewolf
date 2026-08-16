@@ -8,7 +8,7 @@ export function PlayerControls({
   error,
   onReadyChange,
 }: {
-  role: 'VILLAGER' | 'WEREWOLF' | 'SEER' | 'WITCH' | null
+  role: 'VILLAGER' | 'WEREWOLF' | 'SEER' | 'WITCH' | 'PROTECTOR' | null
   ready: boolean
   pending: boolean
   error: string | null

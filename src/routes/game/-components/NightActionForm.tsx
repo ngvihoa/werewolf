@@ -22,8 +22,16 @@ export function NightActionForm({
   const [targetId, setTargetId] = useState('')
   const [heal, setHeal] = useState(false)
   const [poisonTargetId, setPoisonTargetId] = useState('')
+  const teammateIds = new Set(
+    view.turn.werewolfTeammates.map((player) => player.id),
+  )
   const targets = view.players.filter(
-    (player) => player.alive && player.id !== view.me.id,
+    (player) =>
+      player.alive &&
+      (step === 'PROTECTOR_PROTECT' || player.id !== view.me.id) &&
+      (step !== 'PROTECTOR_PROTECT' ||
+        player.id !== view.turn.lastProtectedTargetId) &&
+      (step !== 'WEREWOLF_ATTACK' || !teammateIds.has(player.id)),
   )
 
   function submit(event: FormEvent<HTMLFormElement>) {

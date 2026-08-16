@@ -19,6 +19,7 @@ export function phaseLabel(phase: PlayerGameView['phase']) {
 
 export function queueStepLabel(step: GameState['queue'][number]['step']) {
   return {
+    PROTECTOR_PROTECT: 'Bảo vệ chọn người bảo hộ',
     SEER_INSPECT: 'Tiên tri soi',
     WEREWOLF_ATTACK: 'Ma sói tấn công',
     WITCH_ACTION: 'Phù thủy hành động',
@@ -41,6 +42,7 @@ export function roleLabel(role: Role) {
     WEREWOLF: 'Ma sói',
     SEER: 'Tiên tri',
     WITCH: 'Phù thủy',
+    PROTECTOR: 'Bảo vệ',
   }[role]
 }
 
@@ -50,5 +52,7 @@ export function roleDescription(role: Role) {
     WEREWOLF: 'Mỗi đêm chọn một người chơi để tấn công.',
     SEER: 'Mỗi đêm soi một người để biết họ thuộc phe nào.',
     WITCH: 'Bạn có một bình cứu và một bình độc dùng trong cả ván.',
+    PROTECTOR:
+      'Mỗi đêm bảo hộ một người khỏi Ma sói, không chọn cùng một người hai đêm liên tiếp.',
   }[role]
 }

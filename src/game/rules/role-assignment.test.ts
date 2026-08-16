@@ -15,7 +15,7 @@ describe('role composition', () => {
   })
 
   it('rejects unsupported player counts', () => {
-    const result = getRoleComposition(7)
+    const result = getRoleComposition(13)
     expect(result.ok).toBe(false)
     if (!result.ok) expect(result.error.code).toBe('INVALID_PLAYER_COUNT')
   })

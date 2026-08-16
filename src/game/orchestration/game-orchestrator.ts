@@ -25,6 +25,7 @@ export function createFirstNightState(players: readonly Player[]): GameState {
     queue,
     pendingNightAction: null,
     confirmedNightActions: [],
+    lastProtectedTargetId: null,
     pendingNightResolution: null,
     voteAttempt: 1,
     pendingVote: null,
@@ -81,6 +82,7 @@ function submitNightAction(
     players: state.players,
     werewolfTargetId:
       findWerewolfTarget(state.confirmedNightActions) ?? undefined,
+    lastProtectedTargetId: state.lastProtectedTargetId,
   })
   if (!validation.ok) return validation
 
@@ -177,6 +179,10 @@ function advanceNight(state: GameState, events: GameEvent[]): void {
     witchHealed: findWitchAction(state.confirmedNightActions)?.heal ?? false,
     witchPoisonTargetId:
       findWitchAction(state.confirmedNightActions)?.poisonTargetId ?? null,
+    protectedTargetId:
+      state.confirmedNightActions.find(
+        (action) => action.type === 'PROTECTOR_PROTECT',
+      )?.targetId ?? null,
   })
   events.push(
     {
@@ -322,6 +328,10 @@ function transitionAfterElimination(
   }
 
   if (nextPhase === 'NIGHT') {
+    state.lastProtectedTargetId =
+      state.confirmedNightActions.find(
+        (action) => action.type === 'PROTECTOR_PROTECT',
+      )?.targetId ?? null
     state.round += 1
     state.voteAttempt = 1
     state.confirmedNightActions = []

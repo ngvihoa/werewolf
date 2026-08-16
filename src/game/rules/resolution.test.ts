@@ -11,6 +11,18 @@ const players: Player[] = [
 ]
 
 describe('night resolution', () => {
+  it('blocks the Werewolf attack when the target is protected', () => {
+    expect(
+      resolveNight({
+        players,
+        werewolfTargetId: 'a',
+        protectedTargetId: 'a',
+        witchHealed: false,
+        witchPoisonTargetId: null,
+      }).deaths,
+    ).toEqual([])
+  })
+
   it('keeps a healed Werewolf target alive', () => {
     expect(
       resolveNight({

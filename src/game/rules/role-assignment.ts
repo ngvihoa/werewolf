@@ -16,17 +16,19 @@ function secureRandomIndex(upperBound: number): number {
 }
 
 export function getRoleComposition(playerCount: number): Result<Role[]> {
-  if (playerCount !== 5 && playerCount !== 6) {
+  if (playerCount < 5 || playerCount > 12) {
     return {
       ok: false,
       error: {
         code: 'INVALID_PLAYER_COUNT',
-        message: 'MVP games require exactly 5 or 6 players',
+        message: 'Games require between 5 and 12 players',
       },
     }
   }
 
-  return { ok: true, value: [...MVP_ROLE_COMPOSITIONS[playerCount]] }
+  const composition =
+    MVP_ROLE_COMPOSITIONS[playerCount as keyof typeof MVP_ROLE_COMPOSITIONS]
+  return { ok: true, value: [...composition] }
 }
 
 export function validateRoleComposition(roles: readonly Role[]): Result<true> {

@@ -1300,7 +1300,7 @@ async function syncGamePlayers(
   gameId: string,
   state: GameState,
 ): Promise<void> {
-  // Player count nhỏ (MVP 5-6 người); update rõ từng row giữ code dễ kiểm tra.
+  // Player count is small (5-12); explicit row updates keep this easy to audit.
   for (const player of state.players) {
     await transaction
       .update(gamePlayers)

@@ -13,6 +13,7 @@ export const PHASE_TRANSITIONS = {
 } as const satisfies Record<GamePhase, readonly GamePhase[]>
 
 export const STEP_ROLE = {
+  PROTECTOR_PROTECT: 'PROTECTOR',
   SEER_INSPECT: 'SEER',
   WEREWOLF_ATTACK: 'WEREWOLF',
   WITCH_ACTION: 'WITCH',
@@ -23,7 +24,9 @@ export function canTransitionPhase(from: GamePhase, to: GamePhase): boolean {
 }
 
 export function getNightQueue(roles: readonly Role[]): QueueStep[] {
-  const queue: QueueStep[] = ['SEER_INSPECT', 'WEREWOLF_ATTACK']
+  const queue: QueueStep[] = []
+  if (roles.includes('PROTECTOR')) queue.push('PROTECTOR_PROTECT')
+  queue.push('SEER_INSPECT', 'WEREWOLF_ATTACK')
   if (roles.includes('WITCH')) queue.push('WITCH_ACTION')
   return queue
 }

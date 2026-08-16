@@ -121,6 +121,8 @@ export const playerGameViewSchema = z.object({
     canAct: z.boolean(),
     activeStep: queueStepSchema.nullable(),
     werewolfTargetId: z.string().nullable(),
+    werewolfTeammates: z.array(publicPlayerViewSchema),
+    lastProtectedTargetId: z.string().nullable(),
   }),
   publicHistory: z.array(publicHistoryEntrySchema),
   privateHistory: z.array(privateHistoryEntrySchema),
@@ -139,6 +141,7 @@ const gameStateSchema = z.object({
   ),
   pendingNightAction: nightActionSchema.nullable(),
   confirmedNightActions: z.array(nightActionSchema),
+  lastProtectedTargetId: z.string().nullable().optional(),
   pendingNightResolution: nightResolutionSchema.nullable(),
   voteAttempt: z.union([z.literal(1), z.literal(2)]),
   pendingVote: z

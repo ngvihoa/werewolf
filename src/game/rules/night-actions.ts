@@ -11,11 +11,16 @@ export type NightAction = z.infer<typeof nightActionSchema>
 export type SeerAction = Extract<NightAction, { type: 'SEER_INSPECT' }>
 export type WerewolfAction = Extract<NightAction, { type: 'WEREWOLF_ATTACK' }>
 export type WitchAction = Extract<NightAction, { type: 'WITCH_ACTION' }>
+export type ProtectorAction = Extract<
+  NightAction,
+  { type: 'PROTECTOR_PROTECT' }
+>
 
 type ValidationContext = {
   activeStep: QueueStep
   players: readonly Player[]
   werewolfTargetId?: string
+  lastProtectedTargetId?: string | null
 }
 
 function failure(code: Parameters<typeof makeError>[0], message: string) {
@@ -56,8 +61,23 @@ export function validateNightAction(
   }
 
   const target = context.players.find((player) => player.id === action.targetId)
-  if (!target?.alive || target.id === actor.id) {
+  if (!target?.alive) {
+    return failure('INVALID_TARGET', 'Target must be a living player')
+  }
+  if (action.type === 'PROTECTOR_PROTECT') {
+    if (target.id === context.lastProtectedTargetId) {
+      return failure(
+        'INVALID_TARGET',
+        'Protector cannot protect the same player on consecutive nights',
+      )
+    }
+    return { ok: true, value: action }
+  }
+  if (target.id === actor.id) {
     return failure('INVALID_TARGET', 'Target must be another living player')
+  }
+  if (action.type === 'WEREWOLF_ATTACK' && target.role === 'WEREWOLF') {
+    return failure('INVALID_TARGET', 'Werewolves cannot attack a teammate')
   }
 
   return { ok: true, value: action }

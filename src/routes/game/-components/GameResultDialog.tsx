@@ -106,6 +106,8 @@ function roleLabel(role: Role): string {
       return 'Tiên tri'
     case 'WITCH':
       return 'Phù thủy'
+    case 'PROTECTOR':
+      return 'Bảo vệ'
     case 'VILLAGER':
       return 'Dân làng'
   }

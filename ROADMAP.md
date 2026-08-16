@@ -40,7 +40,9 @@ Goal: encode deterministic game rules independently from UI and persistence.
 - [x] Finalize default MVP settings from the open rule decisions.
 - [x] Define game phase and queue-step transition tables.
 - [x] Define typed commands, actions, decisions, results and events.
-- [x] Implement role composition validation for five and six players.
+- [x] Implement role composition validation for five through twelve players.
+- [x] Add the Protector role with self-protection and consecutive-night limits.
+- [x] Add shared Werewolf teammate and target visibility.
 - [x] Implement secure role randomization.
 - [x] Implement target validation per role and queue step.
 - [x] Implement Witch potion rules and ability consumption.
@@ -124,6 +126,8 @@ Goal: complete the playable night/day loop.
 - [x] Build waiting-for-turn state.
 - [x] Build Seer target selection and private result.
 - [x] Build Werewolf target selection.
+- [x] Build shared multi-Werewolf action context.
+- [x] Build Protector target selection.
 - [x] Build Witch heal, poison and skip controls.
 - [x] Build Moderator queue control panel.
 - [x] Build confirm, reject, redo and skip flows.
@@ -134,7 +138,7 @@ Goal: complete the playable night/day loop.
 
 Exit criteria:
 
-- A five-player and six-player game can run from lobby to game over.
+- A five-through-twelve-player game can run from lobby to game over.
 - UI always reflects the active phase and current player's permissions.
 - No player needs to refresh manually to advance the game.
 

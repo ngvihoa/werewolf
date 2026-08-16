@@ -56,6 +56,15 @@ export function PlayerGamePanel({
 
       {view.me.role ? <RoleCard role={view.me.role} /> : null}
 
+      {view.turn.werewolfTeammates.length > 0 ? (
+        <SecretNotice
+          label="Đồng đội Ma sói"
+          value={view.turn.werewolfTeammates
+            .map((player) => player.displayName)
+            .join(', ')}
+        />
+      ) : null}
+
       {view.turn.werewolfTargetId ? (
         <SecretNotice
           label="Mục tiêu của Ma sói"

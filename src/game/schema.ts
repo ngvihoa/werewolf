@@ -2,7 +2,13 @@ import z from 'zod'
 
 // Các mảng literal là nguồn giá trị duy nhất cho Zod và PostgreSQL enums.
 // `as const` giữ từng phần tử thành literal type thay vì string chung chung.
-export const ROLE_VALUES = ['VILLAGER', 'WEREWOLF', 'SEER', 'WITCH'] as const
+export const ROLE_VALUES = [
+  'VILLAGER',
+  'WEREWOLF',
+  'SEER',
+  'WITCH',
+  'PROTECTOR',
+] as const
 
 export const TEAM_VALUES = ['VILLAGE', 'WEREWOLF'] as const
 
@@ -19,6 +25,7 @@ export const GAME_PHASE_VALUES = [
 ] as const
 
 export const QUEUE_STEP_VALUES = [
+  'PROTECTOR_PROTECT',
   'SEER_INSPECT',
   'WEREWOLF_ATTACK',
   'WITCH_ACTION',
@@ -75,6 +82,11 @@ export const playerSchema = z.discriminatedUnion('role', [
   z.object({
     ...basePlayerFields,
     role: z.literal('SEER'),
+    abilityState: z.null(),
+  }),
+  z.object({
+    ...basePlayerFields,
+    role: z.literal('PROTECTOR'),
     abilityState: z.null(),
   }),
 ])

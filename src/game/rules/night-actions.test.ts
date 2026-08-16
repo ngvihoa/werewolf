@@ -21,6 +21,61 @@ const players: Player[] = [
 ]
 
 describe('night action validation', () => {
+  it('allows self-protection but rejects the previous night target', () => {
+    const protector: Player = {
+      id: 'protector',
+      role: 'PROTECTOR',
+      alive: true,
+      abilityState: null,
+    }
+    const contextPlayers = [...players, protector]
+
+    expect(
+      validateNightAction(
+        {
+          type: 'PROTECTOR_PROTECT',
+          actorId: protector.id,
+          targetId: protector.id,
+        },
+        { activeStep: 'PROTECTOR_PROTECT', players: contextPlayers },
+      ).ok,
+    ).toBe(true)
+    expect(
+      validateNightAction(
+        {
+          type: 'PROTECTOR_PROTECT',
+          actorId: protector.id,
+          targetId: 'villager',
+        },
+        {
+          activeStep: 'PROTECTOR_PROTECT',
+          players: contextPlayers,
+          lastProtectedTargetId: 'villager',
+        },
+      ),
+    ).toMatchObject({ ok: false, error: { code: 'INVALID_TARGET' } })
+  })
+
+  it('prevents a Werewolf from attacking a teammate', () => {
+    const teammate: Player = {
+      id: 'wolf-2',
+      role: 'WEREWOLF',
+      alive: true,
+      abilityState: null,
+    }
+
+    expect(
+      validateNightAction(
+        {
+          type: 'WEREWOLF_ATTACK',
+          actorId: 'wolf',
+          targetId: teammate.id,
+        },
+        { activeStep: 'WEREWOLF_ATTACK', players: [...players, teammate] },
+      ),
+    ).toMatchObject({ ok: false, error: { code: 'INVALID_TARGET' } })
+  })
+
   it('accepts a Seer inspecting another living player', () => {
     expect(
       validateNightAction(

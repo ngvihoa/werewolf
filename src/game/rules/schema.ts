@@ -4,6 +4,11 @@ import z from 'zod'
 // để hai boundary không tự định nghĩa lại cùng một cấu trúc.
 export const nightActionSchema = z.discriminatedUnion('type', [
   z.object({
+    type: z.literal('PROTECTOR_PROTECT'),
+    actorId: z.string().min(1),
+    targetId: z.string().min(1),
+  }),
+  z.object({
     type: z.literal('SEER_INSPECT'),
     actorId: z.string().min(1),
     targetId: z.string().min(1),

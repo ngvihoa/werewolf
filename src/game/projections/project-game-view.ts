@@ -28,11 +28,16 @@ export function projectGameView(
   )
   const activeStep =
     game.state?.queue.find((item) => item.status === 'ACTIVE')?.step ?? null
-  const werewolfTargetId =
-    domainPlayer?.role === 'WITCH' && activeStep === 'WITCH_ACTION'
-      ? (game.state?.confirmedNightActions.find(
+  const visibleWerewolfAction =
+    game.state?.pendingNightAction?.type === 'WEREWOLF_ATTACK'
+      ? game.state.pendingNightAction
+      : game.state?.confirmedNightActions.find(
           (action) => action.type === 'WEREWOLF_ATTACK',
-        )?.targetId ?? null)
+        )
+  const werewolfTargetId =
+    (domainPlayer?.role === 'WITCH' && activeStep === 'WITCH_ACTION') ||
+    domainPlayer?.role === 'WEREWOLF'
+      ? (visibleWerewolfAction?.targetId ?? null)
       : null
 
   let confirmedWerewolfTargetId: string | null = null
@@ -87,6 +92,28 @@ export function projectGameView(
         domainPlayer?.role === STEP_ROLE[activeStep],
       activeStep,
       werewolfTargetId,
+      werewolfTeammates:
+        domainPlayer?.role === 'WEREWOLF'
+          ? game
+              .state!.players.filter(
+                (player) =>
+                  player.role === 'WEREWOLF' && player.id !== domainPlayer.id,
+              )
+              .map((player) => ({
+                id: player.id,
+                displayName:
+                  game.lobbyPlayers.find((item) => item.id === player.id)
+                    ?.displayName ?? '',
+                ready:
+                  game.lobbyPlayers.find((item) => item.id === player.id)
+                    ?.ready ?? false,
+                alive: player.alive,
+              }))
+          : [],
+      lastProtectedTargetId:
+        domainPlayer?.role === 'PROTECTOR'
+          ? (game.state?.lastProtectedTargetId ?? null)
+          : null,
     },
     publicHistory: history.flatMap((entry) =>
       entry.publicEntry ? [entry.publicEntry] : [],

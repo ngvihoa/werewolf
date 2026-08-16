@@ -84,12 +84,12 @@ function EntryPage() {
               Giữ bí mật trong đêm. Giữ nhịp cho cả bàn.
             </h1>
             <p className="max-w-[55ch] text-pretty text-lg text-stone-400 sm:text-base/7">
-              Tạo một phòng local, mời 5–6 người chơi và để hệ thống điều phối
+              Tạo một phòng local, mời 5–12 người chơi và để hệ thống điều phối
               từng lượt. Quản trò vẫn là người đưa ra quyết định cuối cùng.
             </p>
           </div>
           <div className="relative grid grid-cols-3 divide-x divide-white/10 border-t border-white/10 pt-5">
-            <EntryStat value="5–6" label="Người chơi" />
+            <EntryStat value="5–12" label="Người chơi" />
             <EntryStat value="4" label="Vai trò" />
             <EntryStat value="Local" label="Dữ liệu" />
           </div>

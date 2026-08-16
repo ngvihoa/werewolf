@@ -15,12 +15,17 @@ type NightResolutionInput = {
   werewolfTargetId: string | null
   witchHealed: boolean
   witchPoisonTargetId: string | null
+  protectedTargetId?: string | null
 }
 
 export function resolveNight(input: NightResolutionInput): NightResolution {
   const causesByPlayer = new Map<string, EliminationCause[]>()
 
-  if (input.werewolfTargetId && !input.witchHealed) {
+  if (
+    input.werewolfTargetId &&
+    !input.witchHealed &&
+    input.werewolfTargetId !== input.protectedTargetId
+  ) {
     causesByPlayer.set(input.werewolfTargetId, ['WEREWOLF_ATTACK'])
   }
   if (input.witchPoisonTargetId) {
