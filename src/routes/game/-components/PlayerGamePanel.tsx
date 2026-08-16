@@ -6,6 +6,7 @@ import { phaseLabel } from '#/game/presentation/labels'
 import { RoleCard } from '#/components/RoleCard'
 
 import { playerName, playerWaitingTitle } from './game-copy'
+import { GameResultDialog } from './GameResultDialog'
 import { NightActionForm } from './NightActionForm'
 import { SecretNotice } from './SecretNotice'
 import { GameOver } from './GameOver'
@@ -139,6 +140,9 @@ export function PlayerGamePanel({
         />
       ) : null}
       {view.phase === 'GAME_OVER' ? <GameOver winner={view.winner} /> : null}
+      {view.phase === 'GAME_OVER' && view.winner && view.me.role ? (
+        <GameResultDialog winner={view.winner} role={view.me.role} />
+      ) : null}
       {error ? <InlineError message={error} /> : null}
     </div>
   )

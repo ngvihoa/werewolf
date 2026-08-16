@@ -81,6 +81,8 @@ function eventSummary(
         : event.resolution.outcome === 'REVOTE'
           ? 'Biểu quyết hòa, tiến hành lượt hai'
           : 'Không ai bị loại sau biểu quyết'
+    case 'REVOTE_SKIPPED':
+      return 'Quản trò bỏ qua lượt biểu quyết lần hai'
     case 'GAME_ENDED':
       return event.winner === 'WEREWOLF'
         ? 'Phe Ma sói chiến thắng'

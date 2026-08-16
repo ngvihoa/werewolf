@@ -62,6 +62,8 @@ export function executeCommand(
       )
     case 'CONFIRM_VOTE_RESULT':
       return confirmVoteResult(state, events)
+    case 'SKIP_REVOTE':
+      return skipRevote(state, events)
   }
 }
 
@@ -281,6 +283,28 @@ function confirmVoteResult(
     })
   }
 
+  return transitionAfterElimination(state, 'NIGHT', events)
+}
+
+function skipRevote(
+  state: GameState,
+  events: GameEvent[],
+): Result<CommandOutcome> {
+  if (state.phase !== 'VOTE_RESOLUTION') {
+    return invalidPhase('VOTE_RESOLUTION', state.phase)
+  }
+  if (state.pendingVoteResolution?.outcome !== 'REVOTE') {
+    return failure(
+      'INVALID_ACTION',
+      'Only a confirmed first-round tie can skip the second vote',
+    )
+  }
+
+  const resolution = state.pendingVoteResolution
+  state.pendingVote = null
+  state.pendingVoteResolution = null
+  events.push({ type: 'VOTE_RESOLVED', resolution })
+  events.push({ type: 'REVOTE_SKIPPED' })
   return transitionAfterElimination(state, 'NIGHT', events)
 }
 

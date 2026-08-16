@@ -63,6 +63,7 @@ export const publicHistoryEventSchema = z.discriminatedUnion('type', [
     to: gamePhaseSchema,
   }),
   z.object({ type: z.literal('PLAYER_DIED'), playerId: z.string() }),
+  z.object({ type: z.literal('REVOTE_SKIPPED') }),
   z.object({ type: z.literal('GAME_ENDED'), winner: teamSchema }),
 ])
 

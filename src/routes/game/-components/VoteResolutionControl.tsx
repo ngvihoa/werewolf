@@ -16,6 +16,7 @@ export function VoteResolutionControl({
   onCommand: CommandHandler
 }) {
   const resolution = state.pendingVoteResolution
+  const canSkipRevote = resolution?.outcome === 'REVOTE'
   const summary = !resolution
     ? 'Chưa có kết quả'
     : resolution.outcome === 'ELIMINATED'
@@ -31,8 +32,16 @@ export function VoteResolutionControl({
         pending={pending}
         onClick={() => onCommand({ type: 'CONFIRM_VOTE_RESULT' })}
       >
-        Xác nhận kết quả
+        {canSkipRevote ? 'Bắt đầu biểu quyết lần 2' : 'Xác nhận kết quả'}
       </CommandButton>
+      {canSkipRevote ? (
+        <CommandButton
+          pending={pending}
+          onClick={() => onCommand({ type: 'SKIP_REVOTE' })}
+        >
+          Xác nhận hòa và bỏ qua lần 2
+        </CommandButton>
+      ) : null}
     </div>
   )
 }

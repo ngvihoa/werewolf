@@ -201,4 +201,38 @@ describe('vote orchestration', () => {
       winner: 'VILLAGE',
     })
   })
+
+  it('allows the Moderator to confirm the first tie and skip the second vote', () => {
+    let state = createFirstNightState(fivePlayers)
+    state.phase = 'DAY'
+    state = run(state, { type: 'START_VOTE' }).state
+    state = run(state, {
+      type: 'SUBMIT_VOTE_RESULT',
+      tied: true,
+      selectedPlayerId: null,
+    }).state
+    const outcome = run(state, { type: 'SKIP_REVOTE' })
+
+    expect(outcome.state.phase).toBe('NIGHT')
+    expect(outcome.state.round).toBe(2)
+    expect(outcome.events).toContainEqual({ type: 'REVOTE_SKIPPED' })
+    expect(outcome.events).toContainEqual({
+      type: 'VOTE_RESOLVED',
+      resolution: { outcome: 'REVOTE', nextAttempt: 2 },
+    })
+  })
+
+  it('does not allow skipping the first vote', () => {
+    const state = createFirstNightState(fivePlayers)
+    state.phase = 'VOTE'
+
+    const outcome = executeCommand(state, {
+      type: 'SKIP_REVOTE',
+    })
+
+    expect(outcome).toMatchObject({
+      ok: false,
+      error: { code: 'INVALID_ACTION' },
+    })
+  })
 })

@@ -929,6 +929,44 @@ describe('PostgresGameStore.execute', () => {
       { type: 'SEER_RESULT_RECORDED', createdBy: 'MODERATOR' },
       { type: 'QUEUE_STEP_ACTIVATED', createdBy: 'MODERATOR' },
     ])
+
+    if (!storedGame?.state) throw new Error('Expected persisted game state')
+    const firstTieState = structuredClone(storedGame.state)
+    firstTieState.phase = 'VOTE_RESOLUTION'
+    firstTieState.voteAttempt = 1
+    firstTieState.pendingVote = { tied: true, selectedPlayerId: null }
+    firstTieState.pendingVoteResolution = { outcome: 'REVOTE', nextAttempt: 2 }
+    await db
+      .update(games)
+      .set({ state: firstTieState, phase: 'VOTE_RESOLUTION' })
+      .where(eq(games.id, created.value.gameId))
+
+    const skippedRevote = await store.execute({
+      gameId: created.value.gameId,
+      sessionToken: created.value.moderatorSessionToken,
+      idempotencyKey: 'skip-second-vote',
+      expectedVersion: storedGame.version,
+      command: { type: 'SKIP_REVOTE' },
+    })
+
+    expect(skippedRevote).toEqual({
+      ok: true,
+      value: {
+        gameId: created.value.gameId,
+        version: storedGame.version + 1,
+      },
+    })
+    const revoteEvents = await db
+      .select({ type: gameEvents.type })
+      .from(gameEvents)
+      .where(eq(gameEvents.gameId, created.value.gameId))
+      .orderBy(desc(gameEvents.sequence))
+      .limit(3)
+    expect(revoteEvents).toEqual([
+      { type: 'QUEUE_STEP_ACTIVATED' },
+      { type: 'PHASE_CHANGED' },
+      { type: 'REVOTE_SKIPPED' },
+    ])
   })
 })
 

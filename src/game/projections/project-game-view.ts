@@ -31,8 +31,8 @@ export function projectGameView(
   const werewolfTargetId =
     domainPlayer?.role === 'WITCH' && activeStep === 'WITCH_ACTION'
       ? (game.state?.confirmedNightActions.find(
-        (action) => action.type === 'WEREWOLF_ATTACK',
-      )?.targetId ?? null)
+          (action) => action.type === 'WEREWOLF_ATTACK',
+        )?.targetId ?? null)
       : null
 
   let confirmedWerewolfTargetId: string | null = null
@@ -132,6 +132,9 @@ function projectEvent(
       break
     case 'PLAYER_DIED':
       publicEvent = { type: event.type, playerId: event.playerId }
+      break
+    case 'REVOTE_SKIPPED':
+      publicEvent = { type: event.type }
       break
     case 'GAME_ENDED':
       publicEvent = { type: event.type, winner: event.winner }

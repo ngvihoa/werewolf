@@ -2,6 +2,7 @@ import { gameViewQueryKey, useGameView } from '#/hooks/useGameView'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute, Navigate } from '@tanstack/react-router'
 import { createIdempotencyKey } from '#/lib/create-idempotency-key'
+import { mutationErrorMessage } from '#/game/presentation/mutation-error-message'
 import { useLocalSession } from '#/hooks/useLocalSession'
 import { SessionError } from '#/components/SessionError'
 import { RoomSummary } from '#/components/RoomSummary'
@@ -25,52 +26,74 @@ function LobbyPage() {
       queryKey: gameViewQueryKey(activeSessionToken),
     })
   const readyMutation = useMutation({
-    mutationFn: ({
+    mutationFn: async ({
       ready,
       idempotencyKey,
     }: {
       ready: boolean
       idempotencyKey: string
-    }) =>
-      orpcClient.lobby.setReady({
+    }) => {
+      let result = await orpcClient.lobby.setReady({
         sessionToken: activeSessionToken,
-        expectedVersion:
-          viewQuery.data?.viewer === 'MODERATOR'
-            ? viewQuery.data.game.version
-            : (viewQuery.data?.version ?? 0),
+        expectedVersion: gameViewVersion(viewQuery.data),
         ready,
         idempotencyKey,
-      }),
+      })
+      if (!result.ok && result.error.code === 'STALE_VERSION') {
+        const refreshed = await viewQuery.refetch()
+        if (refreshed.isSuccess && refreshed.data) {
+          result = await orpcClient.lobby.setReady({
+            sessionToken: activeSessionToken,
+            expectedVersion: gameViewVersion(refreshed.data),
+            ready,
+            idempotencyKey,
+          })
+        }
+      }
+      return result
+    },
     onSuccess: invalidateView,
   })
   const assignMutation = useMutation({
-    mutationFn: ({
-      expectedVersion,
-      idempotencyKey,
-    }: {
-      expectedVersion: number
-      idempotencyKey: string
-    }) =>
-      orpcClient.lobby.assignRoles({
+    mutationFn: async ({ idempotencyKey }: { idempotencyKey: string }) => {
+      let result = await orpcClient.lobby.assignRoles({
         sessionToken: activeSessionToken,
-        expectedVersion,
+        expectedVersion: gameViewVersion(viewQuery.data),
         idempotencyKey,
-      }),
+      })
+      if (!result.ok && result.error.code === 'STALE_VERSION') {
+        const refreshed = await viewQuery.refetch()
+        if (refreshed.isSuccess && refreshed.data) {
+          result = await orpcClient.lobby.assignRoles({
+            sessionToken: activeSessionToken,
+            expectedVersion: gameViewVersion(refreshed.data),
+            idempotencyKey,
+          })
+        }
+      }
+      return result
+    },
     onSuccess: invalidateView,
   })
   const startMutation = useMutation({
-    mutationFn: ({
-      expectedVersion,
-      idempotencyKey,
-    }: {
-      expectedVersion: number
-      idempotencyKey: string
-    }) =>
-      orpcClient.lobby.startGame({
+    mutationFn: async ({ idempotencyKey }: { idempotencyKey: string }) => {
+      let result = await orpcClient.lobby.startGame({
         sessionToken: activeSessionToken,
-        expectedVersion,
+        expectedVersion: gameViewVersion(viewQuery.data),
         idempotencyKey,
-      }),
+      })
+      if (!result.ok && result.error.code === 'STALE_VERSION') {
+        const refreshed = await viewQuery.refetch()
+        if (refreshed.isSuccess && refreshed.data) {
+          result = await orpcClient.lobby.startGame({
+            sessionToken: activeSessionToken,
+            expectedVersion: gameViewVersion(refreshed.data),
+            idempotencyKey,
+          })
+        }
+      }
+      return result
+    },
     onSuccess: invalidateView,
   })
 
@@ -101,11 +124,17 @@ function LobbyPage() {
 
   let mutationError: string | null = null
   if (readyMutation.data?.ok === false) {
-    mutationError = readyMutation.data.error.message
+    mutationError = mutationErrorMessage(readyMutation.data.error)
+  } else if (readyMutation.error) {
+    mutationError = mutationErrorMessage(readyMutation.error)
   } else if (assignMutation.data?.ok === false) {
-    mutationError = assignMutation.data.error.message
+    mutationError = mutationErrorMessage(assignMutation.data.error)
+  } else if (assignMutation.error) {
+    mutationError = mutationErrorMessage(assignMutation.error)
   } else if (startMutation.data?.ok === false) {
-    mutationError = startMutation.data.error.message
+    mutationError = mutationErrorMessage(startMutation.data.error)
+  } else if (startMutation.error) {
+    mutationError = mutationErrorMessage(startMutation.error)
   }
 
   return (
@@ -135,17 +164,14 @@ function LobbyPage() {
                 assigning={assignMutation.isPending}
                 starting={startMutation.isPending}
                 error={mutationError}
-                // Lấy version tại thời điểm click để server phát hiện request cũ.
                 onAssign={() =>
                   assignMutation.mutate({
-                    expectedVersion: version,
                     idempotencyKey: createIdempotencyKey(),
                   })
                 }
                 // Start game cũng dùng optimistic locking như các lobby mutation khác.
                 onStart={() =>
                   startMutation.mutate({
-                    expectedVersion: version,
                     idempotencyKey: createIdempotencyKey(),
                   })
                 }
@@ -169,4 +195,8 @@ function LobbyPage() {
       </div>
     </main>
   )
+}
+
+function gameViewVersion(view: ReturnType<typeof useGameView>['data']): number {
+  return view?.viewer === 'MODERATOR' ? view.game.version : (view?.version ?? 0)
 }

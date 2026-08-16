@@ -4,6 +4,7 @@ import { gameViewQueryKey, useGameView } from '#/hooks/useGameView'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute, Navigate } from '@tanstack/react-router'
 import { createIdempotencyKey } from '#/lib/create-idempotency-key'
+import { mutationErrorMessage } from '#/game/presentation/mutation-error-message'
 import { useLocalSession } from '#/hooks/useLocalSession'
 import { SessionError } from '#/components/SessionError'
 import { RoomSummary } from '#/components/RoomSummary'
@@ -28,31 +29,36 @@ function GamePage() {
       queryKey: gameViewQueryKey(activeSessionToken),
     })
   const commandMutation = useMutation({
-    mutationFn: ({
+    mutationFn: async ({
       command,
       idempotencyKey,
     }: {
       command: GameCommand
       idempotencyKey: string
-    }) =>
-      orpcClient.lobby.executeGameCommand({
-        gameId:
-          viewQuery.data?.viewer === 'MODERATOR'
-            ? viewQuery.data.game.id
-            : (viewQuery.data?.gameId ?? ''),
+    }) => {
+      let result = await orpcClient.lobby.executeGameCommand({
+        gameId: gameViewId(viewQuery.data),
         sessionToken: activeSessionToken,
         idempotencyKey,
-        expectedVersion:
-          viewQuery.data?.viewer === 'MODERATOR'
-            ? viewQuery.data.game.version
-            : (viewQuery.data?.version ?? 0),
+        expectedVersion: gameViewVersion(viewQuery.data),
         command,
-      }),
-    async onSuccess(result) {
-      await invalidateView()
+      })
       if (!result.ok && result.error.code === 'STALE_VERSION') {
-        commandMutation.reset()
+        const refreshed = await viewQuery.refetch()
+        if (refreshed.isSuccess && refreshed.data) {
+          result = await orpcClient.lobby.executeGameCommand({
+            gameId: gameViewId(refreshed.data),
+            sessionToken: activeSessionToken,
+            idempotencyKey,
+            expectedVersion: gameViewVersion(refreshed.data),
+            command,
+          })
+        }
       }
+      return result
+    },
+    async onSuccess() {
+      await invalidateView()
     },
   })
 
@@ -111,8 +117,10 @@ function GamePage() {
 
   const mutationError =
     commandMutation.data?.ok === false
-      ? commandMutation.data.error.message
-      : null
+      ? mutationErrorMessage(commandMutation.data.error)
+      : commandMutation.error
+        ? mutationErrorMessage(commandMutation.error)
+        : null
 
   return (
     <main className="isolate min-h-dvh px-5 py-6 sm:px-8 sm:py-8 lg:px-12">
@@ -158,4 +166,12 @@ function GamePage() {
       </div>
     </main>
   )
+}
+
+function gameViewId(view: ReturnType<typeof useGameView>['data']): string {
+  return view?.viewer === 'MODERATOR' ? view.game.id : (view?.gameId ?? '')
+}
+
+function gameViewVersion(view: ReturnType<typeof useGameView>['data']): number {
+  return view?.viewer === 'MODERATOR' ? view.game.version : (view?.version ?? 0)
 }
