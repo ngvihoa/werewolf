@@ -130,12 +130,21 @@ export class InMemoryGameStore implements GameStore {
     sessionToken: string,
     expectedVersion: number,
     ready: boolean,
+    idempotencyKey: string,
   ): StoreResult<GameMutationResult> {
     // Sesion dùng để xác định ai đang thực hiện command
     const resolved = this.#resolveSession(sessionToken)
     if (!resolved.ok) return resolved
 
     const { game, session } = resolved.value
+    const receiptKey = `${session.token}:${idempotencyKey}`
+    const request = JSON.stringify({
+      type: 'SET_READY',
+      expectedVersion,
+      ready,
+    })
+    const receipt = this.#commandReceipts.get(receiptKey)
+    if (receipt) return replayReceipt(receipt, request)
 
     // Mọi mutation đều phải kiểm tra version trước khi thay đổi state
     if (game.version !== expectedVersion) {
@@ -165,16 +174,23 @@ export class InMemoryGameStore implements GameStore {
       { type: 'PLAYER_READY_CHANGED', playerId: player.id, ready },
     ])
 
-    return success({ gameId: game.id, version: game.version })
+    const result = { gameId: game.id, version: game.version }
+    this.#commandReceipts.set(receiptKey, { request, result })
+    return success(result)
   }
 
   assignRoles(
     sessionToken: string,
     expectedVersion: number,
+    idempotencyKey: string,
   ): StoreResult<GameMutationResult> {
     const resolved = this.#resolveModerator(sessionToken)
     if (!resolved.ok) return resolved
     const game = resolved.value
+    const receiptKey = `${sessionToken}:${idempotencyKey}`
+    const request = JSON.stringify({ type: 'ASSIGN_ROLES', expectedVersion })
+    const receipt = this.#commandReceipts.get(receiptKey)
+    if (receipt) return replayReceipt(receipt, request)
 
     // Request được tạo từ version cũ không được phép randomize role lần nữa.
     if (game.version !== expectedVersion) {
@@ -198,16 +214,23 @@ export class InMemoryGameStore implements GameStore {
     }
     game.version += 1
     this.#appendEvents(game, 'MODERATOR', null, [{ type: 'ROLES_ASSIGNED' }])
-    return success({ gameId: game.id, version: game.version })
+    const result = { gameId: game.id, version: game.version }
+    this.#commandReceipts.set(receiptKey, { request, result })
+    return success(result)
   }
 
   startGame(
     sessionToken: string,
     expectedVersion: number,
+    idempotencyKey: string,
   ): StoreResult<GameMutationResult> {
     const resolved = this.#resolveModerator(sessionToken)
     if (!resolved.ok) return resolved
     const game = resolved.value
+    const receiptKey = `${sessionToken}:${idempotencyKey}`
+    const request = JSON.stringify({ type: 'START_GAME', expectedVersion })
+    const receipt = this.#commandReceipts.get(receiptKey)
+    if (receipt) return replayReceipt(receipt, request)
 
     // In-memory adapter phải giữ cùng optimistic-locking contract với PostgreSQL.
     if (game.version !== expectedVersion) {
@@ -240,7 +263,9 @@ export class InMemoryGameStore implements GameStore {
     game.state = createFirstNightState(players)
     game.version += 1
     this.#appendEvents(game, 'MODERATOR', null, [{ type: 'GAME_STARTED' }])
-    return success({ gameId: game.id, version: game.version })
+    const result = { gameId: game.id, version: game.version }
+    this.#commandReceipts.set(receiptKey, { request, result })
+    return success(result)
   }
 
   execute(input: ExecuteGameCommandInput): StoreResult<GameMutationResult> {
@@ -410,4 +435,16 @@ function success<T>(value: T): StoreResult<T> {
 
 function failure(code: StoreErrorCode, message: string): StoreResult<never> {
   return { ok: false, error: { code, message } }
+}
+
+function replayReceipt(
+  receipt: { request: string; result: GameMutationResult },
+  request: string,
+): StoreResult<GameMutationResult> {
+  return receipt.request === request
+    ? success(structuredClone(receipt.result))
+    : failure(
+        'IDEMPOTENCY_KEY_REUSED',
+        'Idempotency key was already used for another command',
+      )
 }

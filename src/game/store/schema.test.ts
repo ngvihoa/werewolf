@@ -7,6 +7,7 @@ describe('versioned session input schema', () => {
     const result = versionedSessionInputSchema.safeParse({
       sessionToken: 'session-token',
       expectedVersion: 2,
+      idempotencyKey: 'ready-request-1',
     })
 
     expect(result.success).toBe(true)

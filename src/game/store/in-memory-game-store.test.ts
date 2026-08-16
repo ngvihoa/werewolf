@@ -22,7 +22,11 @@ function createStartedGame() {
     if (!joined.ok) throw new Error(joined.error.message)
     return joined.value
   })
-  const assigned = store.assignRoles(created.value.moderatorSessionToken, 6)
+  const assigned = store.assignRoles(
+    created.value.moderatorSessionToken,
+    6,
+    'fixture-assign',
+  )
   if (!assigned.ok) throw new Error(assigned.error.message)
   for (const player of players) {
     // Mỗi mutation tăng version, nên client kế tiếp phải dùng version mới nhất.
@@ -34,6 +38,7 @@ function createStartedGame() {
       player.playerSessionToken,
       currentGame.value.version,
       true,
+      `fixture-ready-${player.playerId}`,
     )
     if (!ready.ok) throw new Error(ready.error.message)
   }
@@ -43,6 +48,7 @@ function createStartedGame() {
   const started = store.startGame(
     created.value.moderatorSessionToken,
     beforeStart.value.version,
+    'fixture-start',
   )
   if (!started.ok) throw new Error(started.error.message)
 
@@ -108,6 +114,7 @@ describe('InMemoryGameStore lobby', () => {
       joined.value.playerSessionToken,
       currentGame.value.version - 1,
       true,
+      'stale-ready',
     )
     const unchanged = store.getGame(created.value.gameId)
 
@@ -127,7 +134,11 @@ describe('InMemoryGameStore lobby', () => {
 
     // Sau năm lượt join, version hiện tại là 6 nên version 5 đã stale.
     const beforeAssignment = store.getGame(created.value.gameId)
-    const result = store.assignRoles(created.value.moderatorSessionToken, 5)
+    const result = store.assignRoles(
+      created.value.moderatorSessionToken,
+      5,
+      'stale-assign',
+    )
     const afterAssignment = store.getGame(created.value.gameId)
 
     expect(result).toMatchObject({
@@ -148,18 +159,89 @@ describe('InMemoryGameStore lobby', () => {
     const beforeAssignment = store.startGame(
       created.value.moderatorSessionToken,
       6,
+      'start-before-assign',
     )
     expect(beforeAssignment.ok).toBe(false)
     if (!beforeAssignment.ok) {
       expect(beforeAssignment.error.code).toBe('ROLES_NOT_ASSIGNED')
     }
 
-    store.assignRoles(created.value.moderatorSessionToken, 6)
-    const beforeReady = store.startGame(created.value.moderatorSessionToken, 7)
+    store.assignRoles(created.value.moderatorSessionToken, 6, 'assign-roles')
+    const beforeReady = store.startGame(
+      created.value.moderatorSessionToken,
+      7,
+      'start-before-ready',
+    )
     expect(beforeReady.ok).toBe(false)
     if (!beforeReady.ok) {
       expect(beforeReady.error.code).toBe('NOT_ALL_PLAYERS_READY')
     }
+  })
+
+  it('replays successful lobby mutations without applying them twice', () => {
+    const store = createStore()
+    const created = store.createGame('Moderator')
+    if (!created.ok) throw new Error(created.error.message)
+    const joined = store.joinGame(created.value.roomCode, 'An')
+    if (!joined.ok) throw new Error(joined.error.message)
+
+    const readyInput = [
+      joined.value.playerSessionToken,
+      2,
+      true,
+      'ready-once',
+    ] as const
+    const ready = store.setReady(...readyInput)
+    expect(store.setReady(...readyInput)).toEqual(ready)
+
+    for (const name of ['Binh', 'Cuong', 'Dung', 'Hoa']) {
+      store.joinGame(created.value.roomCode, name)
+    }
+    const beforeAssign = store.getGame(created.value.gameId)
+    if (!beforeAssign.ok) throw new Error(beforeAssign.error.message)
+    const assignInput = [
+      created.value.moderatorSessionToken,
+      beforeAssign.value.version,
+      'assign-once',
+    ] as const
+    const assigned = store.assignRoles(...assignInput)
+    expect(store.assignRoles(...assignInput)).toEqual(assigned)
+
+    const snapshot = store.getGame(created.value.gameId)
+    if (!snapshot.ok) throw new Error(snapshot.error.message)
+    expect(
+      snapshot.value.history.filter(
+        (entry) => entry.event.type === 'PLAYER_READY_CHANGED',
+      ),
+    ).toHaveLength(1)
+    expect(
+      snapshot.value.history.filter(
+        (entry) => entry.event.type === 'ROLES_ASSIGNED',
+      ),
+    ).toHaveLength(1)
+  })
+
+  it('replays startGame and rejects a reused key with another payload', () => {
+    const { store, created, game } = createStartedGame()
+    const retried = store.startGame(
+      created.moderatorSessionToken,
+      game.version - 1,
+      'fixture-start',
+    )
+    expect(retried).toEqual({
+      ok: true,
+      value: { gameId: game.id, version: game.version },
+    })
+
+    const reused = store.startGame(
+      created.moderatorSessionToken,
+      game.version,
+      'fixture-start',
+    )
+    expect(reused).toMatchObject({
+      ok: false,
+      error: { code: 'IDEMPOTENCY_KEY_REUSED' },
+    })
   })
 
   it('starts with a valid role composition and private Witch ability state', () => {

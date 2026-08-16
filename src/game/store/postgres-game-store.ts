@@ -303,6 +303,7 @@ export class PostgresGameStore implements GameStore {
     sessionToken: string,
     expectedVersion: number,
     ready: boolean,
+    idempotencyKey: string,
   ): Promise<StoreResult<GameMutationResult>> {
     const sessionTokenHash = this.#hashSessionToken(sessionToken)
     const now = this.#now()
@@ -328,10 +329,21 @@ export class PostgresGameStore implements GameStore {
         )
       }
 
-      const gameResult = validateLobbyMutation(
-        await lockGame(transaction, session.gameId),
+      const lockedGame = await lockGame(transaction, session.gameId)
+      const requestHash = hashMutationRequest({
+        type: 'SET_READY',
         expectedVersion,
+        ready,
+      })
+      const replay = await replayCommandReceipt(
+        transaction,
+        session.id,
+        idempotencyKey,
+        requestHash,
       )
+      if (replay) return replay
+
+      const gameResult = validateLobbyMutation(lockedGame, expectedVersion)
       if (!gameResult.ok) return gameResult
 
       const game = gameResult.value
@@ -386,12 +398,23 @@ export class PostgresGameStore implements GameStore {
         now,
       )
 
+      const result = {
+        gameId: game.id,
+        version: nextVersion,
+      }
+      await saveCommandReceipt(transaction, {
+        gameId: game.id,
+        sessionId: session.id,
+        idempotencyKey,
+        requestHash,
+        commandType: 'SET_READY',
+        expectedVersion,
+        result,
+      })
+
       return {
         ok: true as const,
-        value: {
-          gameId: game.id,
-          version: nextVersion,
-        },
+        value: result,
       }
     })
   }
@@ -399,6 +422,7 @@ export class PostgresGameStore implements GameStore {
   async assignRoles(
     sessionToken: string,
     expectedVersion: number,
+    idempotencyKey: string,
   ): Promise<StoreResult<GameMutationResult>> {
     const sessionTokenHash = this.#hashSessionToken(sessionToken)
     const now = this.#now()
@@ -425,10 +449,20 @@ export class PostgresGameStore implements GameStore {
         )
       }
 
-      const gameResult = validateLobbyMutation(
-        await lockGame(transaction, session.gameId),
+      const lockedGame = await lockGame(transaction, session.gameId)
+      const requestHash = hashMutationRequest({
+        type: 'ASSIGN_ROLES',
         expectedVersion,
+      })
+      const replay = await replayCommandReceipt(
+        transaction,
+        session.id,
+        idempotencyKey,
+        requestHash,
       )
+      if (replay) return replay
+
+      const gameResult = validateLobbyMutation(lockedGame, expectedVersion)
       if (!gameResult.ok) return gameResult
 
       const game = gameResult.value
@@ -495,12 +529,23 @@ export class PostgresGameStore implements GameStore {
         now,
       )
 
+      const result = {
+        gameId: game.id,
+        version: nextVersion,
+      }
+      await saveCommandReceipt(transaction, {
+        gameId: game.id,
+        sessionId: session.id,
+        idempotencyKey,
+        requestHash,
+        commandType: 'ASSIGN_ROLES',
+        expectedVersion,
+        result,
+      })
+
       return {
         ok: true as const,
-        value: {
-          gameId: game.id,
-          version: nextVersion,
-        },
+        value: result,
       }
     })
   }
@@ -508,6 +553,7 @@ export class PostgresGameStore implements GameStore {
   async startGame(
     sessionToken: string,
     expectedVersion: number,
+    idempotencyKey: string,
   ): Promise<StoreResult<GameMutationResult>> {
     const sessionTokenHash = this.#hashSessionToken(sessionToken)
     const now = this.#now()
@@ -534,10 +580,20 @@ export class PostgresGameStore implements GameStore {
         )
       }
 
-      const gameResult = validateLobbyMutation(
-        await lockGame(transaction, session.gameId),
+      const lockedGame = await lockGame(transaction, session.gameId)
+      const requestHash = hashMutationRequest({
+        type: 'START_GAME',
         expectedVersion,
+      })
+      const replay = await replayCommandReceipt(
+        transaction,
+        session.id,
+        idempotencyKey,
+        requestHash,
       )
+      if (replay) return replay
+
+      const gameResult = validateLobbyMutation(lockedGame, expectedVersion)
       if (!gameResult.ok) return gameResult
 
       const game = gameResult.value
@@ -637,12 +693,23 @@ export class PostgresGameStore implements GameStore {
         event: { type: 'GAME_STARTED' },
       })
 
+      const result = {
+        gameId: game.id,
+        version: nextVersion,
+      }
+      await saveCommandReceipt(transaction, {
+        gameId: game.id,
+        sessionId: session.id,
+        idempotencyKey,
+        requestHash,
+        commandType: 'START_GAME',
+        expectedVersion,
+        result,
+      })
+
       return {
         ok: true as const,
-        value: {
-          gameId: game.id,
-          version: nextVersion,
-        },
+        value: result,
       }
     })
   }
@@ -908,14 +975,72 @@ function failure(code: StoreErrorCode, message: string): StoreResult<never> {
 }
 
 function hashCommandRequest(input: ExecuteGameCommandInput): string {
-  return createHash('sha256')
-    .update(
-      JSON.stringify({
-        expectedVersion: input.expectedVersion,
-        command: gameCommandSchema.parse(input.command),
-      }),
+  return hashMutationRequest({
+    expectedVersion: input.expectedVersion,
+    command: gameCommandSchema.parse(input.command),
+  })
+}
+
+function hashMutationRequest(request: unknown): string {
+  return createHash('sha256').update(JSON.stringify(request)).digest('hex')
+}
+
+async function replayCommandReceipt(
+  transaction: DatabaseTransaction,
+  sessionId: string,
+  idempotencyKey: string,
+  requestHash: string,
+): Promise<StoreResult<GameMutationResult> | null> {
+  const [receipt] = await transaction
+    .select({
+      requestHash: commandReceipts.requestHash,
+      response: commandReceipts.response,
+    })
+    .from(commandReceipts)
+    .where(
+      and(
+        eq(commandReceipts.sessionId, sessionId),
+        eq(commandReceipts.idempotencyKey, idempotencyKey),
+      ),
     )
-    .digest('hex')
+    .limit(1)
+
+  if (!receipt) return null
+  if (receipt.requestHash !== requestHash) {
+    return failure(
+      STORE_ERROR_CODE.IDEMPOTENCY_KEY_REUSED,
+      'Idempotency key was already used for another command',
+    )
+  }
+  return {
+    ok: true,
+    value: gameMutationResultSchema.parse(receipt.response),
+  }
+}
+
+async function saveCommandReceipt(
+  transaction: DatabaseTransaction,
+  input: {
+    gameId: string
+    sessionId: string
+    idempotencyKey: string
+    requestHash: string
+    commandType: string
+    expectedVersion: number
+    result: GameMutationResult
+  },
+): Promise<void> {
+  await transaction.insert(commandReceipts).values({
+    gameId: input.gameId,
+    sessionId: input.sessionId,
+    idempotencyKey: input.idempotencyKey,
+    requestHash: input.requestHash,
+    commandType: input.commandType,
+    expectedVersion: input.expectedVersion,
+    resultingVersion: input.result.version,
+    status: 'ACCEPTED',
+    response: input.result,
+  })
 }
 
 async function findActiveSession(

@@ -63,6 +63,7 @@ export interface GameStore {
     sessionToken: string,
     expectedVersion: number,
     ready: boolean,
+    idempotencyKey: string,
   ): Awaitable<StoreResult<GameMutationResult>>
 
   /**
@@ -74,6 +75,7 @@ export interface GameStore {
   assignRoles(
     sessionToken: string,
     expectedVersion: number,
+    idempotencyKey: string,
   ): Awaitable<StoreResult<GameMutationResult>>
 
   /**
@@ -85,6 +87,7 @@ export interface GameStore {
   startGame(
     sessionToken: string,
     expectedVersion: number,
+    idempotencyKey: string,
   ): Awaitable<StoreResult<GameMutationResult>>
 
   /**

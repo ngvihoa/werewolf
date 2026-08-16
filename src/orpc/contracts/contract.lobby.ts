@@ -37,6 +37,7 @@ export const lobbyContract = {
         sessionToken: sessionTokenSchema,
         expectedVersion: expectedVersionSchema,
         ready: z.boolean(),
+        idempotencyKey: idempotencyKeySchema,
       }),
     )
     .output(operationResultSchema),

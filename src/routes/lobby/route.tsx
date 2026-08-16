@@ -24,7 +24,13 @@ function LobbyPage() {
       queryKey: gameViewQueryKey(activeSessionToken),
     })
   const readyMutation = useMutation({
-    mutationFn: (ready: boolean) =>
+    mutationFn: ({
+      ready,
+      idempotencyKey,
+    }: {
+      ready: boolean
+      idempotencyKey: string
+    }) =>
       orpcClient.lobby.setReady({
         sessionToken: activeSessionToken,
         expectedVersion:
@@ -32,22 +38,37 @@ function LobbyPage() {
             ? viewQuery.data.game.version
             : (viewQuery.data?.version ?? 0),
         ready,
+        idempotencyKey,
       }),
     onSuccess: invalidateView,
   })
   const assignMutation = useMutation({
-    mutationFn: (expectedVersion: number) =>
+    mutationFn: ({
+      expectedVersion,
+      idempotencyKey,
+    }: {
+      expectedVersion: number
+      idempotencyKey: string
+    }) =>
       orpcClient.lobby.assignRoles({
         sessionToken: activeSessionToken,
         expectedVersion,
+        idempotencyKey,
       }),
     onSuccess: invalidateView,
   })
   const startMutation = useMutation({
-    mutationFn: (expectedVersion: number) =>
+    mutationFn: ({
+      expectedVersion,
+      idempotencyKey,
+    }: {
+      expectedVersion: number
+      idempotencyKey: string
+    }) =>
       orpcClient.lobby.startGame({
         sessionToken: activeSessionToken,
         expectedVersion,
+        idempotencyKey,
       }),
     onSuccess: invalidateView,
   })
@@ -113,9 +134,19 @@ function LobbyPage() {
                 starting={startMutation.isPending}
                 error={mutationError}
                 // Lấy version tại thời điểm click để server phát hiện request cũ.
-                onAssign={() => assignMutation.mutate(version)}
+                onAssign={() =>
+                  assignMutation.mutate({
+                    expectedVersion: version,
+                    idempotencyKey: crypto.randomUUID(),
+                  })
+                }
                 // Start game cũng dùng optimistic locking như các lobby mutation khác.
-                onStart={() => startMutation.mutate(version)}
+                onStart={() =>
+                  startMutation.mutate({
+                    expectedVersion: version,
+                    idempotencyKey: crypto.randomUUID(),
+                  })
+                }
               />
             ) : (
               <PlayerControls
@@ -123,7 +154,12 @@ function LobbyPage() {
                 ready={view.me.ready}
                 pending={readyMutation.isPending}
                 error={mutationError}
-                onReadyChange={(ready) => readyMutation.mutate(ready)}
+                onReadyChange={(ready) =>
+                  readyMutation.mutate({
+                    ready,
+                    idempotencyKey: crypto.randomUUID(),
+                  })
+                }
               />
             )}
           </aside>

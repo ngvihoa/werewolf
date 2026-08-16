@@ -331,6 +331,7 @@ describe('PostgresGameStore.setReady', () => {
       joined.value.playerSessionToken,
       2,
       true,
+      'set-ready',
     )
 
     expect(result).toEqual({
@@ -340,6 +341,14 @@ describe('PostgresGameStore.setReady', () => {
         version: 3,
       },
     })
+    expect(
+      await store.setReady(
+        joined.value.playerSessionToken,
+        2,
+        true,
+        'set-ready',
+      ),
+    ).toEqual(result)
 
     const [storedPlayer] = await db
       .select({ isReady: gamePlayers.isReady })
@@ -392,6 +401,7 @@ describe('PostgresGameStore.setReady', () => {
       joined.value.playerSessionToken,
       1,
       true,
+      'stale-ready',
     )
 
     expect(result).toEqual({
@@ -427,6 +437,7 @@ describe('PostgresGameStore.setReady', () => {
       created.value.moderatorSessionToken,
       1,
       true,
+      'unauthorized-ready',
     )
 
     expect(result).toEqual({
@@ -457,12 +468,20 @@ describe('PostgresGameStore.assignRoles', () => {
     const result = await store.assignRoles(
       created.value.moderatorSessionToken,
       7,
+      'assign-roles',
     )
 
     expect(result).toEqual({
       ok: true,
       value: { gameId: created.value.gameId, version: 8 },
     })
+    expect(
+      await store.assignRoles(
+        created.value.moderatorSessionToken,
+        7,
+        'assign-roles',
+      ),
+    ).toEqual(result)
 
     const storedPlayers = await db
       .select({
@@ -543,12 +562,23 @@ describe('PostgresGameStore.startGame', () => {
       })),
     )
 
-    const result = await store.startGame(created.value.moderatorSessionToken, 1)
+    const result = await store.startGame(
+      created.value.moderatorSessionToken,
+      1,
+      'start-game',
+    )
 
     expect(result).toEqual({
       ok: true,
       value: { gameId: created.value.gameId, version: 2 },
     })
+    expect(
+      await store.startGame(
+        created.value.moderatorSessionToken,
+        1,
+        'start-game',
+      ),
+    ).toEqual(result)
 
     const [storedGame] = await db
       .select()
@@ -733,6 +763,7 @@ describe('PostgresGameStore.execute', () => {
     const started = await store.startGame(
       created.value.moderatorSessionToken,
       lobbyGame.version,
+      'start-command-game',
     )
     if (!started.ok) throw new Error('Expected game to start')
 
@@ -790,7 +821,12 @@ describe('PostgresGameStore.execute', () => {
     const receipts = await db
       .select()
       .from(commandReceipts)
-      .where(eq(commandReceipts.gameId, created.value.gameId))
+      .where(
+        and(
+          eq(commandReceipts.gameId, created.value.gameId),
+          eq(commandReceipts.idempotencyKey, 'submit-seer-action'),
+        ),
+      )
     expect(receipts).toHaveLength(1)
 
     // Cùng expectedVersion cũ phải bị từ chối trước khi rule engine chạy lại.

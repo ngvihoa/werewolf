@@ -46,6 +46,7 @@ export const idempotencyKeySchema = z.string().trim().min(1).max(100)
 export const versionedSessionInputSchema = z.object({
   sessionToken: sessionTokenSchema,
   expectedVersion: expectedVersionSchema,
+  idempotencyKey: idempotencyKeySchema,
 })
 
 // Runtime schema là source of truth cho toàn bộ lỗi nghiệp vụ của store.

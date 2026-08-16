@@ -28,6 +28,7 @@ export const lobbyRouter = baseRouter.lobby.router({
       input.sessionToken,
       input.expectedVersion,
       input.ready,
+      input.idempotencyKey,
     )
 
     return toOperationResult(result)
@@ -37,6 +38,7 @@ export const lobbyRouter = baseRouter.lobby.router({
     const result = await localGameStore.assignRoles(
       input.sessionToken,
       input.expectedVersion,
+      input.idempotencyKey,
     )
     return toOperationResult(result)
   }),
@@ -45,6 +47,7 @@ export const lobbyRouter = baseRouter.lobby.router({
     const result = await localGameStore.startGame(
       input.sessionToken,
       input.expectedVersion,
+      input.idempotencyKey,
     )
     return toOperationResult(result)
   }),
