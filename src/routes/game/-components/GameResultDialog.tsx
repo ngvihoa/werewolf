@@ -32,14 +32,14 @@ export function GameResultDialog({
       className="m-auto w-[calc(100%-2.5rem)] max-w-md overflow-hidden rounded-3xl bg-stone-950 p-0 text-stone-50 shadow-2xl ring-1 ring-white/15 backdrop:bg-stone-950/85 backdrop:backdrop-blur-sm"
     >
       <div
-        className={`h-1.5 w-full ${won ? 'bg-amber-400' : 'bg-red-500'}`}
+        className={`h-1.5 w-full ${won ? 'bg-emerald-400' : 'bg-red-500'}`}
         aria-hidden="true"
       />
       <div className="flex flex-col items-center gap-6 p-6 text-center sm:p-8">
         <div
           className={`grid size-20 place-items-center rounded-full ring-1 ${
             won
-              ? 'bg-amber-400/10 text-amber-300 ring-amber-300/25'
+              ? 'bg-emerald-400/10 text-emerald-300 ring-emerald-300/25'
               : 'bg-red-500/10 text-red-300 ring-red-400/25'
           }`}
         >
@@ -49,7 +49,7 @@ export function GameResultDialog({
         <div className="flex flex-col items-center gap-3">
           <p
             className={`font-mono text-sm tracking-wide uppercase ${
-              won ? 'text-amber-300' : 'text-red-300'
+              won ? 'text-emerald-300' : 'text-red-300'
             }`}
           >
             {won ? 'Chiến thắng' : 'Thất bại'}
@@ -86,7 +86,7 @@ export function GameResultDialog({
             type="submit"
             className={`w-full rounded-xl px-3 py-2.5 text-base font-medium focus-visible:outline-2 focus-visible:outline-offset-2 sm:py-2 sm:text-sm ${
               won
-                ? 'bg-amber-400 text-stone-950 focus-visible:outline-amber-400'
+                ? 'bg-emerald-400 text-stone-950 focus-visible:outline-emerald-400'
                 : 'bg-red-500 text-white focus-visible:outline-red-500'
             }`}
           >
