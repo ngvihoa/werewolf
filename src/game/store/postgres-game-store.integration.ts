@@ -459,26 +459,35 @@ describe('PostgresGameStore.assignRoles', () => {
     const created = await store.createGame('Test Moderator')
     if (!created.ok) throw new Error('Expected createGame to succeed')
 
-    // Sáu lượt join đưa game từ version 1 lên version 7.
-    for (const name of ['An', 'Binh', 'Cuong', 'Dung', 'Hoa', 'Lan']) {
+    // Tám lượt join đưa game từ version 1 lên version 9 và bao phủ các role mới.
+    for (const name of [
+      'An',
+      'Binh',
+      'Cuong',
+      'Dung',
+      'Hoa',
+      'Lan',
+      'Minh',
+      'Ngoc',
+    ]) {
       const joined = await store.joinGame(roomCode, name)
       if (!joined.ok) throw new Error('Expected joinGame to succeed')
     }
 
     const result = await store.assignRoles(
       created.value.moderatorSessionToken,
-      7,
+      9,
       'assign-roles',
     )
 
     expect(result).toEqual({
       ok: true,
-      value: { gameId: created.value.gameId, version: 8 },
+      value: { gameId: created.value.gameId, version: 10 },
     })
     expect(
       await store.assignRoles(
         created.value.moderatorSessionToken,
-        7,
+        9,
         'assign-roles',
       ),
     ).toEqual(result)
@@ -494,7 +503,16 @@ describe('PostgresGameStore.assignRoles', () => {
 
     // Composition phải đúng MVP và chỉ Witch có ability state.
     expect(storedPlayers.map((player) => player.role).sort()).toEqual(
-      ['SEER', 'VILLAGER', 'VILLAGER', 'VILLAGER', 'WEREWOLF', 'WITCH'].sort(),
+      [
+        'HUNTER',
+        'PROTECTOR',
+        'SEER',
+        'VILLAGER',
+        'VILLAGER',
+        'WEREWOLF',
+        'WEREWOLF',
+        'WITCH',
+      ].sort(),
     )
     expect(storedPlayers.every((player) => !player.isReady)).toBe(true)
     expect(

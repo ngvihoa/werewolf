@@ -1,0 +1,1400 @@
+{
+  "id": "216ba1ee-fb62-4da5-b992-4de5ae1b93f4",
+  "prevId": "478b938e-591b-4e07-aad5-c4e83a2c1307",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.command_receipts": {
+      "name": "command_receipts",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "bigint",
+          "primaryKey": true,
+          "notNull": true,
+          "identity": {
+            "type": "always",
+            "name": "command_receipts_id_seq",
+            "schema": "public",
+            "increment": "1",
+            "startWith": "1",
+            "minValue": "1",
+            "maxValue": "9223372036854775807",
+            "cache": "1",
+            "cycle": false
+          }
+        },
+        "game_id": {
+          "name": "game_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "session_id": {
+          "name": "session_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "idempotency_key": {
+          "name": "idempotency_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "request_hash": {
+          "name": "request_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "command_type": {
+          "name": "command_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "expected_version": {
+          "name": "expected_version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "resulting_version": {
+          "name": "resulting_version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "command_receipt_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "response": {
+          "name": "response",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "command_receipts_game_created_at_idx": {
+          "name": "command_receipts_game_created_at_idx",
+          "columns": [
+            {
+              "expression": "game_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "command_receipts_game_id_games_id_fk": {
+          "name": "command_receipts_game_id_games_id_fk",
+          "tableFrom": "command_receipts",
+          "tableTo": "games",
+          "columnsFrom": [
+            "game_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "command_receipts_game_session_fk": {
+          "name": "command_receipts_game_session_fk",
+          "tableFrom": "command_receipts",
+          "tableTo": "game_sessions",
+          "columnsFrom": [
+            "game_id",
+            "session_id"
+          ],
+          "columnsTo": [
+            "game_id",
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "command_receipts_session_idempotency_key_unique": {
+          "name": "command_receipts_session_idempotency_key_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "session_id",
+            "idempotency_key"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "command_receipts_idempotency_key_not_blank_check": {
+          "name": "command_receipts_idempotency_key_not_blank_check",
+          "value": "length(btrim(\"command_receipts\".\"idempotency_key\")) > 0"
+        },
+        "command_receipts_request_hash_format_check": {
+          "name": "command_receipts_request_hash_format_check",
+          "value": "\"command_receipts\".\"request_hash\" ~ '^[0-9a-f]{64}$'"
+        },
+        "command_receipts_expected_version_positive_check": {
+          "name": "command_receipts_expected_version_positive_check",
+          "value": "\"command_receipts\".\"expected_version\" > 0"
+        },
+        "command_receipts_resulting_version_positive_check": {
+          "name": "command_receipts_resulting_version_positive_check",
+          "value": "\"command_receipts\".\"resulting_version\" > 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.game_actions": {
+      "name": "game_actions",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "bigint",
+          "primaryKey": true,
+          "notNull": true,
+          "identity": {
+            "type": "always",
+            "name": "game_actions_id_seq",
+            "schema": "public",
+            "increment": "1",
+            "startWith": "1",
+            "minValue": "1",
+            "maxValue": "9223372036854775807",
+            "cache": "1",
+            "cycle": false
+          }
+        },
+        "game_id": {
+          "name": "game_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "queue_step_id": {
+          "name": "queue_step_id",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "actor_player_id": {
+          "name": "actor_player_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "attempt": {
+          "name": "attempt",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "type": {
+          "name": "type",
+          "type": "queue_step",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "payload": {
+          "name": "payload",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "action_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'SUBMITTED'"
+        },
+        "rejection_reason": {
+          "name": "rejection_reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "decided_by_session_id": {
+          "name": "decided_by_session_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "submitted_at": {
+          "name": "submitted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "decided_at": {
+          "name": "decided_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "game_actions_one_open_per_queue_step_idx": {
+          "name": "game_actions_one_open_per_queue_step_idx",
+          "columns": [
+            {
+              "expression": "queue_step_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"game_actions\".\"status\" IN ('SUBMITTED', 'CONFIRMED')",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "game_actions_game_queue_attempt_idx": {
+          "name": "game_actions_game_queue_attempt_idx",
+          "columns": [
+            {
+              "expression": "game_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "queue_step_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "attempt",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "game_actions_actor_player_id_idx": {
+          "name": "game_actions_actor_player_id_idx",
+          "columns": [
+            {
+              "expression": "actor_player_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "game_actions_decided_by_session_id_idx": {
+          "name": "game_actions_decided_by_session_id_idx",
+          "columns": [
+            {
+              "expression": "decided_by_session_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "game_actions_game_id_games_id_fk": {
+          "name": "game_actions_game_id_games_id_fk",
+          "tableFrom": "game_actions",
+          "tableTo": "games",
+          "columnsFrom": [
+            "game_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "game_actions_game_queue_step_fk": {
+          "name": "game_actions_game_queue_step_fk",
+          "tableFrom": "game_actions",
+          "tableTo": "game_queue_steps",
+          "columnsFrom": [
+            "game_id",
+            "queue_step_id",
+            "type"
+          ],
+          "columnsTo": [
+            "game_id",
+            "id",
+            "step"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "game_actions_game_actor_player_fk": {
+          "name": "game_actions_game_actor_player_fk",
+          "tableFrom": "game_actions",
+          "tableTo": "game_players",
+          "columnsFrom": [
+            "game_id",
+            "actor_player_id"
+          ],
+          "columnsTo": [
+            "game_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "game_actions_game_decider_session_fk": {
+          "name": "game_actions_game_decider_session_fk",
+          "tableFrom": "game_actions",
+          "tableTo": "game_sessions",
+          "columnsFrom": [
+            "game_id",
+            "decided_by_session_id"
+          ],
+          "columnsTo": [
+            "game_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "game_actions_queue_step_attempt_unique": {
+          "name": "game_actions_queue_step_attempt_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "queue_step_id",
+            "attempt"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "game_actions_attempt_positive_check": {
+          "name": "game_actions_attempt_positive_check",
+          "value": "\"game_actions\".\"attempt\" > 0"
+        },
+        "game_actions_decision_check": {
+          "name": "game_actions_decision_check",
+          "value": "(\"game_actions\".\"status\" = 'SUBMITTED' AND \"game_actions\".\"decided_at\" IS NULL AND \"game_actions\".\"decided_by_session_id\" IS NULL AND \"game_actions\".\"rejection_reason\" IS NULL) OR (\"game_actions\".\"status\" = 'CONFIRMED' AND \"game_actions\".\"decided_at\" IS NOT NULL AND \"game_actions\".\"decided_by_session_id\" IS NOT NULL AND \"game_actions\".\"rejection_reason\" IS NULL) OR (\"game_actions\".\"status\" IN ('REJECTED', 'CANCELLED') AND \"game_actions\".\"decided_at\" IS NOT NULL AND \"game_actions\".\"decided_by_session_id\" IS NOT NULL AND length(btrim(\"game_actions\".\"rejection_reason\")) > 0)"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.game_events": {
+      "name": "game_events",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "game_id": {
+          "name": "game_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "sequence": {
+          "name": "sequence",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "round": {
+          "name": "round",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "phase": {
+          "name": "phase",
+          "type": "game_phase",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "type": {
+          "name": "type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "actor_player_id": {
+          "name": "actor_player_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "target_player_id": {
+          "name": "target_player_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "payload": {
+          "name": "payload",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "game_events_game_created_at_idx": {
+          "name": "game_events_game_created_at_idx",
+          "columns": [
+            {
+              "expression": "game_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "game_events_game_round_phase_idx": {
+          "name": "game_events_game_round_phase_idx",
+          "columns": [
+            {
+              "expression": "game_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "round",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "phase",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "game_events_actor_player_id_idx": {
+          "name": "game_events_actor_player_id_idx",
+          "columns": [
+            {
+              "expression": "actor_player_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "game_events_target_player_id_idx": {
+          "name": "game_events_target_player_id_idx",
+          "columns": [
+            {
+              "expression": "target_player_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "game_events_game_type_idx": {
+          "name": "game_events_game_type_idx",
+          "columns": [
+            {
+              "expression": "game_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "type",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "game_events_game_id_games_id_fk": {
+          "name": "game_events_game_id_games_id_fk",
+          "tableFrom": "game_events",
+          "tableTo": "games",
+          "columnsFrom": [
+            "game_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "game_events_game_actor_player_fk": {
+          "name": "game_events_game_actor_player_fk",
+          "tableFrom": "game_events",
+          "tableTo": "game_players",
+          "columnsFrom": [
+            "game_id",
+            "actor_player_id"
+          ],
+          "columnsTo": [
+            "game_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "game_events_game_target_player_fk": {
+          "name": "game_events_game_target_player_fk",
+          "tableFrom": "game_events",
+          "tableTo": "game_players",
+          "columnsFrom": [
+            "game_id",
+            "target_player_id"
+          ],
+          "columnsTo": [
+            "game_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "game_events_game_sequence_unique": {
+          "name": "game_events_game_sequence_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "game_id",
+            "sequence"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "game_events_sequence_positive_check": {
+          "name": "game_events_sequence_positive_check",
+          "value": "\"game_events\".\"sequence\" > 0"
+        },
+        "game_events_round_nonnegative_check": {
+          "name": "game_events_round_nonnegative_check",
+          "value": "\"game_events\".\"round\" >= 0"
+        },
+        "game_events_created_by_check": {
+          "name": "game_events_created_by_check",
+          "value": "\"game_events\".\"created_by\" IN ('SYSTEM', 'MODERATOR', 'PLAYER')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.game_players": {
+      "name": "game_players",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "game_id": {
+          "name": "game_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "display_name": {
+          "name": "display_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "role": {
+          "name": "role",
+          "type": "role",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ability_state": {
+          "name": "ability_state",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "is_moderator": {
+          "name": "is_moderator",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "is_ready": {
+          "name": "is_ready",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "is_alive": {
+          "name": "is_alive",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "joined_at": {
+          "name": "joined_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "game_players_game_display_name_unique_idx": {
+          "name": "game_players_game_display_name_unique_idx",
+          "columns": [
+            {
+              "expression": "game_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "lower(btrim(\"display_name\"))",
+              "asc": true,
+              "isExpression": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "game_players_game_id_idx": {
+          "name": "game_players_game_id_idx",
+          "columns": [
+            {
+              "expression": "game_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "game_players_game_id_games_id_fk": {
+          "name": "game_players_game_id_games_id_fk",
+          "tableFrom": "game_players",
+          "tableTo": "games",
+          "columnsFrom": [
+            "game_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "game_players_game_id_id_unique": {
+          "name": "game_players_game_id_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "game_id",
+            "id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "game_players_display_name_not_blank_check": {
+          "name": "game_players_display_name_not_blank_check",
+          "value": "length(btrim(\"game_players\".\"display_name\")) > 0"
+        },
+        "game_players_role_ability_check": {
+          "name": "game_players_role_ability_check",
+          "value": "(\"game_players\".\"role\" = 'WITCH' AND \"game_players\".\"ability_state\" IS NOT NULL) OR (\"game_players\".\"role\" <> 'WITCH' AND \"game_players\".\"ability_state\" IS NULL) OR (\"game_players\".\"role\" IS NULL AND \"game_players\".\"ability_state\" IS NULL)"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.game_queue_steps": {
+      "name": "game_queue_steps",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "bigint",
+          "primaryKey": true,
+          "notNull": true,
+          "identity": {
+            "type": "always",
+            "name": "game_queue_steps_id_seq",
+            "schema": "public",
+            "increment": "1",
+            "startWith": "1",
+            "minValue": "1",
+            "maxValue": "9223372036854775807",
+            "cache": "1",
+            "cycle": false
+          }
+        },
+        "game_id": {
+          "name": "game_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "round": {
+          "name": "round",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "position": {
+          "name": "position",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "step": {
+          "name": "step",
+          "type": "queue_step",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "queue_step_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'PENDING'"
+        },
+        "skip_reason": {
+          "name": "skip_reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "activated_at": {
+          "name": "activated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "completed_at": {
+          "name": "completed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "game_queue_steps_game_status_idx": {
+          "name": "game_queue_steps_game_status_idx",
+          "columns": [
+            {
+              "expression": "game_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "game_queue_steps_game_id_games_id_fk": {
+          "name": "game_queue_steps_game_id_games_id_fk",
+          "tableFrom": "game_queue_steps",
+          "tableTo": "games",
+          "columnsFrom": [
+            "game_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "game_queue_steps_game_id_id_unique": {
+          "name": "game_queue_steps_game_id_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "game_id",
+            "id"
+          ]
+        },
+        "game_queue_steps_game_id_id_step_unique": {
+          "name": "game_queue_steps_game_id_id_step_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "game_id",
+            "id",
+            "step"
+          ]
+        },
+        "game_queue_steps_game_round_position_unique": {
+          "name": "game_queue_steps_game_round_position_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "game_id",
+            "round",
+            "position"
+          ]
+        },
+        "game_queue_steps_game_round_step_unique": {
+          "name": "game_queue_steps_game_round_step_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "game_id",
+            "round",
+            "step"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "game_queue_steps_round_positive_check": {
+          "name": "game_queue_steps_round_positive_check",
+          "value": "\"game_queue_steps\".\"round\" > 0"
+        },
+        "game_queue_steps_position_positive_check": {
+          "name": "game_queue_steps_position_positive_check",
+          "value": "\"game_queue_steps\".\"position\" > 0"
+        },
+        "game_queue_steps_skip_reason_check": {
+          "name": "game_queue_steps_skip_reason_check",
+          "value": "(\"game_queue_steps\".\"status\" = 'SKIPPED' AND length(btrim(\"game_queue_steps\".\"skip_reason\")) > 0) OR (\"game_queue_steps\".\"status\" <> 'SKIPPED' AND \"game_queue_steps\".\"skip_reason\" IS NULL)"
+        },
+        "game_queue_steps_lifecycle_check": {
+          "name": "game_queue_steps_lifecycle_check",
+          "value": "(\"game_queue_steps\".\"status\" = 'PENDING' AND \"game_queue_steps\".\"activated_at\" IS NULL AND \"game_queue_steps\".\"completed_at\" IS NULL) OR (\"game_queue_steps\".\"status\" IN ('ACTIVE', 'WAITING_MODERATOR_CONFIRMATION') AND \"game_queue_steps\".\"activated_at\" IS NOT NULL AND \"game_queue_steps\".\"completed_at\" IS NULL) OR (\"game_queue_steps\".\"status\" IN ('COMPLETED', 'SKIPPED') AND \"game_queue_steps\".\"activated_at\" IS NOT NULL AND \"game_queue_steps\".\"completed_at\" IS NOT NULL)"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.game_sessions": {
+      "name": "game_sessions",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "game_id": {
+          "name": "game_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "player_id": {
+          "name": "player_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "kind": {
+          "name": "kind",
+          "type": "game_session_kind",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "token_hash": {
+          "name": "token_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "revoked_at": {
+          "name": "revoked_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "last_seen_at": {
+          "name": "last_seen_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "game_sessions_token_hash_unique_idx": {
+          "name": "game_sessions_token_hash_unique_idx",
+          "columns": [
+            {
+              "expression": "token_hash",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "game_sessions_game_id_idx": {
+          "name": "game_sessions_game_id_idx",
+          "columns": [
+            {
+              "expression": "game_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "game_sessions_active_expiry_idx": {
+          "name": "game_sessions_active_expiry_idx",
+          "columns": [
+            {
+              "expression": "expires_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "where": "\"game_sessions\".\"revoked_at\" IS NULL",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "game_sessions_game_id_games_id_fk": {
+          "name": "game_sessions_game_id_games_id_fk",
+          "tableFrom": "game_sessions",
+          "tableTo": "games",
+          "columnsFrom": [
+            "game_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "game_sessions_game_player_fk": {
+          "name": "game_sessions_game_player_fk",
+          "tableFrom": "game_sessions",
+          "tableTo": "game_players",
+          "columnsFrom": [
+            "game_id",
+            "player_id"
+          ],
+          "columnsTo": [
+            "game_id",
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "game_sessions_game_id_id_unique": {
+          "name": "game_sessions_game_id_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "game_id",
+            "id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "game_sessions_kind_player_check": {
+          "name": "game_sessions_kind_player_check",
+          "value": "(\"game_sessions\".\"kind\" = 'MODERATOR' AND \"game_sessions\".\"player_id\" IS NULL) OR (\"game_sessions\".\"kind\" = 'PLAYER' AND \"game_sessions\".\"player_id\" IS NOT NULL)"
+        },
+        "game_sessions_token_hash_format_check": {
+          "name": "game_sessions_token_hash_format_check",
+          "value": "\"game_sessions\".\"token_hash\" ~ '^[0-9a-f]{64}$'"
+        },
+        "game_sessions_expiry_check": {
+          "name": "game_sessions_expiry_check",
+          "value": "\"game_sessions\".\"expires_at\" > \"game_sessions\".\"created_at\""
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.games": {
+      "name": "games",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "room_code": {
+          "name": "room_code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "moderator_name": {
+          "name": "moderator_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "game_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'LOBBY'"
+        },
+        "phase": {
+          "name": "phase",
+          "type": "game_phase",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'SETUP'"
+        },
+        "round": {
+          "name": "round",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "version": {
+          "name": "version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "settings": {
+          "name": "settings",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{\"revealRoleOnDeath\":false,\"seerResult\":\"TEAM_ALIGNMENT\",\"voteTie\":\"REVOTE_ONCE\",\"witchCanSelfHeal\":true,\"witchCanUseBothPotions\":true,\"witchCanSelfPoison\":false}'::jsonb"
+        },
+        "state": {
+          "name": "state",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "games_status_updated_at_idx": {
+          "name": "games_status_updated_at_idx",
+          "columns": [
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "updated_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "games_room_code_unique": {
+          "name": "games_room_code_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "room_code"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "games_room_code_format_check": {
+          "name": "games_room_code_format_check",
+          "value": "\"games\".\"room_code\" ~ '^[A-Z0-9]{6}$'"
+        },
+        "games_moderator_name_not_blank_check": {
+          "name": "games_moderator_name_not_blank_check",
+          "value": "length(btrim(\"games\".\"moderator_name\")) > 0"
+        },
+        "games_round_nonnegative_check": {
+          "name": "games_round_nonnegative_check",
+          "value": "\"games\".\"round\" >= 0"
+        },
+        "games_version_positive_check": {
+          "name": "games_version_positive_check",
+          "value": "\"games\".\"version\" > 0"
+        }
+      },
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {
+    "public.action_status": {
+      "name": "action_status",
+      "schema": "public",
+      "values": [
+        "SUBMITTED",
+        "CONFIRMED",
+        "REJECTED",
+        "CANCELLED"
+      ]
+    },
+    "public.command_receipt_status": {
+      "name": "command_receipt_status",
+      "schema": "public",
+      "values": [
+        "ACCEPTED",
+        "REJECTED"
+      ]
+    },
+    "public.game_phase": {
+      "name": "game_phase",
+      "schema": "public",
+      "values": [
+        "SETUP",
+        "ROLE_REVEAL",
+        "READY_CHECK",
+        "NIGHT",
+        "NIGHT_RESOLUTION",
+        "DAY",
+        "VOTE",
+        "VOTE_RESOLUTION",
+        "HUNTER_SHOT",
+        "GAME_OVER"
+      ]
+    },
+    "public.game_session_kind": {
+      "name": "game_session_kind",
+      "schema": "public",
+      "values": [
+        "MODERATOR",
+        "PLAYER"
+      ]
+    },
+    "public.game_status": {
+      "name": "game_status",
+      "schema": "public",
+      "values": [
+        "LOBBY",
+        "IN_PROGRESS",
+        "GAME_OVER"
+      ]
+    },
+    "public.queue_step": {
+      "name": "queue_step",
+      "schema": "public",
+      "values": [
+        "HUNTER_MARK",
+        "PROTECTOR_PROTECT",
+        "SEER_INSPECT",
+        "WEREWOLF_ATTACK",
+        "WITCH_ACTION"
+      ]
+    },
+    "public.queue_step_status": {
+      "name": "queue_step_status",
+      "schema": "public",
+      "values": [
+        "PENDING",
+        "ACTIVE",
+        "WAITING_MODERATOR_CONFIRMATION",
+        "COMPLETED",
+        "SKIPPED"
+      ]
+    },
+    "public.role": {
+      "name": "role",
+      "schema": "public",
+      "values": [
+        "VILLAGER",
+        "WEREWOLF",
+        "SEER",
+        "WITCH",
+        "PROTECTOR",
+        "HUNTER"
+      ]
+    }
+  },
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

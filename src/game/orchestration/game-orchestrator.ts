@@ -30,6 +30,7 @@ export function createFirstNightState(players: readonly Player[]): GameState {
     voteAttempt: 1,
     pendingVote: null,
     pendingVoteResolution: null,
+    pendingHunterShot: null,
     winner: null,
   }
 }
@@ -65,6 +66,10 @@ export function executeCommand(
       return confirmVoteResult(state, events)
     case 'SKIP_REVOTE':
       return skipRevote(state, events)
+    case 'SUBMIT_HUNTER_SHOT':
+      return submitHunterShot(state, command.actorId, command.targetId, events)
+    case 'CONFIRM_HUNTER_SHOT':
+      return confirmHunterShot(state, events)
   }
 }
 
@@ -183,6 +188,12 @@ function advanceNight(state: GameState, events: GameEvent[]): void {
       state.confirmedNightActions.find(
         (action) => action.type === 'PROTECTOR_PROTECT',
       )?.targetId ?? null,
+    hunterId:
+      state.players.find((player) => player.role === 'HUNTER')?.id ?? null,
+    hunterTargetId:
+      state.confirmedNightActions.find(
+        (action) => action.type === 'HUNTER_MARK',
+      )?.targetId ?? null,
   })
   events.push(
     {
@@ -287,8 +298,82 @@ function confirmVoteResult(
       playerId: resolution.playerId,
       causes: ['VOTE'],
     })
+    const eliminated = state.players.find(
+      (player) => player.id === resolution.playerId,
+    )
+    if (eliminated?.role === 'HUNTER') {
+      state.pendingHunterShot = {
+        hunterId: eliminated.id,
+        targetId: null,
+      }
+      transitionPhase(state, 'HUNTER_SHOT', events)
+      return success(state, events)
+    }
   }
 
+  return transitionAfterElimination(state, 'NIGHT', events)
+}
+
+function submitHunterShot(
+  state: GameState,
+  actorId: string,
+  targetId: string,
+  events: GameEvent[],
+): Result<CommandOutcome> {
+  if (state.phase !== 'HUNTER_SHOT') {
+    return invalidPhase('HUNTER_SHOT', state.phase)
+  }
+  const pending = state.pendingHunterShot
+  const hunter = state.players.find((player) => player.id === actorId)
+  if (!pending || pending.hunterId !== actorId || hunter?.role !== 'HUNTER') {
+    return failure('ROLE_MISMATCH', 'Only the eliminated Hunter can shoot')
+  }
+  if (pending.targetId) {
+    return failure('INVALID_ACTION', 'Hunter shot is already submitted')
+  }
+  const target = state.players.find((player) => player.id === targetId)
+  if (!target?.alive || target.id === actorId) {
+    return failure(
+      'INVALID_TARGET',
+      'Hunter target must be another living player',
+    )
+  }
+
+  pending.targetId = targetId
+  events.push({
+    type: 'HUNTER_SHOT_SUBMITTED',
+    hunterId: actorId,
+    targetId,
+  })
+  return success(state, events)
+}
+
+function confirmHunterShot(
+  state: GameState,
+  events: GameEvent[],
+): Result<CommandOutcome> {
+  if (state.phase !== 'HUNTER_SHOT') {
+    return invalidPhase('HUNTER_SHOT', state.phase)
+  }
+  const pending = state.pendingHunterShot
+  if (!pending?.targetId) {
+    return failure('INVALID_ACTION', 'Hunter shot is not submitted')
+  }
+
+  setPlayerDead(state.players, pending.targetId)
+  events.push(
+    {
+      type: 'HUNTER_SHOT_CONFIRMED',
+      hunterId: pending.hunterId,
+      targetId: pending.targetId,
+    },
+    {
+      type: 'PLAYER_DIED',
+      playerId: pending.targetId,
+      causes: ['HUNTER_SHOT'],
+    },
+  )
+  state.pendingHunterShot = null
   return transitionAfterElimination(state, 'NIGHT', events)
 }
 

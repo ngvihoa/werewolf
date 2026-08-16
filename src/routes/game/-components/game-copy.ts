@@ -19,6 +19,7 @@ export function moderatorPhaseTitle(
       DAY: 'Mở thảo luận ban ngày',
       VOTE: 'Ghi nhận biểu quyết',
       VOTE_RESOLUTION: 'Xác nhận biểu quyết',
+      HUNTER_SHOT: 'Phát súng cuối cùng của Thợ săn',
       GAME_OVER: 'Ván chơi đã kết thúc',
       SETUP: 'Chuẩn bị',
       ROLE_REVEAL: 'Xem vai',
@@ -35,6 +36,7 @@ export function moderatorPhaseDescription(phase: GameState['phase']) {
       DAY: 'Cho người chơi thảo luận, sau đó mở biểu quyết khi sẵn sàng.',
       VOTE: 'Nhập kết quả cuối cùng của bàn chơi.',
       VOTE_RESOLUTION: 'Kiểm tra người bị loại hoặc yêu cầu biểu quyết lại.',
+      HUNTER_SHOT: 'Chờ Thợ săn chọn mục tiêu, sau đó xác nhận phát bắn.',
       GAME_OVER: 'Điều kiện thắng đã được kiểm tra tự động.',
       SETUP: '',
       ROLE_REVEAL: '',
@@ -49,6 +51,7 @@ export function playerWaitingTitle(phase: PlayerGameView['phase']) {
   if (phase === 'NIGHT_RESOLUTION' || phase === 'VOTE_RESOLUTION') {
     return 'Chờ Quản trò xác nhận'
   }
+  if (phase === 'HUNTER_SHOT') return 'Thợ săn đang chọn mục tiêu'
   return 'Giữ im lặng và chờ lượt'
 }
 

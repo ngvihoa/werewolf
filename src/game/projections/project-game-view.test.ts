@@ -96,6 +96,41 @@ function createGame(): LocalGame {
 }
 
 describe('player projections', () => {
+  it('shows a submitted final-shot target only to the Hunter', () => {
+    const game = createGame()
+    game.state!.phase = 'HUNTER_SHOT'
+    game.state!.players.push({
+      id: 'hunter',
+      role: 'HUNTER',
+      alive: false,
+      abilityState: null,
+    })
+    game.state!.pendingHunterShot = {
+      hunterId: 'hunter',
+      targetId: 'wolf',
+    }
+    game.lobbyPlayers.push({
+      id: 'hunter',
+      displayName: 'Hunter',
+      ready: true,
+      role: 'HUNTER',
+    })
+
+    const hunterView = projectGameView(game, {
+      kind: 'PLAYER',
+      playerId: 'hunter',
+    })
+    const seerView = projectGameView(game, {
+      kind: 'PLAYER',
+      playerId: 'seer',
+    })
+    if (hunterView?.viewer !== 'PLAYER' || seerView?.viewer !== 'PLAYER') return
+
+    expect(hunterView.turn.hunterShotTargetId).toBe('wolf')
+    expect(seerView.turn.hunterShotTargetId).toBeNull()
+    expect(JSON.stringify(seerView)).not.toContain('pendingHunterShot')
+  })
+
   it('contains only public player fields and the viewer private state', () => {
     const view = projectGameView(createGame(), {
       kind: 'PLAYER',

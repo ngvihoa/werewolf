@@ -6,7 +6,10 @@ type CommandSession = {
   playerId: string | null
 }
 
-const PLAYER_COMMANDS = new Set<GameCommand['type']>(['SUBMIT_NIGHT_ACTION'])
+const PLAYER_COMMANDS = new Set<GameCommand['type']>([
+  'SUBMIT_NIGHT_ACTION',
+  'SUBMIT_HUNTER_SHOT',
+])
 
 // Authorization là application policy dùng chung cho mọi GameStore.
 // Rule engine phía sau chỉ kiểm tra luật chơi, không xác thực session.
@@ -21,8 +24,10 @@ export function authorizeCommand(
 
     // Player chỉ được gửi action mang chính actor id của session đó.
     if (
-      command.type === 'SUBMIT_NIGHT_ACTION' &&
-      command.action.actorId !== session.playerId
+      (command.type === 'SUBMIT_NIGHT_ACTION' &&
+        command.action.actorId !== session.playerId) ||
+      (command.type === 'SUBMIT_HUNTER_SHOT' &&
+        command.actorId !== session.playerId)
     ) {
       return failure('Player cannot act for another player')
     }

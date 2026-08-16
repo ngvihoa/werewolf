@@ -8,6 +8,7 @@ import { RoleCard } from '#/components/RoleCard'
 import { playerName, playerWaitingTitle } from './game-copy'
 import { GameResultDialog } from './GameResultDialog'
 import { NightActionForm } from './NightActionForm'
+import { HunterShotForm } from './HunterShotForm'
 import { SecretNotice } from './SecretNotice'
 import { GameOver } from './GameOver'
 
@@ -42,10 +43,10 @@ export function PlayerGamePanel({
           {phaseLabel(view.phase)} · Vòng {String(view.round).padStart(2, '0')}
         </p>
         <h2 className="text-balance text-3xl font-medium tracking-tight text-stone-50">
-          {!view.me.alive
-            ? 'Bạn đang quan sát'
-            : canSubmit
-              ? 'Đến lượt bạn hành động'
+          {canSubmit
+            ? 'Đến lượt bạn hành động'
+            : !view.me.alive
+              ? 'Bạn đang quan sát'
               : playerWaitingTitle(view.phase)}
         </h2>
         <p className="text-pretty text-base/7 text-stone-400 sm:text-sm/6">
@@ -69,6 +70,12 @@ export function PlayerGamePanel({
         <SecretNotice
           label="Mục tiêu của Ma sói"
           value={playerName(view.players, view.turn.werewolfTargetId)}
+        />
+      ) : null}
+      {view.turn.hunterShotTargetId ? (
+        <SecretNotice
+          label="Mục tiêu phát súng cuối"
+          value={playerName(view.players, view.turn.hunterShotTargetId)}
         />
       ) : null}
       {seerResults.length > 0 ? (
@@ -147,6 +154,9 @@ export function PlayerGamePanel({
           pending={pending}
           onCommand={onCommand}
         />
+      ) : null}
+      {canSubmit && view.phase === 'HUNTER_SHOT' ? (
+        <HunterShotForm view={view} pending={pending} onCommand={onCommand} />
       ) : null}
       {view.phase === 'GAME_OVER' ? <GameOver winner={view.winner} /> : null}
       {view.phase === 'GAME_OVER' && view.winner && view.me.role ? (

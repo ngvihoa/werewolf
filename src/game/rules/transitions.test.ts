@@ -8,6 +8,8 @@ describe('phase transitions', () => {
     ['SETUP', 'NIGHT', false],
     ['NIGHT_RESOLUTION', 'DAY', true],
     ['NIGHT_RESOLUTION', 'GAME_OVER', true],
+    ['VOTE_RESOLUTION', 'HUNTER_SHOT', true],
+    ['HUNTER_SHOT', 'NIGHT', true],
     ['GAME_OVER', 'NIGHT', false],
   ] as const)('%s -> %s is %s', (from, to, expected) => {
     expect(canTransitionPhase(from, to)).toBe(expected)
@@ -24,6 +26,15 @@ describe('phase transitions', () => {
       'SEER_INSPECT',
       'WEREWOLF_ATTACK',
       'WITCH_ACTION',
+    ])
+  })
+
+  it('runs the Hunter mark before the other night roles', () => {
+    expect(getNightQueue(['WEREWOLF', 'HUNTER', 'PROTECTOR'])).toEqual([
+      'HUNTER_MARK',
+      'PROTECTOR_PROTECT',
+      'SEER_INSPECT',
+      'WEREWOLF_ATTACK',
     ])
   })
 })

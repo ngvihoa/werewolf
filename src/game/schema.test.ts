@@ -16,7 +16,7 @@ describe('game domain schemas', () => {
     expect(gamePhaseSchema.safeParse('NIGHT').success).toBe(true)
     expect(queueStepSchema.safeParse('SEER_INSPECT').success).toBe(true)
 
-    expect(roleSchema.safeParse('HUNTER').success).toBe(false)
+    expect(roleSchema.safeParse('HUNTER').success).toBe(true)
     expect(gamePhaseSchema.safeParse('LOBBY').success).toBe(false)
   })
 

@@ -16,6 +16,8 @@ type NightResolutionInput = {
   witchHealed: boolean
   witchPoisonTargetId: string | null
   protectedTargetId?: string | null
+  hunterId?: string | null
+  hunterTargetId?: string | null
 }
 
 export function resolveNight(input: NightResolutionInput): NightResolution {
@@ -32,6 +34,15 @@ export function resolveNight(input: NightResolutionInput): NightResolution {
     const causes = causesByPlayer.get(input.witchPoisonTargetId) ?? []
     causes.push('WITCH_POISON')
     causesByPlayer.set(input.witchPoisonTargetId, causes)
+  }
+
+  if (
+    input.hunterId &&
+    input.hunterTargetId &&
+    causesByPlayer.has(input.hunterId) &&
+    !causesByPlayer.has(input.hunterTargetId)
+  ) {
+    causesByPlayer.set(input.hunterTargetId, ['HUNTER_SHOT'])
   }
 
   const deaths = [...causesByPlayer].map(([playerId, causes]) => ({

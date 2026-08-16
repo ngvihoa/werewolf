@@ -87,9 +87,13 @@ export function projectGameView(
       })) ?? [],
     turn: {
       canAct:
-        Boolean(domainPlayer?.alive) &&
-        activeStep !== null &&
-        domainPlayer?.role === STEP_ROLE[activeStep],
+        (Boolean(domainPlayer?.alive) &&
+          activeStep !== null &&
+          domainPlayer?.role === STEP_ROLE[activeStep]) ||
+        (game.state?.phase === 'HUNTER_SHOT' &&
+          domainPlayer?.role === 'HUNTER' &&
+          game.state.pendingHunterShot?.hunterId === domainPlayer.id &&
+          game.state.pendingHunterShot.targetId === null),
       activeStep,
       werewolfTargetId,
       werewolfTeammates:
@@ -113,6 +117,12 @@ export function projectGameView(
       lastProtectedTargetId:
         domainPlayer?.role === 'PROTECTOR'
           ? (game.state?.lastProtectedTargetId ?? null)
+          : null,
+      hunterShotTargetId:
+        game.state?.phase === 'HUNTER_SHOT' &&
+        domainPlayer?.role === 'HUNTER' &&
+        game.state.pendingHunterShot?.hunterId === domainPlayer.id
+          ? game.state.pendingHunterShot.targetId
           : null,
     },
     publicHistory: history.flatMap((entry) =>

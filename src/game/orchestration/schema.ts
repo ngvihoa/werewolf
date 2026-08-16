@@ -27,6 +27,12 @@ export const gameCommandSchema = z.discriminatedUnion('type', [
   }),
   z.object({ type: z.literal('CONFIRM_VOTE_RESULT') }),
   z.object({ type: z.literal('SKIP_REVOTE') }),
+  z.object({
+    type: z.literal('SUBMIT_HUNTER_SHOT'),
+    actorId: z.string().min(1),
+    targetId: z.string().min(1),
+  }),
+  z.object({ type: z.literal('CONFIRM_HUNTER_SHOT') }),
 ])
 
 // Event cũng là một IO boundary vì được lưu vào PostgreSQL dưới dạng type + JSONB.
@@ -87,4 +93,14 @@ export const gameEventSchema = z.discriminatedUnion('type', [
     type: z.literal('REVOTE_SKIPPED'),
   }),
   z.object({ type: z.literal('GAME_ENDED'), winner: teamSchema }),
+  z.object({
+    type: z.literal('HUNTER_SHOT_SUBMITTED'),
+    hunterId: z.string().min(1),
+    targetId: z.string().min(1),
+  }),
+  z.object({
+    type: z.literal('HUNTER_SHOT_CONFIRMED'),
+    hunterId: z.string().min(1),
+    targetId: z.string().min(1),
+  }),
 ])

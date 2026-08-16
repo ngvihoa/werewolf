@@ -6,7 +6,8 @@ export type RoomPlayer = {
   id: string
   displayName: string
   ready: boolean
-  role: 'VILLAGER' | 'WEREWOLF' | 'SEER' | 'WITCH' | 'PROTECTOR' | null
+  role:
+    'VILLAGER' | 'WEREWOLF' | 'SEER' | 'WITCH' | 'PROTECTOR' | 'HUNTER' | null
   alive?: boolean
 }
 

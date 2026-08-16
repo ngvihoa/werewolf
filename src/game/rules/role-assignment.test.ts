@@ -20,6 +20,14 @@ describe('role composition', () => {
     if (!result.ok) expect(result.error.code).toBe('INVALID_PLAYER_COUNT')
   })
 
+  it('adds one Hunter from eight players onward', () => {
+    const result = getRoleComposition(8)
+    expect(result.ok).toBe(true)
+    if (result.ok) {
+      expect(result.value.filter((role) => role === 'HUNTER')).toHaveLength(1)
+    }
+  })
+
   it('validates role counts regardless of order', () => {
     expect(
       validateRoleComposition([

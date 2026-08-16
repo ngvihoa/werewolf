@@ -8,6 +8,7 @@ export const ROLE_VALUES = [
   'SEER',
   'WITCH',
   'PROTECTOR',
+  'HUNTER',
 ] as const
 
 export const TEAM_VALUES = ['VILLAGE', 'WEREWOLF'] as const
@@ -21,10 +22,12 @@ export const GAME_PHASE_VALUES = [
   'DAY',
   'VOTE',
   'VOTE_RESOLUTION',
+  'HUNTER_SHOT',
   'GAME_OVER',
 ] as const
 
 export const QUEUE_STEP_VALUES = [
+  'HUNTER_MARK',
   'PROTECTOR_PROTECT',
   'SEER_INSPECT',
   'WEREWOLF_ATTACK',
@@ -87,6 +90,11 @@ export const playerSchema = z.discriminatedUnion('role', [
   z.object({
     ...basePlayerFields,
     role: z.literal('PROTECTOR'),
+    abilityState: z.null(),
+  }),
+  z.object({
+    ...basePlayerFields,
+    role: z.literal('HUNTER'),
     abilityState: z.null(),
   }),
 ])

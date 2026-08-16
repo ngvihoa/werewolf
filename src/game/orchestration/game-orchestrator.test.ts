@@ -22,6 +22,34 @@ function run(state: GameState, command: GameCommand) {
 }
 
 describe('night orchestration', () => {
+  it('adds the marked target when the Hunter dies that night', () => {
+    const players: Player[] = [
+      ...fivePlayers,
+      { id: 'hunter', role: 'HUNTER', alive: true, abilityState: null },
+    ]
+    let state = createFirstNightState(players)
+    state = run(state, {
+      type: 'SUBMIT_NIGHT_ACTION',
+      action: { type: 'HUNTER_MARK', actorId: 'hunter', targetId: 'a' },
+    }).state
+    state = run(state, { type: 'CONFIRM_STEP' }).state
+    state = run(state, { type: 'SKIP_STEP', reason: 'Skip Seer' }).state
+    state = run(state, {
+      type: 'SUBMIT_NIGHT_ACTION',
+      action: {
+        type: 'WEREWOLF_ATTACK',
+        actorId: 'wolf',
+        targetId: 'hunter',
+      },
+    }).state
+    state = run(state, { type: 'CONFIRM_STEP' }).state
+
+    expect(state.pendingNightResolution?.deaths).toEqual([
+      { playerId: 'hunter', causes: ['WEREWOLF_ATTACK'] },
+      { playerId: 'a', causes: ['HUNTER_SHOT'] },
+    ])
+  })
+
   it('submits, rejects and resubmits without changing the input state', () => {
     const initial = createFirstNightState(fivePlayers)
     const submitted = run(initial, {
@@ -159,6 +187,40 @@ describe('night orchestration', () => {
 })
 
 describe('vote orchestration', () => {
+  it('lets a voted-out Hunter choose a target before resolving the game', () => {
+    const players: Player[] = [
+      { id: 'hunter', role: 'HUNTER', alive: true, abilityState: null },
+      { id: 'wolf', role: 'WEREWOLF', alive: true, abilityState: null },
+      { id: 'a', role: 'VILLAGER', alive: true, abilityState: null },
+      { id: 'b', role: 'VILLAGER', alive: true, abilityState: null },
+    ]
+    let state = createFirstNightState(players)
+    state.phase = 'DAY'
+    state = run(state, { type: 'START_VOTE' }).state
+    state = run(state, {
+      type: 'SUBMIT_VOTE_RESULT',
+      tied: false,
+      selectedPlayerId: 'hunter',
+    }).state
+    state = run(state, { type: 'CONFIRM_VOTE_RESULT' }).state
+    expect(state.phase).toBe('HUNTER_SHOT')
+    expect(state.winner).toBeNull()
+
+    state = run(state, {
+      type: 'SUBMIT_HUNTER_SHOT',
+      actorId: 'hunter',
+      targetId: 'wolf',
+    }).state
+    const outcome = run(state, { type: 'CONFIRM_HUNTER_SHOT' })
+    expect(outcome.state.phase).toBe('GAME_OVER')
+    expect(outcome.state.winner).toBe('VILLAGE')
+    expect(outcome.events).toContainEqual({
+      type: 'PLAYER_DIED',
+      playerId: 'wolf',
+      causes: ['HUNTER_SHOT'],
+    })
+  })
+
   it('revotes once and starts the next night after a second tie', () => {
     let state = createFirstNightState(fivePlayers)
     state.phase = 'DAY'

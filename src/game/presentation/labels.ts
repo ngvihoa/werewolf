@@ -9,6 +9,7 @@ export function phaseLabel(phase: PlayerGameView['phase']) {
     DAY: 'Ban ngày',
     VOTE: 'Biểu quyết',
     VOTE_RESOLUTION: 'Kết quả biểu quyết',
+    HUNTER_SHOT: 'Phát súng cuối cùng',
     GAME_OVER: 'Kết thúc ván',
     LOBBY: 'Sảnh',
     SETUP: 'Chuẩn bị',
@@ -19,6 +20,7 @@ export function phaseLabel(phase: PlayerGameView['phase']) {
 
 export function queueStepLabel(step: GameState['queue'][number]['step']) {
   return {
+    HUNTER_MARK: 'Thợ săn chọn mục tiêu',
     PROTECTOR_PROTECT: 'Bảo vệ chọn người bảo hộ',
     SEER_INSPECT: 'Tiên tri soi',
     WEREWOLF_ATTACK: 'Ma sói tấn công',
@@ -43,6 +45,7 @@ export function roleLabel(role: Role) {
     SEER: 'Tiên tri',
     WITCH: 'Phù thủy',
     PROTECTOR: 'Bảo vệ',
+    HUNTER: 'Thợ săn',
   }[role]
 }
 
@@ -54,5 +57,7 @@ export function roleDescription(role: Role) {
     WITCH: 'Bạn có một bình cứu và một bình độc dùng trong cả ván.',
     PROTECTOR:
       'Mỗi đêm bảo hộ một người khỏi Ma sói, không chọn cùng một người hai đêm liên tiếp.',
+    HUNTER:
+      'Mỗi đêm chọn trước một mục tiêu; nếu chết trong đêm, bạn kéo người đó theo cùng.',
   }[role]
 }

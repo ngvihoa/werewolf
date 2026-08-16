@@ -1,3 +1,5 @@
+import type { Role } from '#/game/domain'
+
 import { InlineError } from '#/components/InlineError'
 import { RoleCard } from '#/components/RoleCard'
 
@@ -8,7 +10,7 @@ export function PlayerControls({
   error,
   onReadyChange,
 }: {
-  role: 'VILLAGER' | 'WEREWOLF' | 'SEER' | 'WITCH' | 'PROTECTOR' | null
+  role: Role | null
   ready: boolean
   pending: boolean
   error: string | null

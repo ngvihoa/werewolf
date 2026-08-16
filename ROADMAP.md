@@ -42,6 +42,7 @@ Goal: encode deterministic game rules independently from UI and persistence.
 - [x] Define typed commands, actions, decisions, results and events.
 - [x] Implement role composition validation for five through twelve players.
 - [x] Add the Protector role with self-protection and consecutive-night limits.
+- [x] Add the Hunter role with a nightly mark and a vote-triggered final shot.
 - [x] Add shared Werewolf teammate and target visibility.
 - [x] Implement secure role randomization.
 - [x] Implement target validation per role and queue step.
@@ -128,6 +129,7 @@ Goal: complete the playable night/day loop.
 - [x] Build Werewolf target selection.
 - [x] Build shared multi-Werewolf action context.
 - [x] Build Protector target selection.
+- [x] Build Hunter mark, final-shot selection and Moderator confirmation.
 - [x] Build Witch heal, poison and skip controls.
 - [x] Build Moderator queue control panel.
 - [x] Build confirm, reject, redo and skip flows.

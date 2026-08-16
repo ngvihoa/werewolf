@@ -108,6 +108,27 @@ export function ModeratorGamePanel({
           onCommand={onCommand}
         />
       ) : null}
+      {state.phase === 'HUNTER_SHOT' ? (
+        state.pendingHunterShot?.targetId ? (
+          <div className="flex flex-col gap-4 rounded-xl border border-red-400/20 bg-red-500/5 p-4">
+            <p className="text-base/7 text-stone-300 sm:text-sm/6">
+              {names.get(state.pendingHunterShot.hunterId) ?? 'Thợ săn'} chọn{' '}
+              {names.get(state.pendingHunterShot.targetId) ?? 'người chơi'}.
+            </p>
+            <CommandButton
+              primary
+              pending={pending}
+              onClick={() => onCommand({ type: 'CONFIRM_HUNTER_SHOT' })}
+            >
+              Xác nhận phát bắn
+            </CommandButton>
+          </div>
+        ) : (
+          <p className="text-base/7 text-stone-400 sm:text-sm/6">
+            Đang chờ Thợ săn chọn người kéo theo.
+          </p>
+        )
+      ) : null}
       {state.phase === 'GAME_OVER' ? (
         <div className="flex flex-col gap-5">
           <GameOver winner={state.winner} />

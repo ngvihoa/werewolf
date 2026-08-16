@@ -11,6 +11,33 @@ const players: Player[] = [
 ]
 
 describe('night resolution', () => {
+  it('triggers the confirmed Hunter mark only when the Hunter dies', () => {
+    expect(
+      resolveNight({
+        players,
+        werewolfTargetId: 'wolf',
+        witchHealed: false,
+        witchPoisonTargetId: null,
+        hunterId: 'wolf',
+        hunterTargetId: 'a',
+      }).deaths,
+    ).toEqual([
+      { playerId: 'wolf', causes: ['WEREWOLF_ATTACK'] },
+      { playerId: 'a', causes: ['HUNTER_SHOT'] },
+    ])
+
+    expect(
+      resolveNight({
+        players,
+        werewolfTargetId: 'a',
+        witchHealed: false,
+        witchPoisonTargetId: null,
+        hunterId: 'wolf',
+        hunterTargetId: 'b',
+      }).deaths,
+    ).toEqual([{ playerId: 'a', causes: ['WEREWOLF_ATTACK'] }])
+  })
+
   it('blocks the Werewolf attack when the target is protected', () => {
     expect(
       resolveNight({

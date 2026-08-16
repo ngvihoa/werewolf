@@ -123,6 +123,7 @@ export const playerGameViewSchema = z.object({
     werewolfTargetId: z.string().nullable(),
     werewolfTeammates: z.array(publicPlayerViewSchema),
     lastProtectedTargetId: z.string().nullable(),
+    hunterShotTargetId: z.string().nullable(),
   }),
   publicHistory: z.array(publicHistoryEntrySchema),
   privateHistory: z.array(privateHistoryEntrySchema),
@@ -151,6 +152,13 @@ const gameStateSchema = z.object({
     })
     .nullable(),
   pendingVoteResolution: voteResolutionSchema.nullable(),
+  pendingHunterShot: z
+    .object({
+      hunterId: z.string(),
+      targetId: z.string().nullable(),
+    })
+    .nullable()
+    .optional(),
   winner: teamSchema.nullable(),
 })
 
