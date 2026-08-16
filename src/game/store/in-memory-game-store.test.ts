@@ -244,6 +244,22 @@ describe('InMemoryGameStore lobby', () => {
     })
   })
 
+  it('only allows a rematch after the game has ended', () => {
+    const { store, created, game } = createStartedGame()
+    const before = store.getGame(game.id)
+    const result = store.rematch(
+      created.moderatorSessionToken,
+      game.version,
+      'rematch-too-early',
+    )
+
+    expect(result).toMatchObject({
+      ok: false,
+      error: { code: 'INVALID_GAME_STATE' },
+    })
+    expect(store.getGame(game.id)).toEqual(before)
+  })
+
   it('starts with a valid role composition and private Witch ability state', () => {
     const { game } = createStartedGame()
     expect(game.state?.phase).toBe('NIGHT')

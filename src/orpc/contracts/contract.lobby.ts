@@ -47,6 +47,7 @@ export const lobbyContract = {
   startGame: oc
     .input(versionedSessionInputSchema)
     .output(operationResultSchema),
+  rematch: oc.input(versionedSessionInputSchema).output(operationResultSchema),
   executeGameCommand: oc
     .input(
       z.object({

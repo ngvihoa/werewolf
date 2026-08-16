@@ -714,6 +714,92 @@ export class PostgresGameStore implements GameStore {
     })
   }
 
+  async rematch(
+    sessionToken: string,
+    expectedVersion: number,
+    idempotencyKey: string,
+  ): Promise<StoreResult<GameMutationResult>> {
+    const sessionTokenHash = this.#hashSessionToken(sessionToken)
+    const now = this.#now()
+
+    return this.#database.transaction(async (transaction) => {
+      const session = await findActiveSession(
+        transaction,
+        sessionTokenHash,
+        now,
+      )
+      if (!session) {
+        return failure(
+          STORE_ERROR_CODE.SESSION_NOT_FOUND,
+          'Session does not exist or is no longer active',
+        )
+      }
+      if (session.kind !== 'MODERATOR') {
+        return failure(
+          STORE_ERROR_CODE.NOT_AUTHORIZED,
+          'Moderator session is required',
+        )
+      }
+
+      const game = await lockGame(transaction, session.gameId)
+      const requestHash = hashMutationRequest({
+        type: 'REMATCH',
+        expectedVersion,
+      })
+      const replay = await replayCommandReceipt(
+        transaction,
+        session.id,
+        idempotencyKey,
+        requestHash,
+      )
+      if (replay) return replay
+      if (!game) {
+        return failure(STORE_ERROR_CODE.GAME_NOT_FOUND, 'Game not found')
+      }
+      if (game.version !== expectedVersion) {
+        return failure(STORE_ERROR_CODE.STALE_VERSION, 'Game version is stale')
+      }
+      if (game.state?.phase !== 'GAME_OVER') {
+        return failure(
+          STORE_ERROR_CODE.INVALID_GAME_STATE,
+          'Game has not ended',
+        )
+      }
+
+      await transaction
+        .delete(gameQueueSteps)
+        .where(eq(gameQueueSteps.gameId, game.id))
+      await transaction
+        .update(gamePlayers)
+        .set({ role: null, abilityState: null, isReady: false, isAlive: true })
+        .where(eq(gamePlayers.gameId, game.id))
+      await appendGameEvent(transaction, {
+        game: { id: game.id, phase: 'SETUP', round: 0 },
+        createdBy: 'MODERATOR',
+        actorPlayerId: null,
+        createdAt: now,
+        event: { type: 'MATCH_RESET' },
+      })
+      const nextVersion = await updateGameAndIncrementVersion(
+        transaction,
+        game,
+        now,
+        { state: null, status: 'LOBBY', phase: 'SETUP', round: 0 },
+      )
+      const result = { gameId: game.id, version: nextVersion }
+      await saveCommandReceipt(transaction, {
+        gameId: game.id,
+        sessionId: session.id,
+        idempotencyKey,
+        requestHash,
+        commandType: 'REMATCH',
+        expectedVersion,
+        result,
+      })
+      return { ok: true as const, value: result }
+    })
+  }
+
   async getGameView(sessionToken: string): Promise<StoreResult<GameView>> {
     const sessionHash = this.#hashSessionToken(sessionToken)
     const now = this.#now()
@@ -775,7 +861,7 @@ export class PostgresGameStore implements GameStore {
           .orderBy(desc(gameEvents.sequence))
           .limit(200)
 
-        const history = events.reverse().map((row) => ({
+        const allHistory = events.reverse().map((row) => ({
           id: row.id,
           sequence: row.sequence,
           gameId: row.gameId,
@@ -784,6 +870,10 @@ export class PostgresGameStore implements GameStore {
           createdAt: row.createdAt.toISOString(),
           event: deserializeGameEvent(row.type, row.payload),
         }))
+        const resetIndex = allHistory
+          .map((entry) => entry.event.type)
+          .lastIndexOf('MATCH_RESET')
+        const history = allHistory.slice(resetIndex + 1)
 
         const localGame: LocalGame = {
           id: game.id,

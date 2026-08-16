@@ -90,6 +90,12 @@ export interface GameStore {
     idempotencyKey: string,
   ): Awaitable<StoreResult<GameMutationResult>>
 
+  rematch(
+    sessionToken: string,
+    expectedVersion: number,
+    idempotencyKey: string,
+  ): Awaitable<StoreResult<GameMutationResult>>
+
   /**
    * Thực thi một lệnh bất kỳ xảy ra trong một đêm
    * @param input Thông tin lệnh

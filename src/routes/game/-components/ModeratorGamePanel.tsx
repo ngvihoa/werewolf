@@ -3,6 +3,7 @@ import type { GameState } from '#/game/orchestration/model'
 
 import { InlineError } from '#/components/InlineError'
 import { phaseLabel } from '#/game/presentation/labels'
+import { useState } from 'react'
 
 import { moderatorPhaseDescription, moderatorPhaseTitle } from './game-copy'
 import { VoteResolutionControl } from './VoteResolutionControl'
@@ -20,13 +21,16 @@ export function ModeratorGamePanel({
   pending,
   error,
   onCommand,
+  onRematch,
 }: {
   state: GameState
   names: Map<string, string>
   pending: boolean
   error: string | null
   onCommand: CommandHandler
+  onRematch: () => void
 }) {
+  const [confirmingRematch, setConfirmingRematch] = useState(false)
   const activeItem = state.queue.find(
     (item) =>
       item.status === 'ACTIVE' ||
@@ -104,7 +108,38 @@ export function ModeratorGamePanel({
           onCommand={onCommand}
         />
       ) : null}
-      {state.phase === 'GAME_OVER' ? <GameOver winner={state.winner} /> : null}
+      {state.phase === 'GAME_OVER' ? (
+        <div className="flex flex-col gap-5">
+          <GameOver winner={state.winner} />
+          {confirmingRematch ? (
+            <div className="flex flex-col gap-3 rounded-md border border-red-500/30 bg-red-950/20 p-4">
+              <p className="text-sm/6 text-stone-300">
+                Giữ nguyên phòng và người chơi, đồng thời xóa vai trò và trạng
+                thái của ván vừa kết thúc?
+              </p>
+              <div className="flex flex-wrap gap-3">
+                <CommandButton primary pending={pending} onClick={onRematch}>
+                  Xác nhận chơi ván mới
+                </CommandButton>
+                <CommandButton
+                  pending={pending}
+                  onClick={() => setConfirmingRematch(false)}
+                >
+                  Hủy
+                </CommandButton>
+              </div>
+            </div>
+          ) : (
+            <CommandButton
+              primary
+              pending={pending}
+              onClick={() => setConfirmingRematch(true)}
+            >
+              Chơi ván mới cùng phòng
+            </CommandButton>
+          )}
+        </div>
+      ) : null}
       {error ? <InlineError message={error} /> : null}
     </div>
   )

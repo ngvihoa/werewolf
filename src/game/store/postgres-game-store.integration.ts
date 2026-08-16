@@ -641,6 +641,125 @@ describe('PostgresGameStore.startGame', () => {
   })
 })
 
+describe('PostgresGameStore.rematch', () => {
+  it('atomically resets a finished game while preserving room, players and sessions', async () => {
+    const roomCode = createTestRoomCode()
+    createdRoomCodes.push(roomCode)
+    const store = new PostgresGameStore({ createRoomCode: () => roomCode })
+    const created = await store.createGame('Test Moderator')
+    if (!created.ok) throw new Error('Expected createGame to succeed')
+
+    await db.insert(gamePlayers).values(
+      [
+        ['An', 'WEREWOLF'],
+        ['Binh', 'SEER'],
+        ['Cuong', 'VILLAGER'],
+        ['Dung', 'VILLAGER'],
+        ['Hoa', 'VILLAGER'],
+      ].map(([displayName, role]) => ({
+        gameId: created.value.gameId,
+        displayName,
+        role: role as 'WEREWOLF' | 'SEER' | 'VILLAGER',
+        isReady: true,
+      })),
+    )
+    const started = await store.startGame(
+      created.value.moderatorSessionToken,
+      1,
+      'rematch-fixture-start',
+    )
+    if (!started.ok) throw new Error('Expected startGame to succeed')
+    const [startedGame] = await db
+      .select()
+      .from(games)
+      .where(eq(games.id, created.value.gameId))
+    if (!startedGame?.state) throw new Error('Expected persisted game state')
+
+    await db
+      .update(games)
+      .set({
+        status: 'GAME_OVER',
+        phase: 'GAME_OVER',
+        state: { ...startedGame.state, phase: 'GAME_OVER', winner: 'VILLAGE' },
+      })
+      .where(eq(games.id, created.value.gameId))
+    const sessionsBefore = await db
+      .select({ id: gameSessions.id })
+      .from(gameSessions)
+      .where(eq(gameSessions.gameId, created.value.gameId))
+
+    const result = await store.rematch(
+      created.value.moderatorSessionToken,
+      2,
+      'rematch-once',
+    )
+    expect(result).toEqual({
+      ok: true,
+      value: { gameId: created.value.gameId, version: 3 },
+    })
+    expect(
+      await store.rematch(
+        created.value.moderatorSessionToken,
+        2,
+        'rematch-once',
+      ),
+    ).toEqual(result)
+
+    const [resetGame] = await db
+      .select()
+      .from(games)
+      .where(eq(games.id, created.value.gameId))
+    const resetPlayers = await db
+      .select()
+      .from(gamePlayers)
+      .where(eq(gamePlayers.gameId, created.value.gameId))
+    const sessionsAfter = await db
+      .select({ id: gameSessions.id })
+      .from(gameSessions)
+      .where(eq(gameSessions.gameId, created.value.gameId))
+    const queue = await db
+      .select()
+      .from(gameQueueSteps)
+      .where(eq(gameQueueSteps.gameId, created.value.gameId))
+    const events = await db
+      .select({ type: gameEvents.type })
+      .from(gameEvents)
+      .where(eq(gameEvents.gameId, created.value.gameId))
+      .orderBy(asc(gameEvents.sequence))
+    const view = await store.getGameView(created.value.moderatorSessionToken)
+
+    expect(resetGame).toMatchObject({
+      roomCode,
+      status: 'LOBBY',
+      phase: 'SETUP',
+      round: 0,
+      version: 3,
+      state: null,
+    })
+    expect(resetPlayers).toHaveLength(5)
+    expect(
+      resetPlayers.every(
+        (player) =>
+          player.role === null &&
+          player.abilityState === null &&
+          !player.isReady &&
+          player.isAlive,
+      ),
+    ).toBe(true)
+    expect(sessionsAfter).toEqual(sessionsBefore)
+    expect(queue).toEqual([])
+    expect(events.map((event) => event.type)).toEqual([
+      'GAME_CREATED',
+      'GAME_STARTED',
+      'MATCH_RESET',
+    ])
+    expect(view.ok && view.value.viewer === 'MODERATOR').toBe(true)
+    if (view.ok && view.value.viewer === 'MODERATOR') {
+      expect(view.value.game.history).toEqual([])
+    }
+  })
+})
+
 describe('PostgresGameStore.getGameView', () => {
   it('rejects a session token that does not exist', async () => {
     const store = new PostgresGameStore()

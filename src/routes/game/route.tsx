@@ -61,6 +61,29 @@ function GamePage() {
       await invalidateView()
     },
   })
+  const rematchMutation = useMutation({
+    mutationFn: async ({ idempotencyKey }: { idempotencyKey: string }) => {
+      let result = await orpcClient.lobby.rematch({
+        sessionToken: activeSessionToken,
+        idempotencyKey,
+        expectedVersion: gameViewVersion(viewQuery.data),
+      })
+      if (!result.ok && result.error.code === 'STALE_VERSION') {
+        const refreshed = await viewQuery.refetch()
+        if (refreshed.isSuccess && refreshed.data) {
+          result = await orpcClient.lobby.rematch({
+            sessionToken: activeSessionToken,
+            idempotencyKey,
+            expectedVersion: gameViewVersion(refreshed.data),
+          })
+        }
+      }
+      return result
+    },
+    async onSuccess() {
+      await invalidateView()
+    },
+  })
 
   if (!sessionToken) return <Navigate to="/" replace />
   if (viewQuery.isPending) return <AppLoading />
@@ -116,11 +139,15 @@ function GamePage() {
   if (!gameStarted) return <Navigate to="/lobby" replace />
 
   const mutationError =
-    commandMutation.data?.ok === false
-      ? mutationErrorMessage(commandMutation.data.error)
-      : commandMutation.error
-        ? mutationErrorMessage(commandMutation.error)
-        : null
+    rematchMutation.data?.ok === false
+      ? mutationErrorMessage(rematchMutation.data.error)
+      : rematchMutation.error
+        ? mutationErrorMessage(rematchMutation.error)
+        : commandMutation.data?.ok === false
+          ? mutationErrorMessage(commandMutation.data.error)
+          : commandMutation.error
+            ? mutationErrorMessage(commandMutation.error)
+            : null
 
   return (
     <main className="isolate min-h-dvh px-5 py-6 sm:px-8 sm:py-8 lg:px-12">
@@ -152,11 +179,16 @@ function GamePage() {
           <aside className="min-w-0 border-t border-white/10 pt-8 lg:border-t-0 lg:border-l lg:pt-0 lg:pl-10">
             <GameBoard
               view={view}
-              pending={commandMutation.isPending}
+              pending={commandMutation.isPending || rematchMutation.isPending}
               error={mutationError}
               onCommand={(command) =>
                 commandMutation.mutate({
                   command,
+                  idempotencyKey: createIdempotencyKey(),
+                })
+              }
+              onRematch={() =>
+                rematchMutation.mutate({
                   idempotencyKey: createIdempotencyKey(),
                 })
               }

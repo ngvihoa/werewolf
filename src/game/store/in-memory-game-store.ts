@@ -268,6 +268,38 @@ export class InMemoryGameStore implements GameStore {
     return success(result)
   }
 
+  rematch(
+    sessionToken: string,
+    expectedVersion: number,
+    idempotencyKey: string,
+  ): StoreResult<GameMutationResult> {
+    const resolved = this.#resolveModerator(sessionToken)
+    if (!resolved.ok) return resolved
+    const game = resolved.value
+    const receiptKey = `${sessionToken}:${idempotencyKey}`
+    const request = JSON.stringify({ type: 'REMATCH', expectedVersion })
+    const receipt = this.#commandReceipts.get(receiptKey)
+    if (receipt) return replayReceipt(receipt, request)
+
+    if (game.version !== expectedVersion) {
+      return failure('STALE_VERSION', 'Game version is stale')
+    }
+    if (game.state?.phase !== 'GAME_OVER') {
+      return failure('INVALID_GAME_STATE', 'Game has not ended')
+    }
+
+    game.state = null
+    for (const player of game.lobbyPlayers) {
+      player.role = null
+      player.ready = false
+    }
+    game.version += 1
+    this.#appendEvents(game, 'MODERATOR', null, [{ type: 'MATCH_RESET' }])
+    const result = { gameId: game.id, version: game.version }
+    this.#commandReceipts.set(receiptKey, { request, result })
+    return success(result)
+  }
+
   execute(input: ExecuteGameCommandInput): StoreResult<GameMutationResult> {
     const game = this.#games.get(input.gameId)
     if (!game) return failure('GAME_NOT_FOUND', 'Game does not exist')
@@ -334,7 +366,7 @@ export class InMemoryGameStore implements GameStore {
     if (!resolved.ok) return resolved
     const { game, session } = resolved.value
     const view = projectGameView(
-      game,
+      currentMatchSnapshot(game),
       session.kind === 'MODERATOR'
         ? { kind: 'MODERATOR', playerId: null }
         : { kind: 'PLAYER', playerId: session.playerId ?? '' },
@@ -413,6 +445,15 @@ export class InMemoryGameStore implements GameStore {
   #snapshot(game: LocalGame): LocalGame {
     return structuredClone(game)
   }
+}
+
+function currentMatchSnapshot(game: LocalGame): LocalGame {
+  const resetIndex = game.history
+    .map((entry) => entry.event.type)
+    .lastIndexOf('MATCH_RESET')
+  const snapshot = structuredClone(game)
+  snapshot.history = snapshot.history.slice(resetIndex + 1)
+  return snapshot
 }
 
 function createDomainPlayer(id: string, role: Role): Player {

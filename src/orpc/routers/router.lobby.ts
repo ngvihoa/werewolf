@@ -52,6 +52,15 @@ export const lobbyRouter = baseRouter.lobby.router({
     return toOperationResult(result)
   }),
 
+  rematch: baseRouter.lobby.rematch.handler(async ({ input }) => {
+    const result = await localGameStore.rematch(
+      input.sessionToken,
+      input.expectedVersion,
+      input.idempotencyKey,
+    )
+    return toOperationResult(result)
+  }),
+
   executeGameCommand: baseRouter.lobby.executeGameCommand.handler(
     async ({ input }) => {
       const result = await localGameStore.execute(input)

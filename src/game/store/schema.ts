@@ -18,6 +18,7 @@ export const setupEventSchema = z.discriminatedUnion('type', [
   }),
   z.object({ type: z.literal('ROLES_ASSIGNED') }),
   z.object({ type: z.literal('GAME_STARTED') }),
+  z.object({ type: z.literal('MATCH_RESET') }),
 ])
 
 // Hai nhóm event có cùng discriminator nên có thể ghép thành một schema duy nhất

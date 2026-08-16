@@ -9,11 +9,13 @@ export function GameBoard({
   pending,
   error,
   onCommand,
+  onRematch,
 }: {
   view: GameView
   pending: boolean
   error: string | null
   onCommand: CommandHandler
+  onRematch: () => void
 }) {
   if (view.viewer === 'MODERATOR') {
     const state = view.game.state
@@ -32,6 +34,7 @@ export function GameBoard({
         pending={pending}
         error={error}
         onCommand={onCommand}
+        onRematch={onRematch}
       />
     )
   }
