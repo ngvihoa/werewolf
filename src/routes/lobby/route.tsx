@@ -155,7 +155,7 @@ function LobbyPage() {
               currentPlayerId={isModerator ? undefined : view.me.id}
             />
           </div>
-          <aside className="min-w-0 border-t border-white/10 pt-8 lg:border-t-0 lg:border-l lg:pt-0 lg:pl-10">
+          <aside className="min-w-0 border-t border-white/10 pt-8 lg:sticky lg:top-8 lg:self-start lg:border-t-0 lg:border-l lg:pt-0 lg:pl-10">
             {view.viewer === 'MODERATOR' ? (
               <ModeratorControls
                 playerCount={players.length}

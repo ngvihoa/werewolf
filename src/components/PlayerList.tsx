@@ -30,10 +30,10 @@ export function PlayerList({
       <div className="flex items-center justify-between border-b border-white/10 pb-3">
         <h2 className="text-xl font-medium text-stone-100">Người chơi</h2>
         <p className="font-mono text-sm tabular-nums text-stone-500">
-          {players.length} / 6
+          {players.length} / 12
         </p>
       </div>
-      <ul className="divide-y divide-white/10" role="list">
+      <ul className="grid gap-2 pt-3 sm:grid-cols-2" role="list">
         {players.length ? (
           players.map((player, index) => {
             const active = activePlayerIds?.has(player.id) ?? false
@@ -41,10 +41,10 @@ export function PlayerList({
             return (
               <li
                 aria-current={active ? 'step' : undefined}
-                className={`grid grid-cols-[auto_1fr_auto] items-center gap-4 rounded-lg px-3 py-4 transition-colors ${
+                className={`grid min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-xl border px-3 py-3 transition-colors sm:gap-4 sm:py-4 ${
                   active
-                    ? 'bg-red-500/10 ring-1 ring-red-400/25'
-                    : 'ring-1 ring-transparent'
+                    ? 'border-red-400/25 bg-red-500/10'
+                    : 'border-white/10 bg-white/[0.02]'
                 }`}
                 key={player.id}
               >
@@ -60,7 +60,7 @@ export function PlayerList({
                       alt={`Vai ${roleLabel(player.role)}`}
                       className="size-full object-cover"
                       height={40}
-                      src={`/role/${player.role.toLowerCase()}.png`}
+                      src={`/role/${player.role === 'PROTECTOR' ? 'defender' : player.role.toLowerCase()}.png`}
                       width={40}
                     />
                   ) : (
@@ -93,7 +93,7 @@ export function PlayerList({
             )
           })
         ) : (
-          <li className="py-12 text-center text-base/7 text-stone-500 sm:text-sm/6">
+          <li className="py-12 text-center text-base/7 text-stone-500 sm:col-span-2 sm:text-sm/6">
             Chưa có người chơi. Room code đang chờ được nhập.
           </li>
         )}
