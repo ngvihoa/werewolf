@@ -1,6 +1,7 @@
 import { gameViewQueryKey, useGameView } from '#/hooks/useGameView'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute, Navigate } from '@tanstack/react-router'
+import { createIdempotencyKey } from '#/lib/create-idempotency-key'
 import { useLocalSession } from '#/hooks/useLocalSession'
 import { SessionError } from '#/components/SessionError'
 import { RoomSummary } from '#/components/RoomSummary'
@@ -122,6 +123,7 @@ function LobbyPage() {
               players={players}
               isModerator={isModerator}
               rolesAssigned={rolesAssigned}
+              currentPlayerId={isModerator ? undefined : view.me.id}
             />
           </div>
           <aside className="min-w-0 border-t border-white/10 pt-8 lg:border-t-0 lg:border-l lg:pt-0 lg:pl-10">
@@ -137,14 +139,14 @@ function LobbyPage() {
                 onAssign={() =>
                   assignMutation.mutate({
                     expectedVersion: version,
-                    idempotencyKey: crypto.randomUUID(),
+                    idempotencyKey: createIdempotencyKey(),
                   })
                 }
                 // Start game cũng dùng optimistic locking như các lobby mutation khác.
                 onStart={() =>
                   startMutation.mutate({
                     expectedVersion: version,
-                    idempotencyKey: crypto.randomUUID(),
+                    idempotencyKey: createIdempotencyKey(),
                   })
                 }
               />
@@ -157,7 +159,7 @@ function LobbyPage() {
                 onReadyChange={(ready) =>
                   readyMutation.mutate({
                     ready,
-                    idempotencyKey: crypto.randomUUID(),
+                    idempotencyKey: createIdempotencyKey(),
                   })
                 }
               />

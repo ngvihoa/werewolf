@@ -3,6 +3,7 @@ import type { GameCommand } from '#/game/orchestration/commands'
 import { gameViewQueryKey, useGameView } from '#/hooks/useGameView'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute, Navigate } from '@tanstack/react-router'
+import { createIdempotencyKey } from '#/lib/create-idempotency-key'
 import { useLocalSession } from '#/hooks/useLocalSession'
 import { SessionError } from '#/components/SessionError'
 import { RoomSummary } from '#/components/RoomSummary'
@@ -68,7 +69,13 @@ function GamePage() {
   const roomCode = isModerator ? view.game.roomCode : view.roomCode
   const version = isModerator ? view.game.version : view.version
   const players = isModerator
-    ? view.game.lobbyPlayers
+    ? view.game.lobbyPlayers.map((player) => ({
+        ...player,
+        alive:
+          view.game.state?.players.find(
+            (statePlayer) => statePlayer.id === player.id,
+          )?.alive ?? true,
+      }))
     : view.players.map((player) => ({ ...player, role: null }))
   const rolesAssigned = isModerator
     ? players.length > 0 && players.every((player) => player.role !== null)
@@ -130,6 +137,8 @@ function GamePage() {
               isModerator={isModerator}
               rolesAssigned={rolesAssigned}
               activePlayerIds={activePlayerIds}
+              currentPlayerId={isModerator ? undefined : view.me.id}
+              showLifeStatus
             />
           </div>
           <aside className="min-w-0 border-t border-white/10 pt-8 lg:border-t-0 lg:border-l lg:pt-0 lg:pl-10">
@@ -140,7 +149,7 @@ function GamePage() {
               onCommand={(command) =>
                 commandMutation.mutate({
                   command,
-                  idempotencyKey: crypto.randomUUID(),
+                  idempotencyKey: createIdempotencyKey(),
                 })
               }
             />

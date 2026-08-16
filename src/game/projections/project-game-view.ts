@@ -31,13 +31,23 @@ export function projectGameView(
   const werewolfTargetId =
     domainPlayer?.role === 'WITCH' && activeStep === 'WITCH_ACTION'
       ? (game.state?.confirmedNightActions.find(
-          (action) => action.type === 'WEREWOLF_ATTACK',
-        )?.targetId ?? null)
+        (action) => action.type === 'WEREWOLF_ATTACK',
+      )?.targetId ?? null)
       : null
 
-  const history = game.history.map((entry) =>
-    projectEvent(entry, viewer.playerId),
-  )
+  let confirmedWerewolfTargetId: string | null = null
+  const history = game.history.map((entry) => {
+    if (entry.event.type === 'PHASE_CHANGED' && entry.event.to === 'NIGHT') {
+      confirmedWerewolfTargetId = null
+    }
+    if (
+      entry.event.type === 'NIGHT_ACTION_CONFIRMED' &&
+      entry.event.action.type === 'WEREWOLF_ATTACK'
+    ) {
+      confirmedWerewolfTargetId = entry.event.action.targetId
+    }
+    return projectEvent(entry, viewer.playerId, confirmedWerewolfTargetId)
+  })
   const view: PlayerGameView = {
     viewer: 'PLAYER',
     gameId: game.id,
@@ -91,6 +101,7 @@ export function projectGameView(
 function projectEvent(
   entry: StoredEventInput,
   viewerPlayerId: string,
+  confirmedWerewolfTargetId: string | null,
 ): EventProjection {
   const metadata = { sequence: entry.sequence, createdAt: entry.createdAt }
   const event = entry.event
@@ -143,6 +154,10 @@ function projectEvent(
       privateEvent = {
         type: 'OWN_NIGHT_ACTION_CONFIRMED',
         action: structuredClone(event.action),
+        healedTargetId:
+          event.action.type === 'WITCH_ACTION' && event.action.heal
+            ? confirmedWerewolfTargetId
+            : null,
       }
     } else {
       privateEvent = {

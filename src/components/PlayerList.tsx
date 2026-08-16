@@ -7,6 +7,7 @@ export type RoomPlayer = {
   displayName: string
   ready: boolean
   role: 'VILLAGER' | 'WEREWOLF' | 'SEER' | 'WITCH' | null
+  alive?: boolean
 }
 
 export function PlayerList({
@@ -14,11 +15,15 @@ export function PlayerList({
   isModerator,
   rolesAssigned,
   activePlayerIds,
+  currentPlayerId,
+  showLifeStatus = false,
 }: {
   players: RoomPlayer[]
   isModerator: boolean
   rolesAssigned: boolean
   activePlayerIds?: ReadonlySet<string>
+  currentPlayerId?: string
+  showLifeStatus?: boolean
 }) {
   return (
     <div className="flex flex-col">
@@ -32,6 +37,7 @@ export function PlayerList({
         {players.length ? (
           players.map((player, index) => {
             const active = activePlayerIds?.has(player.id) ?? false
+            const isCurrentPlayer = player.id === currentPlayerId
             return (
               <li
                 aria-current={active ? 'step' : undefined}
@@ -62,8 +68,13 @@ export function PlayerList({
                   )}
                 </span>
                 <div className="min-w-0">
-                  <p className="truncate text-base font-medium text-stone-100 sm:text-sm">
-                    {player.displayName}
+                  <p className="flex items-center gap-2 text-base font-medium text-stone-100 sm:text-sm">
+                    <span className="truncate">{player.displayName}</span>
+                    {isCurrentPlayer ? (
+                      <span className="shrink-0 rounded-full bg-amber-300/10 px-2 py-0.5 text-xs font-medium text-amber-200 ring-1 ring-amber-300/20">
+                        Bạn
+                      </span>
+                    ) : null}
                   </p>
                   <p className="truncate text-base/7 text-stone-500 sm:text-sm/6">
                     {isModerator && player.role
@@ -75,6 +86,8 @@ export function PlayerList({
                   ready={player.ready}
                   assigned={rolesAssigned}
                   active={active}
+                  alive={player.alive}
+                  showLifeStatus={showLifeStatus}
                 />
               </li>
             )

@@ -1,4 +1,3 @@
-import { roleDescription, roleLabel } from '#/game/presentation/labels'
 import { InlineError } from '#/components/InlineError'
 import { RoleCard } from '#/components/RoleCard'
 
@@ -39,10 +38,10 @@ export function PlayerControls({
           Vai của bạn
         </p>
         <h2 className="text-4xl font-medium tracking-tight text-stone-50">
-          {roleLabel(role)}
+          Vai trò đã được phân
         </h2>
         <p className="text-pretty text-base/7 text-stone-400 sm:text-sm/6">
-          {roleDescription(role)}
+          Mở thẻ bên dưới để xem riêng vai trò của bạn.
         </p>
       </div>
       <RoleCard role={role} />

@@ -80,6 +80,7 @@ export const privateHistoryEventSchema = z.discriminatedUnion('type', [
   z.object({
     type: z.literal('OWN_NIGHT_ACTION_CONFIRMED'),
     action: nightActionSchema,
+    healedTargetId: z.string().nullable(),
   }),
   z.object({
     type: z.literal('OWN_NIGHT_ACTION_REJECTED'),
