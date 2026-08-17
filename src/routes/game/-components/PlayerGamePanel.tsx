@@ -24,7 +24,7 @@ export function PlayerGamePanel({
   onCommand: CommandHandler
 }) {
   const activeStep = view.turn.activeStep
-  const canSubmit = view.turn.canAct && view.me.alive
+  const canSubmit = view.turn.canAct
   const seerResults = [...view.privateHistory]
     .reverse()
     .filter((entry) => entry.event.type === 'SEER_RESULT_RECORDED')

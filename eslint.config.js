@@ -3,6 +3,17 @@
 import config from '@ngvihoa/eslint-config-best-practices'
 
 export default [
+  {
+    ignores: [
+      '.output/**',
+      '.tanstack/**',
+      'dist/**',
+      'drizzle/**',
+      'playwright-report/**',
+      'src/routeTree.gen.ts',
+      'test-results/**',
+    ],
+  },
   ...config.react,
   {
     files: ['**/*.{ts,mts,cts,tsx}'],
@@ -16,13 +27,6 @@ export default [
     },
   },
   {
-    ignores: [
-      '.output/**',
-      '.tanstack/**',
-      'dist/**',
-      'drizzle/**',
-      'src/routeTree.gen.ts',
-    ],
     rules: {
       'import-x/order': 'off',
       'no-nested-ternary': 'off',
