@@ -11,8 +11,11 @@ dist-ssr
 .wrangler
 .output
 .vinxi
+.vercel
+.workspace-notes/*
 __unconfig*
 todos.json
 supabase/.temp
 playwright-report/
 test-results/
+.vercel

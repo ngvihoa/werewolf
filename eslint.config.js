@@ -7,6 +7,7 @@ export default [
     ignores: [
       '.output/**',
       '.tanstack/**',
+      '.vercel/**',
       'dist/**',
       'drizzle/**',
       'playwright-report/**',
