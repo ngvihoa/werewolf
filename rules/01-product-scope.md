@@ -95,9 +95,7 @@ Chưa cần triển khai:
 - Nhiều Werewolf cùng vote target.
 - Neutral faction.
 - Lovers / Cupid.
-- Hunter.
 - Sheriff.
-- Defender.
 - Các role có conversion.
 - Các role phụ thuộc hành vi vật lý như Little Girl.
 

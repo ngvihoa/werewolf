@@ -10,6 +10,7 @@ import type {
 import type { LocalGame } from '../store/model'
 
 import { STEP_ROLE } from '../rules/transitions'
+import { isWerewolfRole } from '../domain'
 
 export function projectGameView(
   game: LocalGame,
@@ -36,7 +37,7 @@ export function projectGameView(
         )
   const werewolfTargetId =
     (domainPlayer?.role === 'WITCH' && activeStep === 'WITCH_ACTION') ||
-    domainPlayer?.role === 'WEREWOLF'
+    (domainPlayer && isWerewolfRole(domainPlayer.role))
       ? (visibleWerewolfAction?.targetId ?? null)
       : null
 
@@ -89,19 +90,29 @@ export function projectGameView(
       canAct:
         (Boolean(domainPlayer?.alive) &&
           activeStep !== null &&
-          domainPlayer?.role === STEP_ROLE[activeStep]) ||
+          (activeStep === 'WEREWOLF_ATTACK'
+            ? isWerewolfRole(domainPlayer.role)
+            : domainPlayer?.role === STEP_ROLE[activeStep])) ||
         (game.state?.phase === 'HUNTER_SHOT' &&
           domainPlayer?.role === 'HUNTER' &&
           game.state.pendingHunterShot?.hunterId === domainPlayer.id &&
           game.state.pendingHunterShot.targetId === null),
       activeStep,
       werewolfTargetId,
+      werewolfAttackEnhanced:
+        domainPlayer && isWerewolfRole(domainPlayer.role)
+          ? (visibleWerewolfAction?.enhanced ?? false)
+          : null,
+      enhancedAttackAvailable:
+        domainPlayer?.role === 'ALPHA_WEREWOLF'
+          ? domainPlayer.abilityState.enhancedAttackAvailable
+          : null,
       werewolfTeammates:
-        domainPlayer?.role === 'WEREWOLF'
+        domainPlayer && isWerewolfRole(domainPlayer.role)
           ? game
               .state!.players.filter(
                 (player) =>
-                  player.role === 'WEREWOLF' && player.id !== domainPlayer.id,
+                  isWerewolfRole(player.role) && player.id !== domainPlayer.id,
               )
               .map((player) => ({
                 id: player.id,

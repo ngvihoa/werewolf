@@ -102,6 +102,8 @@ function roleLabel(role: Role): string {
   switch (role) {
     case 'WEREWOLF':
       return 'Ma sói'
+    case 'ALPHA_WEREWOLF':
+      return 'Sói Đầu Đàn'
     case 'SEER':
       return 'Tiên tri'
     case 'WITCH':

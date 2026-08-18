@@ -19,8 +19,8 @@ export async function createTable(
   browser: Browser,
   playerCount = 8,
 ): Promise<TestTable> {
-  if (playerCount < 5 || playerCount > 12) {
-    throw new Error('A table requires 5-12 players')
+  if (playerCount < 5 || playerCount > 15) {
+    throw new Error('A table requires 5-15 players')
   }
 
   const moderator = await openParticipant(browser, 'Moderator')
@@ -49,7 +49,7 @@ export async function createTable(
     }),
   )
 
-  await expect(moderator.page.getByText(`${playerCount} / 12`)).toBeVisible()
+  await expect(moderator.page.getByText(`${playerCount} / 15`)).toBeVisible()
 
   return {
     moderator,

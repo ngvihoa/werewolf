@@ -457,17 +457,26 @@ function currentMatchSnapshot(game: LocalGame): LocalGame {
 }
 
 function createDomainPlayer(id: string, role: Role): Player {
-  return role === 'WITCH'
-    ? {
-        id,
-        role,
-        alive: true,
-        abilityState: {
-          healingPotionAvailable: true,
-          poisonPotionAvailable: true,
-        },
-      }
-    : { id, role, alive: true, abilityState: null }
+  if (role === 'WITCH') {
+    return {
+      id,
+      role,
+      alive: true,
+      abilityState: {
+        healingPotionAvailable: true,
+        poisonPotionAvailable: true,
+      },
+    }
+  }
+  if (role === 'ALPHA_WEREWOLF') {
+    return {
+      id,
+      role,
+      alive: true,
+      abilityState: { enhancedAttackAvailable: true },
+    }
+  }
+  return { id, role, alive: true, abilityState: null }
 }
 
 function success<T>(value: T): StoreResult<T> {

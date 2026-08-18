@@ -22,6 +22,7 @@ export function NightActionForm({
   const [targetId, setTargetId] = useState('')
   const [heal, setHeal] = useState(false)
   const [poisonTargetId, setPoisonTargetId] = useState('')
+  const [enhanced, setEnhanced] = useState(false)
   const teammateIds = new Set(
     view.turn.werewolfTeammates.map((player) => player.id),
   )
@@ -51,7 +52,10 @@ export function NightActionForm({
     if (!targetId) return
     onCommand({
       type: 'SUBMIT_NIGHT_ACTION',
-      action: { type: step, actorId: view.me.id, targetId },
+      action:
+        step === 'WEREWOLF_ATTACK'
+          ? { type: step, actorId: view.me.id, targetId, enhanced }
+          : { type: step, actorId: view.me.id, targetId },
     })
   }
 
@@ -90,16 +94,44 @@ export function NightActionForm({
           />
         </>
       ) : (
-        <SelectField
-          id="night-target"
-          label="Chọn mục tiêu"
-          name="targetId"
-          value={targetId}
-          options={targets}
-          emptyLabel="Chọn một người chơi"
-          required
-          onChange={setTargetId}
-        />
+        <>
+          <SelectField
+            id="night-target"
+            label="Chọn mục tiêu"
+            name="targetId"
+            value={targetId}
+            options={targets}
+            emptyLabel="Chọn một người chơi"
+            required
+            onChange={setTargetId}
+          />
+          {step === 'WEREWOLF_ATTACK' &&
+          view.me.role === 'ALPHA_WEREWOLF' ? (
+            <label className="flex items-start gap-3 text-base/7 text-stone-300 sm:text-sm/6">
+              <input
+                className="mt-1 size-5 accent-red-600 sm:size-4"
+                name="enhanced"
+                type="checkbox"
+                checked={enhanced}
+                disabled={!view.turn.enhancedAttackAvailable}
+                onChange={(event) => setEnhanced(event.target.checked)}
+              />
+              <span>
+                Cắn xuyên bảo vệ
+                <span className="block text-stone-500">
+                  Dùng một lần trong cả ván. Phù thủy vẫn có thể cứu mục tiêu.
+                </span>
+              </span>
+            </label>
+          ) : null}
+          {step === 'WEREWOLF_ATTACK' &&
+          view.me.role === 'WEREWOLF' &&
+          view.turn.werewolfAttackEnhanced ? (
+            <p className="text-sm/6 text-red-300">
+              Sói Đầu Đàn đang kích hoạt Cắn xuyên bảo vệ.
+            </p>
+          ) : null}
+        </>
       )}
       <CommandButton primary pending={pending} type="submit">
         Gửi hành động cho Quản trò

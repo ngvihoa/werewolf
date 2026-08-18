@@ -42,6 +42,7 @@ export function roleLabel(role: Role) {
   return {
     VILLAGER: 'Dân làng',
     WEREWOLF: 'Ma sói',
+    ALPHA_WEREWOLF: 'Sói Đầu Đàn',
     SEER: 'Tiên tri',
     WITCH: 'Phù thủy',
     PROTECTOR: 'Bảo vệ',
@@ -53,6 +54,8 @@ export function roleDescription(role: Role) {
   return {
     VILLAGER: 'Quan sát, thảo luận và tìm ra Ma sói vào ban ngày.',
     WEREWOLF: 'Mỗi đêm chọn một người chơi để tấn công.',
+    ALPHA_WEREWOLF:
+      'Cùng đàn Sói tấn công và có một lần cắn xuyên qua Bảo vệ.',
     SEER: 'Mỗi đêm soi một người để biết họ thuộc phe nào.',
     WITCH: 'Bạn có một bình cứu và một bình độc dùng trong cả ván.',
     PROTECTOR:

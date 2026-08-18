@@ -1,3 +1,5 @@
+import type { Role } from '#/game/domain'
+
 import { roleLabel } from '#/game/presentation/labels'
 
 import { StatusBadge } from './StatusBadge'
@@ -6,8 +8,7 @@ export type RoomPlayer = {
   id: string
   displayName: string
   ready: boolean
-  role:
-    'VILLAGER' | 'WEREWOLF' | 'SEER' | 'WITCH' | 'PROTECTOR' | 'HUNTER' | null
+  role: Role | null
   alive?: boolean
 }
 
@@ -31,7 +32,7 @@ export function PlayerList({
       <div className="flex items-center justify-between border-b border-white/10 pb-3">
         <h2 className="text-xl font-medium text-stone-100">Người chơi</h2>
         <p className="font-mono text-sm tabular-nums text-stone-500">
-          {players.length} / 12
+          {players.length} / 15
         </p>
       </div>
       <ul className="grid gap-2 pt-3 sm:grid-cols-2" role="list">
@@ -61,7 +62,7 @@ export function PlayerList({
                       alt={`Vai ${roleLabel(player.role)}`}
                       className="size-full object-cover"
                       height={40}
-                      src={`/role/${player.role === 'PROTECTOR' ? 'defender' : player.role.toLowerCase()}.png`}
+                      src={`/role/${player.role === 'PROTECTOR' ? 'defender' : player.role === 'ALPHA_WEREWOLF' ? 'werewolf' : player.role.toLowerCase()}.png`}
                       width={40}
                     />
                   ) : (

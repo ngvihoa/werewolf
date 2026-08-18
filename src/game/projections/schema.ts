@@ -121,6 +121,8 @@ export const playerGameViewSchema = z.object({
     canAct: z.boolean(),
     activeStep: queueStepSchema.nullable(),
     werewolfTargetId: z.string().nullable(),
+    werewolfAttackEnhanced: z.boolean().nullable(),
+    enhancedAttackAvailable: z.boolean().nullable(),
     werewolfTeammates: z.array(publicPlayerViewSchema),
     lastProtectedTargetId: z.string().nullable(),
     hunterShotTargetId: z.string().nullable(),

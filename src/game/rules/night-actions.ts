@@ -2,7 +2,7 @@ import type { Player, QueueStep, Result, Role, Team } from '../domain'
 import type { nightActionSchema } from './schema'
 import type { z } from 'zod'
 
-import { getRoleTeam } from '../domain'
+import { getRoleTeam, isWerewolfRole } from '../domain'
 
 import { STEP_ROLE } from './transitions'
 
@@ -52,7 +52,11 @@ export function validateNightAction(
   const actor = context.players.find((player) => player.id === action.actorId)
   if (!actor) return failure('ACTOR_NOT_FOUND', 'Actor does not exist')
   if (!actor.alive) return failure('ACTOR_DEAD', 'Dead players cannot act')
-  if (actor.role !== STEP_ROLE[context.activeStep]) {
+  const actorCanPerformStep =
+    context.activeStep === 'WEREWOLF_ATTACK'
+      ? isWerewolfRole(actor.role)
+      : actor.role === STEP_ROLE[context.activeStep]
+  if (!actorCanPerformStep) {
     return failure('ROLE_MISMATCH', 'Actor role cannot perform this action')
   }
 
@@ -76,8 +80,22 @@ export function validateNightAction(
   if (target.id === actor.id) {
     return failure('INVALID_TARGET', 'Target must be another living player')
   }
-  if (action.type === 'WEREWOLF_ATTACK' && target.role === 'WEREWOLF') {
-    return failure('INVALID_TARGET', 'Werewolves cannot attack a teammate')
+  if (action.type === 'WEREWOLF_ATTACK') {
+    if (isWerewolfRole(target.role)) {
+      return failure('INVALID_TARGET', 'Werewolves cannot attack a teammate')
+    }
+    if (action.enhanced && actor.role !== 'ALPHA_WEREWOLF') {
+      return failure(
+        'ROLE_MISMATCH',
+        'Only the Alpha Werewolf can enhance the shared attack',
+      )
+    }
+    if (action.enhanced && !actor.abilityState.enhancedAttackAvailable) {
+      return failure(
+        'ABILITY_UNAVAILABLE',
+        'Enhanced Werewolf attack has already been used',
+      )
+    }
   }
 
   return { ok: true, value: action }

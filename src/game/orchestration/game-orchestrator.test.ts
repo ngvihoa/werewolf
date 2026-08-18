@@ -22,6 +22,57 @@ function run(state: GameState, command: GameCommand) {
 }
 
 describe('night orchestration', () => {
+  it('consumes the Alpha attack only after confirmation and bypasses protection', () => {
+    const players: Player[] = [
+      ...fivePlayers.filter((player) => player.role !== 'WEREWOLF'),
+      {
+        id: 'alpha',
+        role: 'ALPHA_WEREWOLF',
+        alive: true,
+        abilityState: { enhancedAttackAvailable: true },
+      },
+      {
+        id: 'protector',
+        role: 'PROTECTOR',
+        alive: true,
+        abilityState: null,
+      },
+    ]
+    let state = createFirstNightState(players)
+    state = run(state, {
+      type: 'SUBMIT_NIGHT_ACTION',
+      action: {
+        type: 'PROTECTOR_PROTECT',
+        actorId: 'protector',
+        targetId: 'a',
+      },
+    }).state
+    state = run(state, { type: 'CONFIRM_STEP' }).state
+    state = run(state, { type: 'SKIP_STEP', reason: 'Skip Seer' }).state
+    const submitted = run(state, {
+      type: 'SUBMIT_NIGHT_ACTION',
+      action: {
+        type: 'WEREWOLF_ATTACK',
+        actorId: 'alpha',
+        targetId: 'a',
+        enhanced: true,
+      },
+    }).state
+    expect(
+      submitted.players.find((player) => player.role === 'ALPHA_WEREWOLF')
+        ?.abilityState,
+    ).toEqual({ enhancedAttackAvailable: true })
+
+    const confirmed = run(submitted, { type: 'CONFIRM_STEP' }).state
+    expect(
+      confirmed.players.find((player) => player.role === 'ALPHA_WEREWOLF')
+        ?.abilityState,
+    ).toEqual({ enhancedAttackAvailable: false })
+    expect(confirmed.pendingNightResolution?.deaths).toEqual([
+      { playerId: 'a', causes: ['WEREWOLF_ATTACK'] },
+    ])
+  })
+
   it('adds the marked target when the Hunter dies that night', () => {
     const players: Player[] = [
       ...fivePlayers,

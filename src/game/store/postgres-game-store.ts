@@ -507,6 +507,8 @@ export class PostgresGameStore implements GameStore {
                     healingPotionAvailable: true,
                     poisonPotionAvailable: true,
                   }
+                : role === 'ALPHA_WEREWOLF'
+                  ? { enhancedAttackAvailable: true }
                 : null,
             isReady: false,
           })

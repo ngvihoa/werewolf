@@ -15,10 +15,24 @@ describe('role composition', () => {
   })
 
   it('rejects unsupported player counts', () => {
-    const result = getRoleComposition(13)
+    const result = getRoleComposition(16)
     expect(result.ok).toBe(false)
     if (!result.ok) expect(result.error.code).toBe('INVALID_PLAYER_COUNT')
   })
+
+  it.each([13, 14, 15])(
+    'adds exactly one Alpha Werewolf for %i players',
+    (count) => {
+      const result = getRoleComposition(count)
+      expect(result.ok).toBe(true)
+      if (result.ok) {
+        expect(
+          result.value.filter((role) => role === 'ALPHA_WEREWOLF'),
+        ).toHaveLength(1)
+        expect(result.value).toHaveLength(count)
+      }
+    },
+  )
 
   it('adds one Hunter from eight players onward', () => {
     const result = getRoleComposition(8)

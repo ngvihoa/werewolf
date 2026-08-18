@@ -50,6 +50,32 @@ describe('night resolution', () => {
     ).toEqual([])
   })
 
+  it('lets an enhanced attack bypass protection', () => {
+    expect(
+      resolveNight({
+        players,
+        werewolfTargetId: 'a',
+        werewolfAttackEnhanced: true,
+        protectedTargetId: 'a',
+        witchHealed: false,
+        witchPoisonTargetId: null,
+      }).deaths,
+    ).toEqual([{ playerId: 'a', causes: ['WEREWOLF_ATTACK'] }])
+  })
+
+  it('lets Witch heal a target hit by an enhanced attack', () => {
+    expect(
+      resolveNight({
+        players,
+        werewolfTargetId: 'a',
+        werewolfAttackEnhanced: true,
+        protectedTargetId: 'a',
+        witchHealed: true,
+        witchPoisonTargetId: null,
+      }).deaths,
+    ).toEqual([])
+  })
+
   it('keeps a healed Werewolf target alive', () => {
     expect(
       resolveNight({

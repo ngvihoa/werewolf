@@ -21,7 +21,7 @@ export function ModeratorControls({
   onAssign: () => void
   onStart: () => void
 }) {
-  const validCount = playerCount >= 5 && playerCount <= 12
+  const validCount = playerCount >= 5 && playerCount <= 15
   return (
     <div className="flex flex-col gap-8">
       <div className="flex flex-col gap-3">
@@ -32,13 +32,13 @@ export function ModeratorControls({
           Chuẩn bị trước khi đêm xuống
         </h2>
         <p className="text-pretty text-base/7 text-stone-400 sm:text-sm/6">
-          Phân vai khi đủ 5–12 người. Sau đó, mọi người xem vai riêng và xác
+          Phân vai khi đủ 5–15 người. Sau đó, mọi người xem vai riêng và xác
           nhận sẵn sàng.
         </p>
       </div>
 
       <ol className="flex flex-col divide-y divide-white/10" role="list">
-        <ControlStep done={validCount} number="01" label="Đủ 5–12 người chơi" />
+        <ControlStep done={validCount} number="01" label="Đủ 5–15 người chơi" />
         <ControlStep
           done={rolesAssigned}
           number="02"

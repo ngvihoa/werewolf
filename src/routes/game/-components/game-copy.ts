@@ -68,5 +68,8 @@ export function actionSummary(
     ].filter(Boolean)
     return `${names.get(action.actorId) ?? 'Phù thủy'}: ${choices.join(' và ') || 'không dùng bình nào'}`
   }
+  if (action.type === 'WEREWOLF_ATTACK' && action.enhanced) {
+    return `${names.get(action.actorId) ?? 'Sói Đầu Đàn'} chọn ${names.get(action.targetId) ?? 'người chơi'} bằng Cắn xuyên bảo vệ`
+  }
   return `${names.get(action.actorId) ?? 'Người chơi'} chọn ${names.get(action.targetId) ?? 'người chơi'}`
 }

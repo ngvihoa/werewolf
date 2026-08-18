@@ -14,6 +14,12 @@ const state: GameState = {
     { id: 'seer', role: 'SEER', alive: true, abilityState: null },
     { id: 'wolf', role: 'WEREWOLF', alive: true, abilityState: null },
     {
+      id: 'alpha',
+      role: 'ALPHA_WEREWOLF',
+      alive: true,
+      abilityState: { enhancedAttackAvailable: true },
+    },
+    {
       id: 'witch',
       role: 'WITCH',
       alive: true,
@@ -31,7 +37,12 @@ const state: GameState = {
   ],
   pendingNightAction: null,
   confirmedNightActions: [
-    { type: 'WEREWOLF_ATTACK', actorId: 'wolf', targetId: 'witch' },
+    {
+      type: 'WEREWOLF_ATTACK',
+      actorId: 'alpha',
+      targetId: 'witch',
+      enhanced: true,
+    },
   ],
   pendingNightResolution: null,
   voteAttempt: 1,
@@ -61,6 +72,12 @@ function createGame(): LocalGame {
     lobbyPlayers: [
       { id: 'seer', displayName: 'Seer', ready: true, role: 'SEER' },
       { id: 'wolf', displayName: 'Wolf', ready: true, role: 'WEREWOLF' },
+      {
+        id: 'alpha',
+        displayName: 'Alpha',
+        ready: true,
+        role: 'ALPHA_WEREWOLF',
+      },
       { id: 'witch', displayName: 'Witch', ready: true, role: 'WITCH' },
       {
         id: 'villager',
@@ -96,6 +113,35 @@ function createGame(): LocalGame {
 }
 
 describe('player projections', () => {
+  it('shows enhanced attack state only to the Werewolf team', () => {
+    const game = createGame()
+    const alphaView = projectGameView(game, {
+      kind: 'PLAYER',
+      playerId: 'alpha',
+    })
+    const wolfView = projectGameView(game, {
+      kind: 'PLAYER',
+      playerId: 'wolf',
+    })
+    const seerView = projectGameView(game, {
+      kind: 'PLAYER',
+      playerId: 'seer',
+    })
+    if (
+      alphaView?.viewer !== 'PLAYER' ||
+      wolfView?.viewer !== 'PLAYER' ||
+      seerView?.viewer !== 'PLAYER'
+    ) {
+      return
+    }
+
+    expect(alphaView.turn.enhancedAttackAvailable).toBe(true)
+    expect(alphaView.turn.werewolfAttackEnhanced).toBe(true)
+    expect(wolfView.turn.werewolfAttackEnhanced).toBe(true)
+    expect(seerView.turn.werewolfAttackEnhanced).toBeNull()
+    expect(seerView.turn.enhancedAttackAvailable).toBeNull()
+  })
+
   it('shows a submitted final-shot target only to the Hunter', () => {
     const game = createGame()
     game.state!.phase = 'HUNTER_SHOT'

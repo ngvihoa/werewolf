@@ -22,6 +22,7 @@ export const nightActionSchema = z.discriminatedUnion('type', [
     type: z.literal('WEREWOLF_ATTACK'),
     actorId: z.string().min(1),
     targetId: z.string().min(1),
+    enhanced: z.boolean().optional(),
   }),
   z.object({
     type: z.literal('WITCH_ACTION'),

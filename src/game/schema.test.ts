@@ -17,6 +17,7 @@ describe('game domain schemas', () => {
     expect(queueStepSchema.safeParse('SEER_INSPECT').success).toBe(true)
 
     expect(roleSchema.safeParse('HUNTER').success).toBe(true)
+    expect(roleSchema.safeParse('ALPHA_WEREWOLF').success).toBe(true)
     expect(gamePhaseSchema.safeParse('LOBBY').success).toBe(false)
   })
 
@@ -54,6 +55,26 @@ describe('game domain schemas', () => {
     })
 
     expect(result.success).toBe(false)
+  })
+
+  it('requires enhanced attack state for Alpha Werewolf players', () => {
+    expect(
+      playerSchema.safeParse({
+        id: 'alpha-1',
+        role: 'ALPHA_WEREWOLF',
+        alive: true,
+        abilityState: { enhancedAttackAvailable: true },
+      }).success,
+    ).toBe(true)
+
+    expect(
+      playerSchema.safeParse({
+        id: 'alpha-1',
+        role: 'ALPHA_WEREWOLF',
+        alive: true,
+        abilityState: null,
+      }).success,
+    ).toBe(false)
   })
 
   it('validates domain errors', () => {

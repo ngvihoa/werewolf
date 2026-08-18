@@ -5,6 +5,7 @@ import z from 'zod'
 export const ROLE_VALUES = [
   'VILLAGER',
   'WEREWOLF',
+  'ALPHA_WEREWOLF',
   'SEER',
   'WITCH',
   'PROTECTOR',
@@ -59,13 +60,17 @@ export const witchResourcesSchema = z.object({
   poisonPotionAvailable: z.boolean(),
 })
 
+export const alphaWerewolfResourcesSchema = z.object({
+  enhancedAttackAvailable: z.boolean(),
+})
+
 const basePlayerFields = {
   id: z.string(),
   alive: z.boolean(),
 }
 
-// Discriminated union giữ invariant quan trọng của domain:
-// chỉ Witch có ability state, mọi role khác bắt buộc có abilityState = null.
+// Discriminated union giữ invariant quan trọng của domain: chỉ các role có tài
+// nguyên dùng một lần mới có ability state.
 export const playerSchema = z.discriminatedUnion('role', [
   z.object({
     ...basePlayerFields,
@@ -81,6 +86,11 @@ export const playerSchema = z.discriminatedUnion('role', [
     ...basePlayerFields,
     role: z.literal('WEREWOLF'),
     abilityState: z.null(),
+  }),
+  z.object({
+    ...basePlayerFields,
+    role: z.literal('ALPHA_WEREWOLF'),
+    abilityState: alphaWerewolfResourcesSchema,
   }),
   z.object({
     ...basePlayerFields,

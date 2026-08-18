@@ -8,6 +8,12 @@ const players: Player[] = [
   { id: 'seer', role: 'SEER', alive: true, abilityState: null },
   { id: 'wolf', role: 'WEREWOLF', alive: true, abilityState: null },
   {
+    id: 'alpha',
+    role: 'ALPHA_WEREWOLF',
+    alive: true,
+    abilityState: { enhancedAttackAvailable: true },
+  },
+  {
     id: 'witch',
     role: 'WITCH',
     alive: true,
@@ -72,6 +78,61 @@ describe('night action validation', () => {
           targetId: teammate.id,
         },
         { activeStep: 'WEREWOLF_ATTACK', players: [...players, teammate] },
+      ),
+    ).toMatchObject({ ok: false, error: { code: 'INVALID_TARGET' } })
+  })
+
+  it('allows only an available Alpha Werewolf to enhance the attack', () => {
+    expect(
+      validateNightAction(
+        {
+          type: 'WEREWOLF_ATTACK',
+          actorId: 'alpha',
+          targetId: 'villager',
+          enhanced: true,
+        },
+        { activeStep: 'WEREWOLF_ATTACK', players },
+      ).ok,
+    ).toBe(true)
+
+    expect(
+      validateNightAction(
+        {
+          type: 'WEREWOLF_ATTACK',
+          actorId: 'wolf',
+          targetId: 'villager',
+          enhanced: true,
+        },
+        { activeStep: 'WEREWOLF_ATTACK', players },
+      ),
+    ).toMatchObject({ ok: false, error: { code: 'ROLE_MISMATCH' } })
+
+    const consumedPlayers = players.map((player) =>
+      player.role === 'ALPHA_WEREWOLF'
+        ? {
+            ...player,
+            abilityState: { enhancedAttackAvailable: false },
+          }
+        : player,
+    )
+    expect(
+      validateNightAction(
+        {
+          type: 'WEREWOLF_ATTACK',
+          actorId: 'alpha',
+          targetId: 'villager',
+          enhanced: true,
+        },
+        { activeStep: 'WEREWOLF_ATTACK', players: consumedPlayers },
+      ),
+    ).toMatchObject({ ok: false, error: { code: 'ABILITY_UNAVAILABLE' } })
+  })
+
+  it('prevents Werewolves from attacking an Alpha teammate', () => {
+    expect(
+      validateNightAction(
+        { type: 'WEREWOLF_ATTACK', actorId: 'wolf', targetId: 'alpha' },
+        { activeStep: 'WEREWOLF_ATTACK', players },
       ),
     ).toMatchObject({ ok: false, error: { code: 'INVALID_TARGET' } })
   })
@@ -173,6 +234,7 @@ describe('night action validation', () => {
 
   it.each([
     ['WEREWOLF', 'WEREWOLF'],
+    ['ALPHA_WEREWOLF', 'WEREWOLF'],
     ['SEER', 'VILLAGE'],
     ['WITCH', 'VILLAGE'],
     ['VILLAGER', 'VILLAGE'],

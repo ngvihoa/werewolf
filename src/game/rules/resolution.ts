@@ -13,6 +13,7 @@ export type NightResolution = z.infer<typeof nightResolutionSchema>
 type NightResolutionInput = {
   players: readonly Player[]
   werewolfTargetId: string | null
+  werewolfAttackEnhanced?: boolean
   witchHealed: boolean
   witchPoisonTargetId: string | null
   protectedTargetId?: string | null
@@ -26,7 +27,8 @@ export function resolveNight(input: NightResolutionInput): NightResolution {
   if (
     input.werewolfTargetId &&
     !input.witchHealed &&
-    input.werewolfTargetId !== input.protectedTargetId
+    (input.werewolfAttackEnhanced ||
+      input.werewolfTargetId !== input.protectedTargetId)
   ) {
     causesByPlayer.set(input.werewolfTargetId, ['WEREWOLF_ATTACK'])
   }

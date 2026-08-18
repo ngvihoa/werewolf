@@ -24,13 +24,33 @@ Player vẫn có thể mở màn hình role để đọc lại chức năng bấ
 
 Khi step `WEREWOLF_ATTACK` được kích hoạt:
 
-- Chọn một player hợp lệ làm target.
-- Submit action.
+- Các Werewolf còn sống nhận biết đồng đội và cùng theo dõi một target chung.
+- Werewolf không được chọn thành viên phe Werewolf làm target.
+- Một Werewolf chọn player hợp lệ và submit action chung của đàn.
 - Chờ Moderator xác nhận step.
 
-Trong MVP chỉ có 1 Werewolf nên chưa cần Wolf voting.
+Mỗi step chỉ có một Werewolf action đang chờ xác nhận. Werewolf khác có thể đổi
+target chung trước khi Moderator xác nhận; hệ thống không thực hiện Wolf voting.
 
-Sau này nếu có nhiều Werewolf, các Werewolf có thể được phép nhận biết đồng đội tùy rule.
+### Alpha Werewolf (Sói Đầu Đàn)
+
+Sói Đầu Đàn thuộc phe Werewolf, nhận biết đồng đội và tham gia
+`WEREWOLF_ATTACK` như Werewolf thường.
+
+Sói Đầu Đàn có một lần **Cắn xuyên bảo vệ** trong cả game:
+
+- Chỉ Sói Đầu Đàn còn sống được kích hoạt năng lực trên Werewolf action chung.
+- Đòn cắn bỏ qua hiệu lực của Protector đối với target trong đêm đó.
+- Healing Potion của Witch vẫn cứu được target.
+- Năng lực chỉ bị tiêu hao sau khi Moderator xác nhận action.
+- Action chưa được xác nhận có thể đổi target hoặc tắt Cắn xuyên bảo vệ mà không
+  tiêu hao năng lực.
+- Sau khi đã dùng hoặc khi Sói Đầu Đàn chết, Cắn xuyên bảo vệ không còn khả dụng.
+- Sói thường không được kích hoạt năng lực thay cho Sói Đầu Đàn.
+
+Trạng thái kích hoạt và số lần sử dụng chỉ được hiển thị cho phe Werewolf và
+Moderator. Protector, Witch và các player khác không được biết đòn cắn có xuyên
+bảo vệ hay không.
 
 ---
 
@@ -96,7 +116,53 @@ Luật MVP đã chốt:
 
 ---
 
-# 5. Information Visibility
+## 5. Protector
+
+**Team:** Village
+
+### Ability
+
+Khi step `PROTECTOR_PROTECT` active:
+
+- Protector chọn một player đang sống để bảo vệ trong đêm đó.
+- Protector được tự bảo vệ.
+- Không được bảo vệ cùng một target trong hai đêm liên tiếp.
+- Bảo vệ chỉ chặn `WEREWOLF_ATTACK`; không chặn Witch Poison hoặc Hunter Shot.
+- Cắn xuyên bảo vệ của Sói Đầu Đàn bỏ qua hiệu lực này.
+- Target được bảo vệ và kết quả chặn đòn là thông tin ẩn.
+
+---
+
+## 6. Hunter
+
+**Team:** Village
+
+### Night Mark
+
+Khi step `HUNTER_MARK` active, Hunter chọn trước một player đang sống:
+
+- Mark chỉ có hiệu lực trong đêm hiện tại.
+- Nếu Hunter thực sự chết khi giải quyết đêm, target đã mark chết theo với cause
+  `HUNTER_SHOT`.
+- Nếu Hunter được cứu hoặc bảo vệ và không chết, mark không kích hoạt.
+- Nếu target đã chết bởi cause khác trong cùng đêm, mark không tạo thêm một lần
+  chết.
+
+### Vote Shot
+
+Nếu Hunter bị vote loại:
+
+1. Game chuyển sang phase `HUNTER_SHOT`.
+2. Hunter đã chết chọn một player khác còn sống.
+3. Moderator xác nhận target chết.
+4. System kiểm tra điều kiện thắng trước khi chuyển sang đêm tiếp theo.
+
+Target mark, target shot và action đang chờ chỉ được hiển thị cho Hunter và
+Moderator cho đến khi kết quả chết được công khai.
+
+---
+
+# 7. Information Visibility
 
 Không phải mọi state đều được hiển thị cho mọi player.
 
@@ -117,6 +183,7 @@ Chỉ owner và Moderator được thấy:
 - Role.
 - Team.
 - Ability state.
+- Thành viên phe Werewolf và Werewolf target chung.
 - Potion còn hay đã dùng.
 - Night action.
 - Investigation result.
@@ -124,7 +191,7 @@ Chỉ owner và Moderator được thấy:
 
 ---
 
-## 6. Permission Matrix
+## 8. Permission Matrix
 
 | Information                | Other Player | Owner | Moderator |
 | -------------------------- | -----------: | ----: | --------: |
@@ -135,12 +202,15 @@ Chỉ owner và Moderator được thấy:
 | Role description           |           ❌ |    ✅ |        ✅ |
 | Ability remaining          |           ❌ |    ✅ |        ✅ |
 | Own night action           |           ❌ |    ✅ |        ✅ |
+| Werewolf teammates (Wolf owner) |      ❌ |    ✅ |        ✅ |
+| Shared target (Wolf owner)      |      ❌ |    ✅ |        ✅ |
+| Enhanced attack (Wolf owner)    |      ❌ |    ✅ |        ✅ |
 | Other player's hidden role |           ❌ |    ❌ |        ✅ |
 | Complete game history      |           ❌ |    ❌ |        ✅ |
 
 ---
 
-## 7. Player State nên tách Public và Private
+## 9. Player State nên tách Public và Private
 
 Ví dụ:
 

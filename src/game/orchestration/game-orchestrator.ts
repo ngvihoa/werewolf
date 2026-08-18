@@ -5,6 +5,7 @@ import type { GameCommand } from './commands'
 import type { GameEvent } from './events'
 
 import { getSeerResult, validateNightAction } from '../rules/night-actions'
+import { isWerewolfRole } from '../domain'
 import { getWinningTeamFromPlayers } from '../rules/win-condition'
 import { resolveNight, resolveVote } from '../rules/resolution'
 import { getNightQueue, STEP_ROLE } from '../rules/transitions'
@@ -114,6 +115,7 @@ function confirmStep(
   state.confirmedNightActions.push(action)
   state.pendingNightAction = null
   consumeWitchResources(state, action)
+  consumeAlphaWerewolfAbility(state, action)
   events.push({ type: 'NIGHT_ACTION_CONFIRMED', action })
   if (action.type === 'SEER_INSPECT') {
     const target = state.players.find((player) => player.id === action.targetId)
@@ -181,6 +183,8 @@ function advanceNight(state: GameState, events: GameEvent[]): void {
   state.pendingNightResolution = resolveNight({
     players: state.players,
     werewolfTargetId: findWerewolfTarget(state.confirmedNightActions),
+    werewolfAttackEnhanced:
+      findWerewolfAction(state.confirmedNightActions)?.enhanced === true,
     witchHealed: findWitchAction(state.confirmedNightActions)?.heal ?? false,
     witchPoisonTargetId:
       findWitchAction(state.confirmedNightActions)?.poisonTargetId ?? null,
@@ -445,7 +449,11 @@ function activateNextRunnableStep(
   for (const item of queue) {
     if (item.status !== 'PENDING') continue
     const ownerAlive = players.some(
-      (player) => player.role === STEP_ROLE[item.step] && player.alive,
+      (player) =>
+        player.alive &&
+        (item.step === 'WEREWOLF_ATTACK'
+          ? isWerewolfRole(player.role)
+          : player.role === STEP_ROLE[item.step]),
     )
     if (!ownerAlive) {
       item.status = 'SKIPPED'
@@ -466,10 +474,11 @@ function activateNextRunnableStep(
 }
 
 function findWerewolfTarget(actions: readonly NightAction[]): string | null {
-  return (
-    actions.find((action) => action.type === 'WEREWOLF_ATTACK')?.targetId ??
-    null
-  )
+  return findWerewolfAction(actions)?.targetId ?? null
+}
+
+function findWerewolfAction(actions: readonly NightAction[]) {
+  return actions.find((action) => action.type === 'WEREWOLF_ATTACK')
 }
 
 function findWitchAction(actions: readonly NightAction[]) {
@@ -482,6 +491,17 @@ function consumeWitchResources(state: GameState, action: NightAction): void {
   if (witch?.role !== 'WITCH') return
   if (action.heal) witch.abilityState.healingPotionAvailable = false
   if (action.poisonTargetId) witch.abilityState.poisonPotionAvailable = false
+}
+
+function consumeAlphaWerewolfAbility(
+  state: GameState,
+  action: NightAction,
+): void {
+  if (action.type !== 'WEREWOLF_ATTACK' || !action.enhanced) return
+  const alpha = state.players.find((player) => player.id === action.actorId)
+  if (alpha?.role === 'ALPHA_WEREWOLF') {
+    alpha.abilityState.enhancedAttackAvailable = false
+  }
 }
 
 function setPlayerDead(players: Player[], playerId: string): void {

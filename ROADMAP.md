@@ -40,10 +40,11 @@ Goal: encode deterministic game rules independently from UI and persistence.
 - [x] Finalize default MVP settings from the open rule decisions.
 - [x] Define game phase and queue-step transition tables.
 - [x] Define typed commands, actions, decisions, results and events.
-- [x] Implement role composition validation for five through twelve players.
+- [x] Implement role composition validation for five through fifteen players.
 - [x] Add the Protector role with self-protection and consecutive-night limits.
 - [x] Add the Hunter role with a nightly mark and a vote-triggered final shot.
 - [x] Add shared Werewolf teammate and target visibility.
+- [x] Add Alpha Werewolf for 13–15 players with one enhanced attack per game.
 - [x] Implement secure role randomization.
 - [x] Implement target validation per role and queue step.
 - [x] Implement Witch potion rules and ability consumption.

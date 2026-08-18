@@ -7,6 +7,7 @@ import type {
   roleSchema,
   teamSchema,
   witchResourcesSchema,
+  alphaWerewolfResourcesSchema,
 } from './schema'
 import type { z } from 'zod'
 
@@ -17,6 +18,9 @@ export type Team = z.infer<typeof teamSchema>
 export type GamePhase = z.infer<typeof gamePhaseSchema>
 export type QueueStep = z.infer<typeof queueStepSchema>
 export type WitchResources = z.infer<typeof witchResourcesSchema>
+export type AlphaWerewolfResources = z.infer<
+  typeof alphaWerewolfResourcesSchema
+>
 export type Player = z.infer<typeof playerSchema>
 export type DomainErrorCode = z.infer<typeof domainErrorCodeSchema>
 export type DomainError = z.infer<typeof domainErrorSchema>
@@ -27,5 +31,9 @@ export type Result<T> =
   { ok: true; value: T } | { ok: false; error: DomainError }
 
 export function getRoleTeam(role: Role): Team {
-  return role === 'WEREWOLF' ? 'WEREWOLF' : 'VILLAGE'
+  return isWerewolfRole(role) ? 'WEREWOLF' : 'VILLAGE'
+}
+
+export function isWerewolfRole(role: Role | null | undefined): boolean {
+  return role === 'WEREWOLF' || role === 'ALPHA_WEREWOLF'
 }

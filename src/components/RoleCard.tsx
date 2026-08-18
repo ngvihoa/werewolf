@@ -5,7 +5,13 @@ import { useState } from 'react'
 
 export function RoleCard({ role }: { role: Role }) {
   const [revealed, setRevealed] = useState(false)
-  const imagePath = `/role/${role === 'PROTECTOR' ? 'defender' : role.toLowerCase()}.png`
+  const imageName =
+    role === 'PROTECTOR'
+      ? 'defender'
+      : role === 'ALPHA_WEREWOLF'
+        ? 'werewolf'
+        : role.toLowerCase()
+  const imagePath = `/role/${imageName}.png`
 
   return (
     <div className="mx-auto flex w-full max-w-64 flex-col items-center gap-4">

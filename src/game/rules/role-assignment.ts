@@ -16,12 +16,12 @@ function secureRandomIndex(upperBound: number): number {
 }
 
 export function getRoleComposition(playerCount: number): Result<Role[]> {
-  if (playerCount < 5 || playerCount > 12) {
+  if (playerCount < 5 || playerCount > 15) {
     return {
       ok: false,
       error: {
         code: 'INVALID_PLAYER_COUNT',
-        message: 'Games require between 5 and 12 players',
+        message: 'Games require between 5 and 15 players',
       },
     }
   }
