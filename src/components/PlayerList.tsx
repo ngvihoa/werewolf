@@ -62,7 +62,7 @@ export function PlayerList({
                       alt={`Vai ${roleLabel(player.role)}`}
                       className="size-full object-cover"
                       height={40}
-                      src={`/role/${player.role === 'PROTECTOR' ? 'defender' : player.role === 'ALPHA_WEREWOLF' ? 'werewolf' : player.role.toLowerCase()}.png`}
+                      src={`/role/${player.role.toLowerCase()}.png`}
                       width={40}
                     />
                   ) : (
