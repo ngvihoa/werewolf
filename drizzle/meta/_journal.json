@@ -36,6 +36,13 @@
       "when": 1787072584115,
       "tag": "0004_slimy_the_hood",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1787102030934,
+      "tag": "0005_exotic_champions",
+      "breakpoints": true
     }
   ]
 }

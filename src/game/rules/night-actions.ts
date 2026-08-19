@@ -84,17 +84,19 @@ export function validateNightAction(
     if (isWerewolfRole(target.role)) {
       return failure('INVALID_TARGET', 'Werewolves cannot attack a teammate')
     }
-    if (action.enhanced && actor.role !== 'ALPHA_WEREWOLF') {
-      return failure(
-        'ROLE_MISMATCH',
-        'Only the Alpha Werewolf can enhance the shared attack',
-      )
-    }
-    if (action.enhanced && !actor.abilityState.enhancedAttackAvailable) {
-      return failure(
-        'ABILITY_UNAVAILABLE',
-        'Enhanced Werewolf attack has already been used',
-      )
+    if (action.enhanced) {
+      if (actor.role !== 'ALPHA_WEREWOLF') {
+        return failure(
+          'ROLE_MISMATCH',
+          'Only the Alpha Werewolf can enhance the shared attack',
+        )
+      }
+      if (!actor.abilityState.enhancedAttackAvailable) {
+        return failure(
+          'ABILITY_UNAVAILABLE',
+          'Enhanced Werewolf attack has already been used',
+        )
+      }
     }
   }
 

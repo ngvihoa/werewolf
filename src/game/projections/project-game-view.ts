@@ -9,8 +9,8 @@ import type {
 } from './model'
 import type { LocalGame } from '../store/model'
 
-import { STEP_ROLE } from '../rules/transitions'
 import { isWerewolfRole } from '../domain'
+import { STEP_ROLE } from '../rules/transitions'
 
 export function projectGameView(
   game: LocalGame,
@@ -33,11 +33,11 @@ export function projectGameView(
     game.state?.pendingNightAction?.type === 'WEREWOLF_ATTACK'
       ? game.state.pendingNightAction
       : game.state?.confirmedNightActions.find(
-          (action) => action.type === 'WEREWOLF_ATTACK',
-        )
+        (action) => action.type === 'WEREWOLF_ATTACK',
+      )
   const werewolfTargetId =
     (domainPlayer?.role === 'WITCH' && activeStep === 'WITCH_ACTION') ||
-    (domainPlayer && isWerewolfRole(domainPlayer.role))
+      (domainPlayer && isWerewolfRole(domainPlayer.role))
       ? (visibleWerewolfAction?.targetId ?? null)
       : null
 
@@ -77,7 +77,9 @@ export function projectGameView(
       alive: domainPlayer?.alive ?? true,
       role: lobbyPlayer.role,
       abilityState:
-        domainPlayer?.role === 'WITCH'
+        domainPlayer?.role === 'WITCH' ||
+          domainPlayer?.role === 'ALPHA_WEREWOLF' ||
+          domainPlayer?.role === 'ELDER'
           ? structuredClone(domainPlayer.abilityState)
           : null,
     },
@@ -91,7 +93,7 @@ export function projectGameView(
         (Boolean(domainPlayer?.alive) &&
           activeStep !== null &&
           (activeStep === 'WEREWOLF_ATTACK'
-            ? isWerewolfRole(domainPlayer.role)
+            ? isWerewolfRole(domainPlayer?.role)
             : domainPlayer?.role === STEP_ROLE[activeStep])) ||
         (game.state?.phase === 'HUNTER_SHOT' &&
           domainPlayer?.role === 'HUNTER' &&
@@ -110,20 +112,20 @@ export function projectGameView(
       werewolfTeammates:
         domainPlayer && isWerewolfRole(domainPlayer.role)
           ? game
-              .state!.players.filter(
-                (player) =>
-                  isWerewolfRole(player.role) && player.id !== domainPlayer.id,
-              )
-              .map((player) => ({
-                id: player.id,
-                displayName:
-                  game.lobbyPlayers.find((item) => item.id === player.id)
-                    ?.displayName ?? '',
-                ready:
-                  game.lobbyPlayers.find((item) => item.id === player.id)
-                    ?.ready ?? false,
-                alive: player.alive,
-              }))
+            .state!.players.filter(
+              (player) =>
+                isWerewolfRole(player.role) && player.id !== domainPlayer.id,
+            )
+            .map((player) => ({
+              id: player.id,
+              displayName:
+                game.lobbyPlayers.find((item) => item.id === player.id)
+                  ?.displayName ?? '',
+              ready:
+                game.lobbyPlayers.find((item) => item.id === player.id)
+                  ?.ready ?? false,
+              alive: player.alive,
+            }))
           : [],
       lastProtectedTargetId:
         domainPlayer?.role === 'PROTECTOR'
@@ -131,8 +133,8 @@ export function projectGameView(
           : null,
       hunterShotTargetId:
         game.state?.phase === 'HUNTER_SHOT' &&
-        domainPlayer?.role === 'HUNTER' &&
-        game.state.pendingHunterShot?.hunterId === domainPlayer.id
+          domainPlayer?.role === 'HUNTER' &&
+          game.state.pendingHunterShot?.hunterId === domainPlayer.id
           ? game.state.pendingHunterShot.targetId
           : null,
     },

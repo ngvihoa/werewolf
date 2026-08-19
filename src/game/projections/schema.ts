@@ -1,6 +1,8 @@
 import z from 'zod'
 
 import {
+  alphaWerewolfResourcesSchema,
+  elderResourcesSchema,
   witchResourcesSchema,
   gamePhaseSchema,
   queueStepSchema,
@@ -40,7 +42,13 @@ export const playerPrivateViewSchema = z.object({
   ready: z.boolean(),
   alive: z.boolean(),
   role: roleSchema.nullable(),
-  abilityState: witchResourcesSchema.nullable(),
+  abilityState: z
+    .union([
+      witchResourcesSchema,
+      alphaWerewolfResourcesSchema,
+      elderResourcesSchema,
+    ])
+    .nullable(),
 })
 
 export const publicHistoryEventSchema = z.discriminatedUnion('type', [

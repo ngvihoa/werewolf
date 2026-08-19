@@ -5,10 +5,10 @@ import type { GameCommand } from './commands'
 import type { GameEvent } from './events'
 
 import { getSeerResult, validateNightAction } from '../rules/night-actions'
-import { isWerewolfRole } from '../domain'
 import { getWinningTeamFromPlayers } from '../rules/win-condition'
 import { resolveNight, resolveVote } from '../rules/resolution'
 import { getNightQueue, STEP_ROLE } from '../rules/transitions'
+import { isWerewolfRole } from '../domain'
 
 export type CommandOutcome = {
   state: GameState
@@ -217,6 +217,14 @@ function confirmNightResolution(
   }
   if (!state.pendingNightResolution) {
     return failure('INVALID_ACTION', 'Night resolution is not prepared')
+  }
+
+  for (const playerId of state.pendingNightResolution
+    .elderSurvivalConsumedPlayerIds) {
+    const elder = state.players.find((player) => player.id === playerId)
+    if (elder?.role === 'ELDER') {
+      elder.abilityState.werewolfAttackSurvivalAvailable = false
+    }
   }
 
   for (const death of state.pendingNightResolution.deaths) {

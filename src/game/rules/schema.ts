@@ -48,6 +48,7 @@ export const nightResolutionSchema = z.object({
     }),
   ),
   survivors: z.array(z.string().min(1)),
+  elderSurvivalConsumedPlayerIds: z.array(z.string().min(1)).default([]),
 })
 
 export const voteResolutionSchema = z.discriminatedUnion('outcome', [

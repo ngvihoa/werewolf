@@ -112,6 +112,8 @@ function roleLabel(role: Role): string {
       return 'Bảo vệ'
     case 'HUNTER':
       return 'Thợ săn'
+    case 'ELDER':
+      return 'Già làng'
     case 'VILLAGER':
       return 'Dân làng'
   }

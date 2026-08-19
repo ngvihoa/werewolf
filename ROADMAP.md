@@ -43,6 +43,7 @@ Goal: encode deterministic game rules independently from UI and persistence.
 - [x] Implement role composition validation for five through fifteen players.
 - [x] Add the Protector role with self-protection and consecutive-night limits.
 - [x] Add the Hunter role with a nightly mark and a vote-triggered final shot.
+- [x] Add the Elder role with one survival against a lethal Werewolf attack.
 - [x] Add shared Werewolf teammate and target visibility.
 - [x] Add Alpha Werewolf for 13–15 players with one enhanced attack per game.
 - [x] Implement secure role randomization.

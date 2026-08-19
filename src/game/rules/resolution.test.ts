@@ -84,7 +84,82 @@ describe('night resolution', () => {
         witchHealed: true,
         witchPoisonTargetId: null,
       }),
-    ).toEqual({ deaths: [], survivors: ['a', 'b', 'wolf'] })
+    ).toEqual({
+      deaths: [],
+      survivors: ['a', 'b', 'wolf'],
+      elderSurvivalConsumedPlayerIds: [],
+    })
+  })
+
+  it('lets the Elder survive only the first unprevented Werewolf attack', () => {
+    const elder: Player = {
+      id: 'elder',
+      role: 'ELDER',
+      alive: true,
+      abilityState: { werewolfAttackSurvivalAvailable: true },
+    }
+    const firstAttack = resolveNight({
+      players: [...players, elder],
+      werewolfTargetId: 'elder',
+      witchHealed: false,
+      witchPoisonTargetId: null,
+    })
+
+    expect(firstAttack.deaths).toEqual([])
+    expect(firstAttack.elderSurvivalConsumedPlayerIds).toEqual(['elder'])
+
+    elder.abilityState.werewolfAttackSurvivalAvailable = false
+    expect(
+      resolveNight({
+        players: [...players, elder],
+        werewolfTargetId: 'elder',
+        witchHealed: false,
+        witchPoisonTargetId: null,
+      }).deaths,
+    ).toEqual([{ playerId: 'elder', causes: ['WEREWOLF_ATTACK'] }])
+  })
+
+  it('does not consume the Elder survival when healing or protection blocks the attack', () => {
+    const elder: Player = {
+      id: 'elder',
+      role: 'ELDER',
+      alive: true,
+      abilityState: { werewolfAttackSurvivalAvailable: true },
+    }
+
+    for (const prevention of [
+      { witchHealed: true },
+      { witchHealed: false, protectedTargetId: 'elder' },
+    ]) {
+      const result = resolveNight({
+        players: [...players, elder],
+        werewolfTargetId: 'elder',
+        witchPoisonTargetId: null,
+        ...prevention,
+      })
+      expect(result.deaths).toEqual([])
+      expect(result.elderSurvivalConsumedPlayerIds).toEqual([])
+    }
+  })
+
+  it('consumes the Elder survival when an enhanced attack bypasses protection', () => {
+    const elder: Player = {
+      id: 'elder',
+      role: 'ELDER',
+      alive: true,
+      abilityState: { werewolfAttackSurvivalAvailable: true },
+    }
+    const result = resolveNight({
+      players: [...players, elder],
+      werewolfTargetId: 'elder',
+      werewolfAttackEnhanced: true,
+      protectedTargetId: 'elder',
+      witchHealed: false,
+      witchPoisonTargetId: null,
+    })
+
+    expect(result.deaths).toEqual([])
+    expect(result.elderSurvivalConsumedPlayerIds).toEqual(['elder'])
   })
 
   it('resolves attack and poison simultaneously', () => {

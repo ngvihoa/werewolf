@@ -10,6 +10,7 @@ export const ROLE_VALUES = [
   'WITCH',
   'PROTECTOR',
   'HUNTER',
+  'ELDER',
 ] as const
 
 export const TEAM_VALUES = ['VILLAGE', 'WEREWOLF'] as const
@@ -64,6 +65,10 @@ export const alphaWerewolfResourcesSchema = z.object({
   enhancedAttackAvailable: z.boolean(),
 })
 
+export const elderResourcesSchema = z.object({
+  werewolfAttackSurvivalAvailable: z.boolean(),
+})
+
 const basePlayerFields = {
   id: z.string(),
   alive: z.boolean(),
@@ -106,6 +111,11 @@ export const playerSchema = z.discriminatedUnion('role', [
     ...basePlayerFields,
     role: z.literal('HUNTER'),
     abilityState: z.null(),
+  }),
+  z.object({
+    ...basePlayerFields,
+    role: z.literal('ELDER'),
+    abilityState: elderResourcesSchema,
   }),
 ])
 

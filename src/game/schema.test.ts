@@ -18,6 +18,7 @@ describe('game domain schemas', () => {
 
     expect(roleSchema.safeParse('HUNTER').success).toBe(true)
     expect(roleSchema.safeParse('ALPHA_WEREWOLF').success).toBe(true)
+    expect(roleSchema.safeParse('ELDER').success).toBe(true)
     expect(gamePhaseSchema.safeParse('LOBBY').success).toBe(false)
   })
 
@@ -71,6 +72,26 @@ describe('game domain schemas', () => {
       playerSchema.safeParse({
         id: 'alpha-1',
         role: 'ALPHA_WEREWOLF',
+        alive: true,
+        abilityState: null,
+      }).success,
+    ).toBe(false)
+  })
+
+  it('requires survival state for Elder players', () => {
+    expect(
+      playerSchema.safeParse({
+        id: 'elder-1',
+        role: 'ELDER',
+        alive: true,
+        abilityState: { werewolfAttackSurvivalAvailable: true },
+      }).success,
+    ).toBe(true)
+
+    expect(
+      playerSchema.safeParse({
+        id: 'elder-1',
+        role: 'ELDER',
         alive: true,
         abilityState: null,
       }).success,

@@ -42,6 +42,18 @@ describe('role composition', () => {
     }
   })
 
+  it.each([9, 10, 11, 12, 13, 14, 15])(
+    'adds exactly one Elder from %i players',
+    (count) => {
+      const result = getRoleComposition(count)
+      expect(result.ok).toBe(true)
+      if (result.ok) {
+        expect(result.value.filter((role) => role === 'ELDER')).toHaveLength(1)
+        expect(result.value).toHaveLength(count)
+      }
+    },
+  )
+
   it('validates role counts regardless of order', () => {
     expect(
       validateRoleComposition([

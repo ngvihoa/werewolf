@@ -19,6 +19,10 @@ export function NightActionForm({
   pending: boolean
   onCommand: CommandHandler
 }) {
+  const witchResources =
+    view.me.abilityState && 'healingPotionAvailable' in view.me.abilityState
+      ? view.me.abilityState
+      : null
   const [targetId, setTargetId] = useState('')
   const [heal, setHeal] = useState(false)
   const [poisonTargetId, setPoisonTargetId] = useState('')
@@ -75,7 +79,7 @@ export function NightActionForm({
               type="checkbox"
               checked={heal}
               disabled={
-                !view.me.abilityState?.healingPotionAvailable ||
+                !witchResources?.healingPotionAvailable ||
                 !view.turn.werewolfTargetId
               }
               onChange={(event) => setHeal(event.target.checked)}
@@ -87,7 +91,7 @@ export function NightActionForm({
             label="Dùng bình độc"
             name="poisonTargetId"
             value={poisonTargetId}
-            disabled={!view.me.abilityState?.poisonPotionAvailable}
+            disabled={!witchResources?.poisonPotionAvailable}
             options={targets}
             emptyLabel="Không dùng bình độc"
             onChange={setPoisonTargetId}
@@ -105,8 +109,7 @@ export function NightActionForm({
             required
             onChange={setTargetId}
           />
-          {step === 'WEREWOLF_ATTACK' &&
-          view.me.role === 'ALPHA_WEREWOLF' ? (
+          {step === 'WEREWOLF_ATTACK' && view.me.role === 'ALPHA_WEREWOLF' ? (
             <label className="flex items-start gap-3 text-base/7 text-stone-300 sm:text-sm/6">
               <input
                 className="mt-1 size-5 accent-red-600 sm:size-4"

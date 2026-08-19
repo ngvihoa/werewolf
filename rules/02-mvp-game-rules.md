@@ -45,6 +45,10 @@ Hệ thống chịu trách nhiệm duy trì phase hiện tại.
 - 1 Witch
 - 3 Villagers
 
+Từ 9 người chơi trở lên, composition mặc định thay một Villager bằng một Elder.
+Elder là vai thụ động, không thêm queue step; khả năng sống sót được xử lý khi
+Moderator xác nhận Night Resolution.
+
 Mục tiêu của MVP là kiểm tra toàn bộ flow và state management trước khi tối ưu balance.
 
 ---

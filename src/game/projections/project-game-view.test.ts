@@ -28,6 +28,12 @@ const state: GameState = {
         poisonPotionAvailable: false,
       },
     },
+    {
+      id: 'elder',
+      role: 'ELDER',
+      alive: true,
+      abilityState: { werewolfAttackSurvivalAvailable: true },
+    },
     { id: 'villager', role: 'VILLAGER', alive: false, abilityState: null },
   ],
   queue: [
@@ -79,6 +85,7 @@ function createGame(): LocalGame {
         role: 'ALPHA_WEREWOLF',
       },
       { id: 'witch', displayName: 'Witch', ready: true, role: 'WITCH' },
+      { id: 'elder', displayName: 'Elder', ready: true, role: 'ELDER' },
       {
         id: 'villager',
         displayName: 'Villager',
@@ -175,6 +182,26 @@ describe('player projections', () => {
     expect(hunterView.turn.hunterShotTargetId).toBe('wolf')
     expect(seerView.turn.hunterShotTargetId).toBeNull()
     expect(JSON.stringify(seerView)).not.toContain('pendingHunterShot')
+  })
+
+  it('shows Elder survival state only to the Elder', () => {
+    const game = createGame()
+    const elderView = projectGameView(game, {
+      kind: 'PLAYER',
+      playerId: 'elder',
+    })
+    const seerView = projectGameView(game, {
+      kind: 'PLAYER',
+      playerId: 'seer',
+    })
+    if (elderView?.viewer !== 'PLAYER' || seerView?.viewer !== 'PLAYER') return
+
+    expect(elderView.me.abilityState).toEqual({
+      werewolfAttackSurvivalAvailable: true,
+    })
+    expect(JSON.stringify(seerView)).not.toContain(
+      'werewolfAttackSurvivalAvailable',
+    )
   })
 
   it('contains only public player fields and the viewer private state', () => {

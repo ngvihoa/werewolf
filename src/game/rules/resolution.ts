@@ -23,6 +23,7 @@ type NightResolutionInput = {
 
 export function resolveNight(input: NightResolutionInput): NightResolution {
   const causesByPlayer = new Map<string, EliminationCause[]>()
+  const elderSurvivalConsumedPlayerIds: string[] = []
 
   if (
     input.werewolfTargetId &&
@@ -30,7 +31,17 @@ export function resolveNight(input: NightResolutionInput): NightResolution {
     (input.werewolfAttackEnhanced ||
       input.werewolfTargetId !== input.protectedTargetId)
   ) {
-    causesByPlayer.set(input.werewolfTargetId, ['WEREWOLF_ATTACK'])
+    const target = input.players.find(
+      (player) => player.id === input.werewolfTargetId,
+    )
+    if (
+      target?.role === 'ELDER' &&
+      target.abilityState.werewolfAttackSurvivalAvailable
+    ) {
+      elderSurvivalConsumedPlayerIds.push(target.id)
+    } else {
+      causesByPlayer.set(input.werewolfTargetId, ['WEREWOLF_ATTACK'])
+    }
   }
   if (input.witchPoisonTargetId) {
     const causes = causesByPlayer.get(input.witchPoisonTargetId) ?? []
@@ -55,6 +66,7 @@ export function resolveNight(input: NightResolutionInput): NightResolution {
 
   return {
     deaths,
+    elderSurvivalConsumedPlayerIds,
     survivors: input.players
       .filter((player) => player.alive && !deadIds.has(player.id))
       .map((player) => player.id),

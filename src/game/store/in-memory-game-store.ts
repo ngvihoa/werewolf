@@ -476,6 +476,14 @@ function createDomainPlayer(id: string, role: Role): Player {
       abilityState: { enhancedAttackAvailable: true },
     }
   }
+  if (role === 'ELDER') {
+    return {
+      id,
+      role,
+      alive: true,
+      abilityState: { werewolfAttackSurvivalAvailable: true },
+    }
+  }
   return { id, role, alive: true, abilityState: null }
 }
 

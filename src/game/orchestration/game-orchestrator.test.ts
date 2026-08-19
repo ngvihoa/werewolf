@@ -153,6 +153,32 @@ describe('night orchestration', () => {
     ).toBe(false)
   })
 
+  it('consumes the Elder survival only when Moderator confirms the resolution', () => {
+    const elder: Player = {
+      id: 'elder',
+      role: 'ELDER',
+      alive: true,
+      abilityState: { werewolfAttackSurvivalAvailable: true },
+    }
+    const state = createFirstNightState([...fivePlayers, elder])
+    state.phase = 'NIGHT_RESOLUTION'
+    state.pendingNightResolution = {
+      deaths: [],
+      survivors: state.players.map((player) => player.id),
+      elderSurvivalConsumedPlayerIds: ['elder'],
+    }
+
+    expect(elder.abilityState.werewolfAttackSurvivalAvailable).toBe(true)
+    const confirmed = run(state, { type: 'CONFIRM_NIGHT_RESOLUTION' })
+    const confirmedElder = confirmed.state.players.find(
+      (player) => player.id === 'elder',
+    )
+    expect(confirmedElder?.abilityState).toEqual({
+      werewolfAttackSurvivalAvailable: false,
+    })
+    expect(confirmedElder?.alive).toBe(true)
+  })
+
   it('records the Seer alignment when Moderator confirms', () => {
     let state = createFirstNightState(fivePlayers)
     state = run(state, {

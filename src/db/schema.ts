@@ -1,5 +1,9 @@
+import type {
+  AlphaWerewolfResources,
+  ElderResources,
+  WitchResources,
+} from '#/game/domain'
 import type { EventActor, PersistedGameEvent } from '#/game/store/model'
-import type { AlphaWerewolfResources, WitchResources } from '#/game/domain'
 import type { MvpSettings } from '#/game/rules/mvp-settings'
 import type { GameState } from '#/game/orchestration/model'
 
@@ -111,7 +115,7 @@ export const gamePlayers = pgTable(
     displayName: text('display_name').notNull(),
     role: role('role'),
     abilityState: jsonb('ability_state').$type<
-      WitchResources | AlphaWerewolfResources
+      WitchResources | AlphaWerewolfResources | ElderResources
     >(),
     isModerator: boolean('is_moderator').notNull().default(false),
     isReady: boolean('is_ready').notNull().default(false),
@@ -134,7 +138,7 @@ export const gamePlayers = pgTable(
     ),
     check(
       'game_players_role_ability_check',
-      sql`(${table.role} IN ('WITCH', 'ALPHA_WEREWOLF') AND ${table.abilityState} IS NOT NULL) OR (${table.role} NOT IN ('WITCH', 'ALPHA_WEREWOLF') AND ${table.abilityState} IS NULL) OR (${table.role} IS NULL AND ${table.abilityState} IS NULL)`,
+      sql`(${table.role} IN ('WITCH', 'ALPHA_WEREWOLF', 'ELDER') AND ${table.abilityState} IS NOT NULL) OR (${table.role} NOT IN ('WITCH', 'ALPHA_WEREWOLF', 'ELDER') AND ${table.abilityState} IS NULL) OR (${table.role} IS NULL AND ${table.abilityState} IS NULL)`,
     ),
   ],
 )

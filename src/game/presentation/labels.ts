@@ -47,6 +47,7 @@ export function roleLabel(role: Role) {
     WITCH: 'Phù thủy',
     PROTECTOR: 'Bảo vệ',
     HUNTER: 'Thợ săn',
+    ELDER: 'Già làng',
   }[role]
 }
 
@@ -54,13 +55,14 @@ export function roleDescription(role: Role) {
   return {
     VILLAGER: 'Quan sát, thảo luận và tìm ra Ma sói vào ban ngày.',
     WEREWOLF: 'Mỗi đêm chọn một người chơi để tấn công.',
-    ALPHA_WEREWOLF:
-      'Cùng đàn Sói tấn công và có một lần cắn xuyên qua Bảo vệ.',
+    ALPHA_WEREWOLF: 'Cùng đàn Sói tấn công và có một lần cắn xuyên qua Bảo vệ.',
     SEER: 'Mỗi đêm soi một người để biết họ thuộc phe nào.',
     WITCH: 'Bạn có một bình cứu và một bình độc dùng trong cả ván.',
     PROTECTOR:
       'Mỗi đêm bảo hộ một người khỏi Ma sói, không chọn cùng một người hai đêm liên tiếp.',
     HUNTER:
       'Mỗi đêm chọn trước một mục tiêu; nếu chết trong đêm, bạn kéo người đó theo cùng.',
+    ELDER:
+      'Sống sót qua lần cắn chí mạng đầu tiên của Ma sói; những nguồn sát thương khác vẫn hạ gục bạn ngay.',
   }[role]
 }

@@ -8,6 +8,7 @@ import type {
   teamSchema,
   witchResourcesSchema,
   alphaWerewolfResourcesSchema,
+  elderResourcesSchema,
 } from './schema'
 import type { z } from 'zod'
 
@@ -21,6 +22,7 @@ export type WitchResources = z.infer<typeof witchResourcesSchema>
 export type AlphaWerewolfResources = z.infer<
   typeof alphaWerewolfResourcesSchema
 >
+export type ElderResources = z.infer<typeof elderResourcesSchema>
 export type Player = z.infer<typeof playerSchema>
 export type DomainErrorCode = z.infer<typeof domainErrorCodeSchema>
 export type DomainError = z.infer<typeof domainErrorSchema>

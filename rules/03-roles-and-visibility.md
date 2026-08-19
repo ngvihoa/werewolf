@@ -162,7 +162,25 @@ Moderator cho đến khi kết quả chết được công khai.
 
 ---
 
-# 7. Information Visibility
+## 7. Elder
+
+**Team:** Village
+
+Già làng có thể sống sót qua lần `WEREWOLF_ATTACK` chí mạng đầu tiên trong ván:
+
+- Mạng đặc biệt chỉ bị tiêu hao khi đòn cắn thực sự có thể gây chết.
+- Witch dùng Healing Potion hoặc Protector chặn đòn thì không tiêu hao mạng.
+- Cắn xuyên bảo vệ của Sói Đầu Đàn vẫn kích hoạt và tiêu hao mạng đặc biệt.
+- Sau khi đã mất mạng đặc biệt, lần cắn Sói tiếp theo giết Già làng như bình
+  thường.
+- Vote, Witch Poison và Hunter Shot giết Già làng ngay, không bị mạng đặc biệt
+  ngăn cản.
+
+Trạng thái mạng đặc biệt chỉ hiển thị cho Già làng và Moderator.
+
+---
+
+# 8. Information Visibility
 
 Không phải mọi state đều được hiển thị cho mọi player.
 
@@ -193,20 +211,20 @@ Chỉ owner và Moderator được thấy:
 
 ## 8. Permission Matrix
 
-| Information                | Other Player | Owner | Moderator |
-| -------------------------- | -----------: | ----: | --------: |
-| Player name                |           ✅ |    ✅ |        ✅ |
-| Alive / Dead               |           ✅ |    ✅ |        ✅ |
-| Public status              |           ✅ |    ✅ |        ✅ |
-| Own role                   |           ❌ |    ✅ |        ✅ |
-| Role description           |           ❌ |    ✅ |        ✅ |
-| Ability remaining          |           ❌ |    ✅ |        ✅ |
-| Own night action           |           ❌ |    ✅ |        ✅ |
-| Werewolf teammates (Wolf owner) |      ❌ |    ✅ |        ✅ |
-| Shared target (Wolf owner)      |      ❌ |    ✅ |        ✅ |
-| Enhanced attack (Wolf owner)    |      ❌ |    ✅ |        ✅ |
-| Other player's hidden role |           ❌ |    ❌ |        ✅ |
-| Complete game history      |           ❌ |    ❌ |        ✅ |
+| Information                     | Other Player | Owner | Moderator |
+| ------------------------------- | -----------: | ----: | --------: |
+| Player name                     |           ✅ |    ✅ |        ✅ |
+| Alive / Dead                    |           ✅ |    ✅ |        ✅ |
+| Public status                   |           ✅ |    ✅ |        ✅ |
+| Own role                        |           ❌ |    ✅ |        ✅ |
+| Role description                |           ❌ |    ✅ |        ✅ |
+| Ability remaining               |           ❌ |    ✅ |        ✅ |
+| Own night action                |           ❌ |    ✅ |        ✅ |
+| Werewolf teammates (Wolf owner) |           ❌ |    ✅ |        ✅ |
+| Shared target (Wolf owner)      |           ❌ |    ✅ |        ✅ |
+| Enhanced attack (Wolf owner)    |           ❌ |    ✅ |        ✅ |
+| Other player's hidden role      |           ❌ |    ❌ |        ✅ |
+| Complete game history           |           ❌ |    ❌ |        ✅ |
 
 ---
 
