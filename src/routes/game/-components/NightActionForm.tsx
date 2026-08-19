@@ -24,6 +24,7 @@ export function NightActionForm({
       ? view.me.abilityState
       : null
   const [targetId, setTargetId] = useState('')
+  const [secondTargetId, setSecondTargetId] = useState('')
   const [heal, setHeal] = useState(false)
   const [poisonTargetId, setPoisonTargetId] = useState('')
   const [enhanced, setEnhanced] = useState(false)
@@ -51,6 +52,18 @@ export function NightActionForm({
           actorId: view.me.id,
           heal,
           poisonTargetId: poisonTargetId || null,
+        },
+      })
+      return
+    }
+    if (step === 'CUPID_LINK') {
+      if (!targetId || !secondTargetId || targetId === secondTargetId) return
+      onCommand({
+        type: 'SUBMIT_NIGHT_ACTION',
+        action: {
+          type: step,
+          actorId: view.me.id,
+          targetIds: [targetId, secondTargetId],
         },
       })
       return
@@ -111,6 +124,18 @@ export function NightActionForm({
             required
             onChange={setTargetId}
           />
+          {step === 'CUPID_LINK' ? (
+            <SelectField
+              id="second-night-target"
+              label="Chọn người yêu thứ hai"
+              name="secondTargetId"
+              value={secondTargetId}
+              options={targets.filter((player) => player.id !== targetId)}
+              emptyLabel="Chọn một người chơi khác"
+              required
+              onChange={setSecondTargetId}
+            />
+          ) : null}
           {step === 'WEREWOLF_ATTACK' && view.me.role === 'ALPHA_WEREWOLF' ? (
             <label className="flex items-start gap-3 text-base/7 text-stone-300 sm:text-sm/6">
               <input

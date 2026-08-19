@@ -20,14 +20,16 @@ export const STEP_ROLE = {
   WEREWOLF_ATTACK: 'WEREWOLF',
   WITCH_ACTION: 'WITCH',
   PIPER_CHARM: 'PIPER',
+  CUPID_LINK: 'CUPID',
 } as const satisfies Record<QueueStep, Role>
 
 export function canTransitionPhase(from: GamePhase, to: GamePhase): boolean {
   return (PHASE_TRANSITIONS[from] as readonly GamePhase[]).includes(to)
 }
 
-export function getNightQueue(roles: readonly Role[]): QueueStep[] {
+export function getNightQueue(roles: readonly Role[], round = 1): QueueStep[] {
   const queue: QueueStep[] = []
+  if (round === 1 && roles.includes('CUPID')) queue.push('CUPID_LINK')
   if (roles.includes('HUNTER')) queue.push('HUNTER_MARK')
   if (roles.includes('PROTECTOR')) queue.push('PROTECTOR_PROTECT')
   queue.push('SEER_INSPECT', 'WEREWOLF_ATTACK')

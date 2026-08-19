@@ -138,6 +138,7 @@ export const playerGameViewSchema = z.object({
     charmedPlayerIds: z.array(z.string()),
   }),
   isCharmed: z.boolean(),
+  lover: publicPlayerViewSchema.nullable(),
   publicHistory: z.array(publicHistoryEntrySchema),
   privateHistory: z.array(privateHistoryEntrySchema),
 })
@@ -156,6 +157,7 @@ const gameStateSchema = z.object({
   pendingNightAction: nightActionSchema.nullable(),
   confirmedNightActions: z.array(nightActionSchema),
   charmedPlayerIds: z.array(z.string()).optional(),
+  loverIds: z.tuple([z.string(), z.string()]).nullable().optional(),
   lastProtectedTargetId: z.string().nullable().optional(),
   pendingNightResolution: nightResolutionSchema.nullable(),
   voteAttempt: z.union([z.literal(1), z.literal(2)]),

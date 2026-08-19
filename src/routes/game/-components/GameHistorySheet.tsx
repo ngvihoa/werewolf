@@ -29,6 +29,9 @@ function nightActionSummary(
     ].filter(Boolean)
     return `${actor}: ${choices.join(' và ') || 'không dùng bình nào'}`
   }
+  if (action.type === 'CUPID_LINK') {
+    return `${actor} ghép đôi ${playerName(names, action.targetIds[0])} và ${playerName(names, action.targetIds[1])}`
+  }
   return `${actor} chọn ${playerName(names, action.targetId)}`
 }
 
@@ -88,9 +91,11 @@ function eventSummary(
         ? 'Thằng ngốc chiến thắng'
         : event.winner === 'PIPER'
           ? 'Người thổi sáo chiến thắng'
-          : event.winner === 'WEREWOLF'
-            ? 'Phe Ma sói chiến thắng'
-            : 'Phe Dân làng chiến thắng'
+          : event.winner === 'LOVERS'
+            ? 'Cặp tình nhân chiến thắng'
+            : event.winner === 'WEREWOLF'
+              ? 'Phe Ma sói chiến thắng'
+              : 'Phe Dân làng chiến thắng'
   }
 }
 

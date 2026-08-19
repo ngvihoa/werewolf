@@ -13,10 +13,16 @@ export const ROLE_VALUES = [
   'ELDER',
   'FOOL',
   'PIPER',
+  'CUPID',
 ] as const
 
 export const TEAM_VALUES = ['VILLAGE', 'WEREWOLF'] as const
-export const WINNER_VALUES = [...TEAM_VALUES, 'FOOL', 'PIPER'] as const
+export const WINNER_VALUES = [
+  ...TEAM_VALUES,
+  'FOOL',
+  'PIPER',
+  'LOVERS',
+] as const
 
 export const GAME_PHASE_VALUES = [
   'SETUP',
@@ -38,6 +44,7 @@ export const QUEUE_STEP_VALUES = [
   'WEREWOLF_ATTACK',
   'WITCH_ACTION',
   'PIPER_CHARM',
+  'CUPID_LINK',
 ] as const
 
 export const DOMAIN_ERROR_CODE_VALUES = [
@@ -130,6 +137,11 @@ export const playerSchema = z.discriminatedUnion('role', [
   z.object({
     ...basePlayerFields,
     role: z.literal('PIPER'),
+    abilityState: z.null(),
+  }),
+  z.object({
+    ...basePlayerFields,
+    role: z.literal('CUPID'),
     abilityState: z.null(),
   }),
 ])

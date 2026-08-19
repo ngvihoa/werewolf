@@ -68,6 +68,10 @@ export function actionSummary(
     ].filter(Boolean)
     return `${names.get(action.actorId) ?? 'Phù thủy'}: ${choices.join(' và ') || 'không dùng bình nào'}`
   }
+  if (action.type === 'CUPID_LINK') {
+    const [firstId, secondId] = action.targetIds
+    return `${names.get(action.actorId) ?? 'Thần tình yêu'} ghép ${names.get(firstId) ?? 'người chơi'} với ${names.get(secondId) ?? 'người chơi'}`
+  }
   if (action.type === 'WEREWOLF_ATTACK' && action.enhanced) {
     return `${names.get(action.actorId) ?? 'Sói Đầu Đàn'} chọn ${names.get(action.targetId) ?? 'người chơi'} bằng Cắn xuyên bảo vệ`
   }

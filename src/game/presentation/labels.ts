@@ -26,6 +26,7 @@ export function queueStepLabel(step: GameState['queue'][number]['step']) {
     WEREWOLF_ATTACK: 'Ma sói tấn công',
     WITCH_ACTION: 'Phù thủy hành động',
     PIPER_CHARM: 'Người thổi sáo mê hoặc',
+    CUPID_LINK: 'Thần tình yêu ghép đôi',
   }[step]
 }
 
@@ -51,6 +52,7 @@ export function roleLabel(role: Role) {
     ELDER: 'Già làng',
     FOOL: 'Thằng ngốc',
     PIPER: 'Người thổi sáo',
+    CUPID: 'Thần tình yêu',
   }[role]
 }
 
@@ -70,5 +72,7 @@ export function roleDescription(role: Role) {
     FOOL: 'Thắng một mình nếu bị loại bởi biểu quyết đã được Quản trò xác nhận.',
     PIPER:
       'Mỗi đêm mê hoặc một người mới; thắng khi mọi người còn sống khác đều đã bị mê hoặc.',
+    CUPID:
+      'Đêm đầu tiên ghép hai người khác thành tình nhân; một người chết thì người kia chết theo.',
   }[role]
 }

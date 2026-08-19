@@ -46,4 +46,16 @@ describe('phase transitions', () => {
       'PIPER_CHARM',
     ])
   })
+
+  it('runs Cupid first only on the first night', () => {
+    expect(getNightQueue(['CUPID', 'WEREWOLF', 'SEER'], 1)).toEqual([
+      'CUPID_LINK',
+      'SEER_INSPECT',
+      'WEREWOLF_ATTACK',
+    ])
+    expect(getNightQueue(['CUPID', 'WEREWOLF', 'SEER'], 2)).toEqual([
+      'SEER_INSPECT',
+      'WEREWOLF_ATTACK',
+    ])
+  })
 })

@@ -5,6 +5,7 @@ import type {
   PrivateHistoryEvent,
   ProjectionViewer,
   PublicHistoryEvent,
+  PublicPlayerView,
   StoredEventInput,
 } from './model'
 import type { LocalGame } from '../store/model'
@@ -33,11 +34,11 @@ export function projectGameView(
     game.state?.pendingNightAction?.type === 'WEREWOLF_ATTACK'
       ? game.state.pendingNightAction
       : game.state?.confirmedNightActions.find(
-          (action) => action.type === 'WEREWOLF_ATTACK',
-        )
+        (action) => action.type === 'WEREWOLF_ATTACK',
+      )
   const werewolfTargetId =
     (domainPlayer?.role === 'WITCH' && activeStep === 'WITCH_ACTION') ||
-    (domainPlayer && isWerewolfRole(domainPlayer.role))
+      (domainPlayer && isWerewolfRole(domainPlayer.role))
       ? (visibleWerewolfAction?.targetId ?? null)
       : null
 
@@ -78,12 +79,13 @@ export function projectGameView(
       role: lobbyPlayer.role,
       abilityState:
         domainPlayer?.role === 'WITCH' ||
-        domainPlayer?.role === 'ALPHA_WEREWOLF' ||
-        domainPlayer?.role === 'ELDER'
+          domainPlayer?.role === 'ALPHA_WEREWOLF' ||
+          domainPlayer?.role === 'ELDER'
           ? structuredClone(domainPlayer.abilityState)
           : null,
     },
     isCharmed: game.state?.charmedPlayerIds?.includes(lobbyPlayer.id) ?? false,
+    lover: projectLover(game, lobbyPlayer.id),
     queue:
       game.state?.queue.map((item) => ({
         step: item.step,
@@ -113,20 +115,20 @@ export function projectGameView(
       werewolfTeammates:
         domainPlayer && isWerewolfRole(domainPlayer.role)
           ? game
-              .state!.players.filter(
-                (player) =>
-                  isWerewolfRole(player.role) && player.id !== domainPlayer.id,
-              )
-              .map((player) => ({
-                id: player.id,
-                displayName:
-                  game.lobbyPlayers.find((item) => item.id === player.id)
-                    ?.displayName ?? '',
-                ready:
-                  game.lobbyPlayers.find((item) => item.id === player.id)
-                    ?.ready ?? false,
-                alive: player.alive,
-              }))
+            .state!.players.filter(
+              (player) =>
+                isWerewolfRole(player.role) && player.id !== domainPlayer.id,
+            )
+            .map((player) => ({
+              id: player.id,
+              displayName:
+                game.lobbyPlayers.find((item) => item.id === player.id)
+                  ?.displayName ?? '',
+              ready:
+                game.lobbyPlayers.find((item) => item.id === player.id)
+                  ?.ready ?? false,
+              alive: player.alive,
+            }))
           : [],
       lastProtectedTargetId:
         domainPlayer?.role === 'PROTECTOR'
@@ -134,8 +136,8 @@ export function projectGameView(
           : null,
       hunterShotTargetId:
         game.state?.phase === 'HUNTER_SHOT' &&
-        domainPlayer?.role === 'HUNTER' &&
-        game.state.pendingHunterShot?.hunterId === domainPlayer.id
+          domainPlayer?.role === 'HUNTER' &&
+          game.state.pendingHunterShot?.hunterId === domainPlayer.id
           ? game.state.pendingHunterShot.targetId
           : null,
       charmedPlayerIds:
@@ -151,6 +153,28 @@ export function projectGameView(
     ),
   }
   return view
+}
+
+function projectLover(
+  game: LocalGame,
+  playerId: string,
+): PublicPlayerView | null {
+  const loverIds = game.state?.loverIds
+  if (!loverIds) return null
+  const [firstId, secondId] = loverIds
+  const loverId =
+    playerId === firstId ? secondId : playerId === secondId ? firstId : null
+  if (!loverId) return null
+  const lover = game.lobbyPlayers.find((player) => player.id === loverId)
+  if (!lover) return null
+  return {
+    id: lover.id,
+    displayName: lover.displayName,
+    ready: lover.ready,
+    alive:
+      game.state?.players.find((player) => player.id === lover.id)?.alive ??
+      true,
+  }
 }
 
 function projectEvent(

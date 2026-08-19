@@ -51,13 +51,19 @@ System tạo queue dựa trên role hiện có trong game.
 Ví dụ:
 
 ```text
-Night 2
+Night 1 (khi mọi role đều có mặt)
 
-1. SEER_INSPECT
-2. WEREWOLF_ATTACK
-3. WITCH_ACTION
-4. NIGHT_RESOLUTION
+1. CUPID_LINK
+2. HUNTER_MARK
+3. PROTECTOR_PROTECT
+4. SEER_INSPECT
+5. WEREWOLF_ATTACK
+6. WITCH_ACTION
+7. PIPER_CHARM
+8. NIGHT_RESOLUTION
 ```
+
+`CUPID_LINK` chỉ có ở đêm đầu; các đêm sau bắt đầu từ `HUNTER_MARK`.
 
 Nếu game 5 người không có Witch:
 
@@ -122,13 +128,17 @@ Không nên hard-code hoàn toàn.
 Có thể lưu dạng:
 
 ```text
-SEER_INSPECT      order = 10
-WEREWOLF_ATTACK   order = 20
-WITCH_ACTION      order = 30
+CUPID_LINK        order = 5 (night 1 only)
+HUNTER_MARK       order = 10
+PROTECTOR_PROTECT order = 20
+SEER_INSPECT      order = 30
+WEREWOLF_ATTACK   order = 40
+WITCH_ACTION      order = 50
+PIPER_CHARM       order = 60
 NIGHT_RESOLUTION  order = 100
 ```
 
-Dùng khoảng cách `10, 20, 30` giúp chèn role mới sau này.
+Dùng khoảng cách giữa các order giúp chèn role mới sau này.
 
 Ví dụ thêm Defender:
 

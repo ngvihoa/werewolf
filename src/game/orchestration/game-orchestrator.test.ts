@@ -311,6 +311,59 @@ describe('night orchestration', () => {
 })
 
 describe('vote orchestration', () => {
+  it('eliminates the surviving lover from heartbreak after a vote', () => {
+    const players: Player[] = [
+      { id: 'wolf', role: 'WEREWOLF', alive: true, abilityState: null },
+      { id: 'lover', role: 'VILLAGER', alive: true, abilityState: null },
+      { id: 'other', role: 'VILLAGER', alive: true, abilityState: null },
+    ]
+    let state = createFirstNightState(players)
+    state.loverIds = ['wolf', 'lover']
+    state.phase = 'DAY'
+    state = run(state, { type: 'START_VOTE' }).state
+    state = run(state, {
+      type: 'SUBMIT_VOTE_RESULT',
+      tied: false,
+      selectedPlayerId: 'lover',
+    }).state
+
+    const outcome = run(state, { type: 'CONFIRM_VOTE_RESULT' })
+
+    expect(
+      outcome.state.players.every(
+        (player) => player.id === 'other' || !player.alive,
+      ),
+    ).toBe(true)
+    expect(outcome.events).toContainEqual({
+      type: 'PLAYER_DIED',
+      playerId: 'wolf',
+      causes: ['HEARTBREAK'],
+    })
+    expect(outcome.state.winner).toBe('VILLAGE')
+  })
+
+  it('awards mixed-alignment lovers victory when they are last alive', () => {
+    const players: Player[] = [
+      { id: 'wolf', role: 'WEREWOLF', alive: true, abilityState: null },
+      { id: 'lover', role: 'VILLAGER', alive: true, abilityState: null },
+      { id: 'other', role: 'VILLAGER', alive: true, abilityState: null },
+    ]
+    let state = createFirstNightState(players)
+    state.loverIds = ['wolf', 'lover']
+    state.phase = 'DAY'
+    state = run(state, { type: 'START_VOTE' }).state
+    state = run(state, {
+      type: 'SUBMIT_VOTE_RESULT',
+      tied: false,
+      selectedPlayerId: 'other',
+    }).state
+
+    const outcome = run(state, { type: 'CONFIRM_VOTE_RESULT' })
+
+    expect(outcome.state.phase).toBe('GAME_OVER')
+    expect(outcome.state.winner).toBe('LOVERS')
+  })
+
   it('awards the Fool a solo victory when a confirmed vote eliminates them', () => {
     const players: Player[] = [
       { id: 'fool', role: 'FOOL', alive: true, abilityState: null },

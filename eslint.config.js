@@ -39,6 +39,8 @@ export default [
           maxEOF: 0,
         },
       ],
+      '@typescript-eslint/no-unsafe-assignment': 'off',
+      '@typescript-eslint/no-unsafe-call': 'off',
     },
   },
   {

@@ -16,7 +16,7 @@ export type CommandOutcome = {
 }
 
 export function createFirstNightState(players: readonly Player[]): GameState {
-  const queue = createQueue(players)
+  const queue = createQueue(players, 1)
   activateNextRunnableStep(queue, players, [])
 
   return {
@@ -27,6 +27,7 @@ export function createFirstNightState(players: readonly Player[]): GameState {
     pendingNightAction: null,
     confirmedNightActions: [],
     charmedPlayerIds: [],
+    loverIds: null,
     lastProtectedTargetId: null,
     pendingNightResolution: null,
     voteAttempt: 1,
@@ -91,6 +92,8 @@ function submitNightAction(
       findWerewolfTarget(state.confirmedNightActions) ?? undefined,
     lastProtectedTargetId: state.lastProtectedTargetId,
     charmedPlayerIds: state.charmedPlayerIds,
+    round: state.round,
+    loverIds: state.loverIds,
   })
   if (!validation.ok) return validation
 
@@ -118,6 +121,7 @@ function confirmStep(
   state.pendingNightAction = null
   consumeWitchResources(state, action)
   consumeAlphaWerewolfAbility(state, action)
+  if (action.type === 'CUPID_LINK') state.loverIds = [...action.targetIds]
   events.push({ type: 'NIGHT_ACTION_CONFIRMED', action })
   if (action.type === 'SEER_INSPECT') {
     const target = state.players.find((player) => player.id === action.targetId)
@@ -182,25 +186,28 @@ function advanceNight(state: GameState, events: GameEvent[]): void {
 
   const from = state.phase
   state.phase = 'NIGHT_RESOLUTION'
-  state.pendingNightResolution = resolveNight({
-    players: state.players,
-    werewolfTargetId: findWerewolfTarget(state.confirmedNightActions),
-    werewolfAttackEnhanced:
-      findWerewolfAction(state.confirmedNightActions)?.enhanced === true,
-    witchHealed: findWitchAction(state.confirmedNightActions)?.heal ?? false,
-    witchPoisonTargetId:
-      findWitchAction(state.confirmedNightActions)?.poisonTargetId ?? null,
-    protectedTargetId:
-      state.confirmedNightActions.find(
-        (action) => action.type === 'PROTECTOR_PROTECT',
-      )?.targetId ?? null,
-    hunterId:
-      state.players.find((player) => player.role === 'HUNTER')?.id ?? null,
-    hunterTargetId:
-      state.confirmedNightActions.find(
-        (action) => action.type === 'HUNTER_MARK',
-      )?.targetId ?? null,
-  })
+  state.pendingNightResolution = withHeartbreakDeaths(
+    resolveNight({
+      players: state.players,
+      werewolfTargetId: findWerewolfTarget(state.confirmedNightActions),
+      werewolfAttackEnhanced:
+        findWerewolfAction(state.confirmedNightActions)?.enhanced === true,
+      witchHealed: findWitchAction(state.confirmedNightActions)?.heal ?? false,
+      witchPoisonTargetId:
+        findWitchAction(state.confirmedNightActions)?.poisonTargetId ?? null,
+      protectedTargetId:
+        state.confirmedNightActions.find(
+          (action) => action.type === 'PROTECTOR_PROTECT',
+        )?.targetId ?? null,
+      hunterId:
+        state.players.find((player) => player.role === 'HUNTER')?.id ?? null,
+      hunterTargetId:
+        state.confirmedNightActions.find(
+          (action) => action.type === 'HUNTER_MARK',
+        )?.targetId ?? null,
+    }),
+    state.loverIds,
+  )
   events.push(
     {
       type: 'NIGHT_RESOLUTION_PREPARED',
@@ -229,14 +236,7 @@ function confirmNightResolution(
     }
   }
 
-  for (const death of state.pendingNightResolution.deaths) {
-    setPlayerDead(state.players, death.playerId)
-    events.push({
-      type: 'PLAYER_DIED',
-      playerId: death.playerId,
-      causes: death.causes,
-    })
-  }
+  applyDeaths(state, state.pendingNightResolution.deaths, events)
   const charmAction = state.confirmedNightActions.find(
     (action) => action.type === 'PIPER_CHARM',
   )
@@ -245,6 +245,7 @@ function confirmNightResolution(
     charmedPlayerIds.push(charmAction.targetId)
   }
   state.pendingNightResolution = null
+  if (hasLoversWon(state)) return endGame(state, 'LOVERS', events)
   const piper = state.players.find((player) => player.role === 'PIPER')
   if (
     piper?.alive &&
@@ -325,12 +326,14 @@ function confirmVoteResult(
   }
 
   if (resolution.outcome === 'ELIMINATED') {
-    setPlayerDead(state.players, resolution.playerId)
-    events.push({
-      type: 'PLAYER_DIED',
-      playerId: resolution.playerId,
-      causes: ['VOTE'],
-    })
+    applyDeaths(
+      state,
+      withHeartbreakCauses(
+        [{ playerId: resolution.playerId, causes: ['VOTE'] }],
+        state.loverIds,
+      ),
+      events,
+    )
     const eliminated = state.players.find(
       (player) => player.id === resolution.playerId,
     )
@@ -399,18 +402,18 @@ function confirmHunterShot(
     return failure('INVALID_ACTION', 'Hunter shot is not submitted')
   }
 
-  setPlayerDead(state.players, pending.targetId)
-  events.push(
-    {
-      type: 'HUNTER_SHOT_CONFIRMED',
-      hunterId: pending.hunterId,
-      targetId: pending.targetId,
-    },
-    {
-      type: 'PLAYER_DIED',
-      playerId: pending.targetId,
-      causes: ['HUNTER_SHOT'],
-    },
+  events.push({
+    type: 'HUNTER_SHOT_CONFIRMED',
+    hunterId: pending.hunterId,
+    targetId: pending.targetId,
+  })
+  applyDeaths(
+    state,
+    withHeartbreakCauses(
+      [{ playerId: pending.targetId, causes: ['HUNTER_SHOT'] }],
+      state.loverIds,
+    ),
+    events,
   )
   state.pendingHunterShot = null
   return transitionAfterElimination(state, 'NIGHT', events)
@@ -443,6 +446,7 @@ function transitionAfterElimination(
   nextPhase: 'DAY' | 'NIGHT',
   events: GameEvent[],
 ): Result<CommandOutcome> {
+  if (hasLoversWon(state)) return endGame(state, 'LOVERS', events)
   const winner = getWinningTeamFromPlayers(state.players)
   if (winner) {
     state.winner = winner
@@ -459,7 +463,7 @@ function transitionAfterElimination(
     state.round += 1
     state.voteAttempt = 1
     state.confirmedNightActions = []
-    state.queue = createQueue(state.players)
+    state.queue = createQueue(state.players, state.round)
     transitionPhase(state, 'NIGHT', events)
     activateNextRunnableStep(state.queue, state.players, events)
   } else {
@@ -468,12 +472,84 @@ function transitionAfterElimination(
   return success(state, events)
 }
 
-function createQueue(players: readonly Player[]): NightQueueItem[] {
-  return getNightQueue(players.map((player) => player.role)).map((step) => ({
+function createQueue(
+  players: readonly Player[],
+  round: number,
+): NightQueueItem[] {
+  return getNightQueue(
+    players.map((player) => player.role),
+    round,
+  ).map((step) => ({
     step,
     status: 'PENDING',
     skipReason: null,
   }))
+}
+
+function withHeartbreakDeaths(
+  resolution: NonNullable<GameState['pendingNightResolution']>,
+  loverIds: GameState['loverIds'],
+) {
+  const deaths = withHeartbreakCauses(resolution.deaths, loverIds)
+  const deadIds = new Set(deaths.map((death) => death.playerId))
+  return {
+    ...resolution,
+    deaths,
+    survivors: resolution.survivors.filter((id) => !deadIds.has(id)),
+  }
+}
+
+function withHeartbreakCauses(
+  deaths: NonNullable<GameState['pendingNightResolution']>['deaths'],
+  loverIds: GameState['loverIds'],
+) {
+  if (!loverIds) return deaths
+  const deadIds = new Set(deaths.map((death) => death.playerId))
+  const [firstId, secondId] = loverIds
+  if (deadIds.has(firstId) === deadIds.has(secondId)) return deaths
+  return [
+    ...deaths,
+    {
+      playerId: deadIds.has(firstId) ? secondId : firstId,
+      causes: ['HEARTBREAK' as const],
+    },
+  ]
+}
+
+function applyDeaths(
+  state: GameState,
+  deaths: NonNullable<GameState['pendingNightResolution']>['deaths'],
+  events: GameEvent[],
+): void {
+  for (const death of deaths) {
+    setPlayerDead(state.players, death.playerId)
+    events.push({ type: 'PLAYER_DIED', ...death })
+  }
+}
+
+function hasLoversWon(state: GameState): boolean {
+  if (!state.loverIds) return false
+  const lovers = state.loverIds.map((id) =>
+    state.players.find((player) => player.id === id),
+  )
+  if (lovers.some((player) => !player?.alive)) return false
+  const mixedAlignment =
+    isWerewolfRole(lovers[0]?.role) !== isWerewolfRole(lovers[1]?.role)
+  return (
+    mixedAlignment &&
+    state.players.filter((player) => player.alive).length === 2
+  )
+}
+
+function endGame(
+  state: GameState,
+  winner: NonNullable<GameState['winner']>,
+  events: GameEvent[],
+): Result<CommandOutcome> {
+  state.winner = winner
+  transitionPhase(state, 'GAME_OVER', events)
+  events.push({ type: 'GAME_ENDED', winner })
+  return success(state, events)
 }
 
 function activateNextRunnableStep(

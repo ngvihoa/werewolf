@@ -215,6 +215,27 @@ Người thổi sáo xuất hiện từ bàn 11 người và mỗi đêm mê ho�
 
 ---
 
+## 10. Cupid
+
+**Team:** Village
+
+Thần tình yêu xuất hiện từ bàn 12 người và chỉ hành động trong đêm đầu tiên:
+
+- Cupid chọn hai người đang sống khác nhau và không được chọn chính mình.
+- Hai tình nhân biết danh tính của nhau nhưng không biết vai trò của nhau.
+- Khi một người chết bởi bất kỳ nguyên nhân nào, người còn lại chết theo với
+  cause `HEARTBREAK`.
+- Hệ thống không cấm tình nhân nhắm vào nhau; Werewolf Attack vẫn là hành động
+  chung của đàn Sói.
+- Nếu hai tình nhân cùng alignment, họ tiếp tục thắng hoặc thua cùng phe gốc.
+- Nếu một người thuộc Werewolf và người kia không thuộc Werewolf, họ thắng với
+  `LOVERS` khi là hai người cuối cùng còn sống.
+- Khi cùng đạt điều kiện sau Night Resolution, `LOVERS` được kiểm tra trước Piper
+  rồi mới đến Village/Werewolf.
+- Cupid không tự động thắng cùng cặp đôi và Seer soi Cupid nhận `VILLAGE`.
+
+---
+
 # 8. Information Visibility
 
 Không phải mọi state đều được hiển thị cho mọi player.

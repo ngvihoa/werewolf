@@ -336,6 +336,41 @@ describe('player projections', () => {
     expect(wolfView.isCharmed).toBe(false)
     expect(wolfView.turn.charmedPlayerIds).toEqual([])
   })
+
+  it('shows each lover only the other lover without revealing their role', () => {
+    const game = createGame()
+    game.state!.loverIds = ['seer', 'wolf']
+
+    const seerView = projectGameView(game, {
+      kind: 'PLAYER',
+      playerId: 'seer',
+    })
+    const wolfView = projectGameView(game, {
+      kind: 'PLAYER',
+      playerId: 'wolf',
+    })
+    const witchView = projectGameView(game, {
+      kind: 'PLAYER',
+      playerId: 'witch',
+    })
+    if (
+      seerView?.viewer !== 'PLAYER' ||
+      wolfView?.viewer !== 'PLAYER' ||
+      witchView?.viewer !== 'PLAYER'
+    ) {
+      return
+    }
+
+    expect(seerView.lover).toEqual({
+      id: 'wolf',
+      displayName: 'Wolf',
+      ready: true,
+      alive: true,
+    })
+    expect(wolfView.lover?.id).toBe('seer')
+    expect(witchView.lover).toBeNull()
+    expect(seerView.lover).not.toHaveProperty('role')
+  })
 })
 
 describe('moderator projection', () => {

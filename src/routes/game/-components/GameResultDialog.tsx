@@ -7,16 +7,20 @@ import { getRoleTeam } from '#/game/domain'
 export function GameResultDialog({
   winner,
   role,
+  isLover,
 }: {
   winner: Winner
   role: Role
+  isLover: boolean
 }) {
   const dialogRef = useRef<HTMLDialogElement>(null)
   const playerTeam = getRoleTeam(role)
   const neutralWinner = winner === 'FOOL' || winner === 'PIPER'
   const won = neutralWinner
     ? role === winner
-    : role !== 'FOOL' && role !== 'PIPER' && playerTeam === winner
+    : winner === 'LOVERS'
+      ? isLover
+      : role !== 'FOOL' && role !== 'PIPER' && playerTeam === winner
   const isWerewolf = playerTeam === 'WEREWOLF'
   const alignmentName =
     role === 'FOOL' || role === 'PIPER'
@@ -36,9 +40,11 @@ export function GameResultDialog({
       ? 'Thằng ngốc'
       : winner === 'PIPER'
         ? 'Người thổi sáo'
-        : winner === 'WEREWOLF'
-          ? 'Phe Ma sói'
-          : 'Phe Dân làng'
+        : winner === 'LOVERS'
+          ? 'Cặp tình nhân'
+          : winner === 'WEREWOLF'
+            ? 'Phe Ma sói'
+            : 'Phe Dân làng'
 
   return (
     <dialog
@@ -85,7 +91,9 @@ export function GameResultDialog({
                 ? winner === 'FOOL'
                   ? 'Bạn đã khiến cả làng biểu quyết loại mình và giành chiến thắng một mình.'
                   : 'Bạn đã mê hoặc tất cả những người chơi còn sống và giành chiến thắng một mình.'
-                : `Bạn thuộc ${alignmentName}. Mọi quyết định trong ván đấu đã đưa phe của bạn đến chiến thắng.`
+                : winner === 'LOVERS'
+                  ? 'Hai bạn đã sống sót đến cuối cùng và giành chiến thắng cùng nhau.'
+                  : `Bạn thuộc ${alignmentName}. Mọi quyết định trong ván đấu đã đưa phe của bạn đến chiến thắng.`
               : `Bạn thuộc ${alignmentName}. ${winnerName} đã giành chiến thắng trong ván này.`}
           </p>
         </div>
@@ -138,6 +146,8 @@ function roleLabel(role: Role): string {
       return 'Thằng ngốc'
     case 'PIPER':
       return 'Người thổi sáo'
+    case 'CUPID':
+      return 'Thần tình yêu'
     case 'VILLAGER':
       return 'Dân làng'
   }

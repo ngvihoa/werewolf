@@ -78,6 +78,18 @@ describe('role composition', () => {
     },
   )
 
+  it.each([12, 13, 14, 15])(
+    'adds exactly one Cupid from %i players',
+    (count) => {
+      const result = getRoleComposition(count)
+      expect(result.ok).toBe(true)
+      if (result.ok) {
+        expect(result.value.filter((role) => role === 'CUPID')).toHaveLength(1)
+        expect(result.value).toHaveLength(count)
+      }
+    },
+  )
+
   it('validates role counts regardless of order', () => {
     expect(
       validateRoleComposition([

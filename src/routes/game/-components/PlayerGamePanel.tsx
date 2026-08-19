@@ -61,6 +61,12 @@ export function PlayerGamePanel({
           Bạn đã bị Người thổi sáo mê hoặc.
         </p>
       ) : null}
+      {view.lover ? (
+        <p className="rounded-xl bg-rose-400/10 px-4 py-3 text-sm/6 text-rose-200 ring-1 ring-rose-300/20">
+          Tình nhân của bạn là {view.lover.displayName}. Nếu một trong hai chết,
+          người còn lại cũng sẽ chết theo.
+        </p>
+      ) : null}
 
       {view.turn.werewolfTeammates.length > 0 ? (
         <SecretNotice
@@ -165,7 +171,11 @@ export function PlayerGamePanel({
       ) : null}
       {view.phase === 'GAME_OVER' ? <GameOver winner={view.winner} /> : null}
       {view.phase === 'GAME_OVER' && view.winner && view.me.role ? (
-        <GameResultDialog winner={view.winner} role={view.me.role} />
+        <GameResultDialog
+          winner={view.winner}
+          role={view.me.role}
+          isLover={view.lover !== null}
+        />
       ) : null}
       {error ? <InlineError message={error} /> : null}
     </div>

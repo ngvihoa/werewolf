@@ -1373,7 +1373,9 @@ function getEventTargetPlayerId(event: GameEvent): string | null {
     case 'NIGHT_ACTION_REJECTED':
       return event.action.type === 'WITCH_ACTION'
         ? event.action.poisonTargetId
-        : event.action.targetId
+        : event.action.type === 'CUPID_LINK'
+          ? null
+          : event.action.targetId
     case 'SEER_RESULT_RECORDED':
       return event.targetPlayerId
     case 'PLAYER_DIED':

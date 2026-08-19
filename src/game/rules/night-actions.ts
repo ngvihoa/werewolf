@@ -22,6 +22,8 @@ type ValidationContext = {
   werewolfTargetId?: string
   lastProtectedTargetId?: string | null
   charmedPlayerIds?: readonly string[]
+  round?: number
+  loverIds?: readonly string[] | null
 }
 
 function failure(code: Parameters<typeof makeError>[0], message: string) {
@@ -63,6 +65,29 @@ export function validateNightAction(
 
   if (action.type === 'WITCH_ACTION') {
     return validateWitchAction(action, actor, context)
+  }
+
+  if (action.type === 'CUPID_LINK') {
+    if (context.round !== 1 || context.loverIds?.length) {
+      return failure(
+        'ABILITY_UNAVAILABLE',
+        'Cupid acts only once on first night',
+      )
+    }
+    const [firstId, secondId] = action.targetIds
+    if (firstId === secondId || firstId === actor.id || secondId === actor.id) {
+      return failure(
+        'INVALID_TARGET',
+        'Cupid must choose two different players other than Cupid',
+      )
+    }
+    const targets = action.targetIds.map((targetId) =>
+      context.players.find((player) => player.id === targetId),
+    )
+    if (targets.some((target) => !target?.alive)) {
+      return failure('INVALID_TARGET', 'Both lovers must be living players')
+    }
+    return { ok: true, value: action }
   }
 
   const target = context.players.find((player) => player.id === action.targetId)

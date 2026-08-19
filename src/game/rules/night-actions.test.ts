@@ -27,6 +27,36 @@ const players: Player[] = [
 ]
 
 describe('night action validation', () => {
+  it('allows Cupid to link two other living players only on first night', () => {
+    const cupidPlayers: Player[] = [
+      { id: 'cupid', role: 'CUPID', alive: true, abilityState: null },
+      { id: 'wolf', role: 'WEREWOLF', alive: true, abilityState: null },
+      { id: 'villager', role: 'VILLAGER', alive: true, abilityState: null },
+    ]
+    const action = {
+      type: 'CUPID_LINK' as const,
+      actorId: 'cupid',
+      targetIds: ['wolf', 'villager'] as [string, string],
+    }
+
+    expect(
+      validateNightAction(action, {
+        activeStep: 'CUPID_LINK',
+        players: cupidPlayers,
+        round: 1,
+        loverIds: null,
+      }),
+    ).toEqual({ ok: true, value: action })
+    expect(
+      validateNightAction(action, {
+        activeStep: 'CUPID_LINK',
+        players: cupidPlayers,
+        round: 2,
+        loverIds: null,
+      }),
+    ).toMatchObject({ ok: false, error: { code: 'ABILITY_UNAVAILABLE' } })
+  })
+
   it('prevents Piper from charming an already charmed player', () => {
     const players: Player[] = [
       { id: 'piper', role: 'PIPER', alive: true, abilityState: null },
