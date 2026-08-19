@@ -180,6 +180,23 @@ Trạng thái mạng đặc biệt chỉ hiển thị cho Già làng và Moderat
 
 ---
 
+## 8. Fool
+
+**Team:** Neutral
+
+Thằng ngốc xuất hiện từ bàn 10 người và thắng một mình khi bị loại bởi biểu quyết
+đã được Moderator xác nhận:
+
+- Chiến thắng được xử lý ngay sau khi xác nhận loại, trước Hunter Shot và điều
+  kiện thắng của hai phe.
+- Chết bởi Werewolf Attack, Witch Poison, Hunter Shot hoặc Hunter Mark không tạo
+  chiến thắng cho Thằng ngốc.
+- Nếu phe Village thắng theo điều kiện thông thường, Thằng ngốc vẫn thua.
+- Seer soi Thằng ngốc nhận kết quả `VILLAGE`.
+- Thằng ngốc không có night action hoặc tài nguyên riêng.
+
+---
+
 # 8. Information Visibility
 
 Không phải mọi state đều được hiển thị cho mọi player.

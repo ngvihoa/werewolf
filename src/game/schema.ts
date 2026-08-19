@@ -11,9 +11,11 @@ export const ROLE_VALUES = [
   'PROTECTOR',
   'HUNTER',
   'ELDER',
+  'FOOL',
 ] as const
 
 export const TEAM_VALUES = ['VILLAGE', 'WEREWOLF'] as const
+export const WINNER_VALUES = [...TEAM_VALUES, 'FOOL'] as const
 
 export const GAME_PHASE_VALUES = [
   'SETUP',
@@ -52,6 +54,7 @@ export const DOMAIN_ERROR_CODE_VALUES = [
 // database hoặc bất kỳ nguồn nào không được TypeScript bảo đảm.
 export const roleSchema = z.enum(ROLE_VALUES)
 export const teamSchema = z.enum(TEAM_VALUES)
+export const winnerSchema = z.enum(WINNER_VALUES)
 export const gamePhaseSchema = z.enum(GAME_PHASE_VALUES)
 export const queueStepSchema = z.enum(QUEUE_STEP_VALUES)
 export const domainErrorCodeSchema = z.enum(DOMAIN_ERROR_CODE_VALUES)
@@ -116,6 +119,11 @@ export const playerSchema = z.discriminatedUnion('role', [
     ...basePlayerFields,
     role: z.literal('ELDER'),
     abilityState: elderResourcesSchema,
+  }),
+  z.object({
+    ...basePlayerFields,
+    role: z.literal('FOOL'),
+    abilityState: z.null(),
   }),
 ])
 

@@ -313,6 +313,12 @@ function confirmVoteResult(
     const eliminated = state.players.find(
       (player) => player.id === resolution.playerId,
     )
+    if (eliminated?.role === 'FOOL') {
+      state.winner = 'FOOL'
+      transitionPhase(state, 'GAME_OVER', events)
+      events.push({ type: 'GAME_ENDED', winner: 'FOOL' })
+      return success(state, events)
+    }
     if (eliminated?.role === 'HUNTER') {
       state.pendingHunterShot = {
         hunterId: eliminated.id,

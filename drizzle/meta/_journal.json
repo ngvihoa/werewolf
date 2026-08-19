@@ -50,6 +50,13 @@
       "when": 1787119035149,
       "tag": "0006_elder_ability_constraint",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1787120250487,
+      "tag": "0007_complete_pepper_potts",
+      "breakpoints": true
     }
   ]
 }

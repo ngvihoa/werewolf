@@ -1,5 +1,5 @@
+import type { GamePhase, Player, QueueStep, Winner } from '../domain'
 import type { NightResolution, VoteResolution } from '../rules/resolution'
-import type { GamePhase, Player, QueueStep, Team } from '../domain'
 import type { NightAction } from '../rules/night-actions'
 
 export type QueueStepStatus =
@@ -36,5 +36,5 @@ export type GameState = {
     hunterId: string
     targetId: string | null
   } | null
-  winner: Team | null
+  winner: Winner | null
 }

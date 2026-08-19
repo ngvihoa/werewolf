@@ -264,6 +264,33 @@ describe('night orchestration', () => {
 })
 
 describe('vote orchestration', () => {
+  it('awards the Fool a solo victory when a confirmed vote eliminates them', () => {
+    const players: Player[] = [
+      { id: 'fool', role: 'FOOL', alive: true, abilityState: null },
+      { id: 'hunter', role: 'HUNTER', alive: true, abilityState: null },
+      { id: 'wolf', role: 'WEREWOLF', alive: true, abilityState: null },
+      { id: 'a', role: 'VILLAGER', alive: true, abilityState: null },
+    ]
+    let state = createFirstNightState(players)
+    state.phase = 'DAY'
+    state = run(state, { type: 'START_VOTE' }).state
+    state = run(state, {
+      type: 'SUBMIT_VOTE_RESULT',
+      tied: false,
+      selectedPlayerId: 'fool',
+    }).state
+
+    const outcome = run(state, { type: 'CONFIRM_VOTE_RESULT' })
+
+    expect(outcome.state.phase).toBe('GAME_OVER')
+    expect(outcome.state.winner).toBe('FOOL')
+    expect(outcome.state.pendingHunterShot).toBeNull()
+    expect(outcome.events.at(-1)).toEqual({
+      type: 'GAME_ENDED',
+      winner: 'FOOL',
+    })
+  })
+
   it('lets a voted-out Hunter choose a target before resolving the game', () => {
     const players: Player[] = [
       { id: 'hunter', role: 'HUNTER', alive: true, abilityState: null },

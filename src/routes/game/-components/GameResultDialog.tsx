@@ -1,4 +1,4 @@
-import type { Role, Team } from '#/game/domain'
+import type { Role, Winner } from '#/game/domain'
 
 import { ShieldCheck, Skull, Trophy } from 'lucide-react'
 import { useEffect, useRef } from 'react'
@@ -8,13 +8,22 @@ export function GameResultDialog({
   winner,
   role,
 }: {
-  winner: Team
+  winner: Winner
   role: Role
 }) {
   const dialogRef = useRef<HTMLDialogElement>(null)
   const playerTeam = getRoleTeam(role)
-  const won = playerTeam === winner
+  const won =
+    winner === 'FOOL'
+      ? role === 'FOOL'
+      : role !== 'FOOL' && playerTeam === winner
   const isWerewolf = playerTeam === 'WEREWOLF'
+  const alignmentName =
+    role === 'FOOL'
+      ? 'phe Trung lập'
+      : isWerewolf
+        ? 'phe Ma sói'
+        : 'phe Dân làng'
 
   useEffect(() => {
     const dialog = dialogRef.current
@@ -22,7 +31,12 @@ export function GameResultDialog({
   }, [winner])
 
   const Icon = won ? Trophy : Skull
-  const teamName = isWerewolf ? 'phe Ma sói' : 'phe Dân làng'
+  const winnerName =
+    winner === 'FOOL'
+      ? 'Thằng ngốc'
+      : winner === 'WEREWOLF'
+        ? 'Phe Ma sói'
+        : 'Phe Dân làng'
 
   return (
     <dialog
@@ -58,15 +72,17 @@ export function GameResultDialog({
             id="game-result-title"
             className="text-balance text-3xl font-medium tracking-tight"
           >
-            {won ? 'Chúc mừng, phe của bạn đã thắng!' : 'Phe của bạn đã thua'}
+            {won ? 'Chúc mừng, bạn đã thắng!' : 'Bạn đã thua'}
           </h2>
           <p
             id="game-result-description"
             className="max-w-[38ch] text-pretty text-base/7 text-stone-400 sm:text-sm/6"
           >
             {won
-              ? `Bạn thuộc ${teamName}. Mọi quyết định trong ván đấu đã đưa phe của bạn đến chiến thắng.`
-              : `Bạn thuộc ${teamName}. ${winner === 'WEREWOLF' ? 'Phe Ma sói' : 'Phe Dân làng'} đã giành chiến thắng trong ván này.`}
+              ? winner === 'FOOL'
+                ? 'Bạn đã khiến cả làng biểu quyết loại mình và giành chiến thắng một mình.'
+                : `Bạn thuộc ${alignmentName}. Mọi quyết định trong ván đấu đã đưa phe của bạn đến chiến thắng.`
+              : `Bạn thuộc ${alignmentName}. ${winnerName} đã giành chiến thắng trong ván này.`}
           </p>
         </div>
 
@@ -77,7 +93,7 @@ export function GameResultDialog({
           />
           <p className="text-pretty text-base/7 text-stone-300 sm:text-sm/6">
             Vai trò của bạn: {roleLabel(role)} ·{' '}
-            {isWerewolf ? 'Phe Ma sói' : 'Phe Dân làng'}
+            {alignmentName.replace('phe ', 'Phe ')}
           </p>
         </div>
 
@@ -114,6 +130,8 @@ function roleLabel(role: Role): string {
       return 'Thợ săn'
     case 'ELDER':
       return 'Già làng'
+    case 'FOOL':
+      return 'Thằng ngốc'
     case 'VILLAGER':
       return 'Dân làng'
   }

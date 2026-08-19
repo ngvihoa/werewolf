@@ -44,6 +44,7 @@ Goal: encode deterministic game rules independently from UI and persistence.
 - [x] Add the Protector role with self-protection and consecutive-night limits.
 - [x] Add the Hunter role with a nightly mark and a vote-triggered final shot.
 - [x] Add the Elder role with one survival against a lethal Werewolf attack.
+- [x] Add the neutral Fool role with a vote-elimination solo victory.
 - [x] Add shared Werewolf teammate and target visibility.
 - [x] Add Alpha Werewolf for 13–15 players with one enhanced attack per game.
 - [x] Implement secure role randomization.
@@ -142,7 +143,7 @@ Goal: complete the playable night/day loop.
 
 Exit criteria:
 
-- A five-through-twelve-player game can run from lobby to game over.
+- A five-through-fifteen-player game can run from lobby to game over.
 - UI always reflects the active phase and current player's permissions.
 - No player needs to refresh manually to advance the game.
 

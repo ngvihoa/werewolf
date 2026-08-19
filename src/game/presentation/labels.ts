@@ -48,6 +48,7 @@ export function roleLabel(role: Role) {
     PROTECTOR: 'Bảo vệ',
     HUNTER: 'Thợ săn',
     ELDER: 'Già làng',
+    FOOL: 'Thằng ngốc',
   }[role]
 }
 
@@ -64,5 +65,6 @@ export function roleDescription(role: Role) {
       'Mỗi đêm chọn trước một mục tiêu; nếu chết trong đêm, bạn kéo người đó theo cùng.',
     ELDER:
       'Sống sót qua lần cắn chí mạng đầu tiên của Ma sói; những nguồn sát thương khác vẫn hạ gục bạn ngay.',
+    FOOL: 'Thắng một mình nếu bị loại bởi biểu quyết đã được Quản trò xác nhận.',
   }[role]
 }

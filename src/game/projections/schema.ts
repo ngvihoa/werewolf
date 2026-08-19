@@ -7,6 +7,7 @@ import {
   gamePhaseSchema,
   queueStepSchema,
   playerSchema,
+  winnerSchema,
   roleSchema,
   teamSchema,
 } from '../schema'
@@ -72,7 +73,7 @@ export const publicHistoryEventSchema = z.discriminatedUnion('type', [
   }),
   z.object({ type: z.literal('PLAYER_DIED'), playerId: z.string() }),
   z.object({ type: z.literal('REVOTE_SKIPPED') }),
-  z.object({ type: z.literal('GAME_ENDED'), winner: teamSchema }),
+  z.object({ type: z.literal('GAME_ENDED'), winner: winnerSchema }),
 ])
 
 export const publicHistoryEntrySchema = z.object({
@@ -116,7 +117,7 @@ export const playerGameViewSchema = z.object({
   version: z.number(),
   phase: z.union([gamePhaseSchema, z.literal('LOBBY')]),
   round: z.number(),
-  winner: teamSchema.nullable(),
+  winner: winnerSchema.nullable(),
   players: z.array(publicPlayerViewSchema),
   me: playerPrivateViewSchema,
   queue: z.array(
@@ -169,7 +170,7 @@ const gameStateSchema = z.object({
     })
     .nullable()
     .optional(),
-  winner: teamSchema.nullable(),
+  winner: winnerSchema.nullable(),
 })
 
 const localGameSchema = z.object({

@@ -1,12 +1,17 @@
 import z from 'zod'
 
-import { gamePhaseSchema, queueStepSchema, teamSchema } from '../schema'
 import {
   eliminationCauseSchema,
   nightResolutionSchema,
   voteResolutionSchema,
   nightActionSchema,
 } from '../rules/schema'
+import {
+  gamePhaseSchema,
+  queueStepSchema,
+  winnerSchema,
+  teamSchema,
+} from '../schema'
 
 // Đây là runtime representation của mọi command mà orchestration hỗ trợ.
 // oRPC dùng schema để validate request trước khi command vào rule engine.
@@ -92,7 +97,7 @@ export const gameEventSchema = z.discriminatedUnion('type', [
   z.object({
     type: z.literal('REVOTE_SKIPPED'),
   }),
-  z.object({ type: z.literal('GAME_ENDED'), winner: teamSchema }),
+  z.object({ type: z.literal('GAME_ENDED'), winner: winnerSchema }),
   z.object({
     type: z.literal('HUNTER_SHOT_SUBMITTED'),
     hunterId: z.string().min(1),

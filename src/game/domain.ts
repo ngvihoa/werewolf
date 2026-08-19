@@ -6,6 +6,7 @@ import type {
   queueStepSchema,
   roleSchema,
   teamSchema,
+  winnerSchema,
   witchResourcesSchema,
   alphaWerewolfResourcesSchema,
   elderResourcesSchema,
@@ -16,6 +17,7 @@ import type { z } from 'zod'
 // Khi schema đổi, TypeScript buộc mọi consumer liên quan cập nhật theo.
 export type Role = z.infer<typeof roleSchema>
 export type Team = z.infer<typeof teamSchema>
+export type Winner = z.infer<typeof winnerSchema>
 export type GamePhase = z.infer<typeof gamePhaseSchema>
 export type QueueStep = z.infer<typeof queueStepSchema>
 export type WitchResources = z.infer<typeof witchResourcesSchema>

@@ -84,9 +84,11 @@ function eventSummary(
     case 'REVOTE_SKIPPED':
       return 'Quản trò bỏ qua lượt biểu quyết lần hai'
     case 'GAME_ENDED':
-      return event.winner === 'WEREWOLF'
-        ? 'Phe Ma sói chiến thắng'
-        : 'Phe Dân làng chiến thắng'
+      return event.winner === 'FOOL'
+        ? 'Thằng ngốc chiến thắng'
+        : event.winner === 'WEREWOLF'
+          ? 'Phe Ma sói chiến thắng'
+          : 'Phe Dân làng chiến thắng'
   }
 }
 
