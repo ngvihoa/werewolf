@@ -25,6 +25,7 @@ export function queueStepLabel(step: GameState['queue'][number]['step']) {
     SEER_INSPECT: 'Tiên tri soi',
     WEREWOLF_ATTACK: 'Ma sói tấn công',
     WITCH_ACTION: 'Phù thủy hành động',
+    PIPER_CHARM: 'Người thổi sáo mê hoặc',
   }[step]
 }
 
@@ -49,6 +50,7 @@ export function roleLabel(role: Role) {
     HUNTER: 'Thợ săn',
     ELDER: 'Già làng',
     FOOL: 'Thằng ngốc',
+    PIPER: 'Người thổi sáo',
   }[role]
 }
 
@@ -66,5 +68,7 @@ export function roleDescription(role: Role) {
     ELDER:
       'Sống sót qua lần cắn chí mạng đầu tiên của Ma sói; những nguồn sát thương khác vẫn hạ gục bạn ngay.',
     FOOL: 'Thắng một mình nếu bị loại bởi biểu quyết đã được Quản trò xác nhận.',
+    PIPER:
+      'Mỗi đêm mê hoặc một người mới; thắng khi mọi người còn sống khác đều đã bị mê hoặc.',
   }[role]
 }

@@ -197,6 +197,24 @@ Thằng ngốc xuất hiện từ bàn 10 người và thắng một mình khi b
 
 ---
 
+## 9. Piper
+
+**Team:** Neutral
+
+Người thổi sáo xuất hiện từ bàn 11 người và mỗi đêm mê hoặc một người chơi mới:
+
+- Piper không được chọn chính mình, người đã chết hoặc người đã bị mê hoặc.
+- Người bị mê vẫn giữ nguyên vai trò và hành động bình thường.
+- Người bị mê chỉ biết trạng thái của chính mình; họ không thấy Piper hoặc những
+  người đã bị mê khác.
+- Piper thấy danh sách mục tiêu mình đã mê để chọn mục tiêu mới.
+- Piper thắng một mình sau khi Moderator xác nhận kết quả đêm nếu Piper còn sống
+  và tất cả người chơi còn sống khác đều đã bị mê.
+- Nếu Piper chết trong chính đêm đó thì không thắng.
+- Seer soi Piper nhận kết quả `VILLAGE`.
+
+---
+
 # 8. Information Visibility
 
 Không phải mọi state đều được hiển thị cho mọi player.

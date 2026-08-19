@@ -179,6 +179,53 @@ describe('night orchestration', () => {
     expect(confirmedElder?.alive).toBe(true)
   })
 
+  it('awards Piper a solo victory after night deaths leave every survivor charmed', () => {
+    const players: Player[] = [
+      { id: 'piper', role: 'PIPER', alive: true, abilityState: null },
+      { id: 'wolf', role: 'WEREWOLF', alive: true, abilityState: null },
+      { id: 'a', role: 'VILLAGER', alive: true, abilityState: null },
+    ]
+    const state = createFirstNightState(players)
+    state.phase = 'NIGHT_RESOLUTION'
+    state.charmedPlayerIds = ['wolf']
+    state.confirmedNightActions = [
+      { type: 'PIPER_CHARM', actorId: 'piper', targetId: 'wolf' },
+    ]
+    state.pendingNightResolution = {
+      deaths: [{ playerId: 'a', causes: ['WEREWOLF_ATTACK'] }],
+      survivors: ['piper', 'wolf'],
+      elderSurvivalConsumedPlayerIds: [],
+    }
+
+    const outcome = run(state, { type: 'CONFIRM_NIGHT_RESOLUTION' })
+
+    expect(outcome.state.phase).toBe('GAME_OVER')
+    expect(outcome.state.winner).toBe('PIPER')
+    expect(outcome.events.at(-1)).toEqual({
+      type: 'GAME_ENDED',
+      winner: 'PIPER',
+    })
+  })
+
+  it('does not award Piper victory if Piper dies in the resolution', () => {
+    const players: Player[] = [
+      { id: 'piper', role: 'PIPER', alive: true, abilityState: null },
+      { id: 'wolf', role: 'WEREWOLF', alive: true, abilityState: null },
+    ]
+    const state = createFirstNightState(players)
+    state.phase = 'NIGHT_RESOLUTION'
+    state.charmedPlayerIds = ['wolf']
+    state.pendingNightResolution = {
+      deaths: [{ playerId: 'piper', causes: ['WEREWOLF_ATTACK'] }],
+      survivors: ['wolf'],
+      elderSurvivalConsumedPlayerIds: [],
+    }
+
+    const outcome = run(state, { type: 'CONFIRM_NIGHT_RESOLUTION' })
+
+    expect(outcome.state.winner).toBe('WEREWOLF')
+  })
+
   it('records the Seer alignment when Moderator confirms', () => {
     let state = createFirstNightState(fivePlayers)
     state = run(state, {

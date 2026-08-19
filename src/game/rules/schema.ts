@@ -30,6 +30,11 @@ export const nightActionSchema = z.discriminatedUnion('type', [
     heal: z.boolean(),
     poisonTargetId: z.string().min(1).nullable(),
   }),
+  z.object({
+    type: z.literal('PIPER_CHARM'),
+    actorId: z.string().min(1),
+    targetId: z.string().min(1),
+  }),
 ])
 
 export const eliminationCauseSchema = z.enum([

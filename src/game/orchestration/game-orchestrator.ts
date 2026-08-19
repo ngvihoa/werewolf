@@ -26,6 +26,7 @@ export function createFirstNightState(players: readonly Player[]): GameState {
     queue,
     pendingNightAction: null,
     confirmedNightActions: [],
+    charmedPlayerIds: [],
     lastProtectedTargetId: null,
     pendingNightResolution: null,
     voteAttempt: 1,
@@ -89,6 +90,7 @@ function submitNightAction(
     werewolfTargetId:
       findWerewolfTarget(state.confirmedNightActions) ?? undefined,
     lastProtectedTargetId: state.lastProtectedTargetId,
+    charmedPlayerIds: state.charmedPlayerIds,
   })
   if (!validation.ok) return validation
 
@@ -235,7 +237,26 @@ function confirmNightResolution(
       causes: death.causes,
     })
   }
+  const charmAction = state.confirmedNightActions.find(
+    (action) => action.type === 'PIPER_CHARM',
+  )
+  if (charmAction && !state.charmedPlayerIds?.includes(charmAction.targetId)) {
+    const charmedPlayerIds = (state.charmedPlayerIds ??= [])
+    charmedPlayerIds.push(charmAction.targetId)
+  }
   state.pendingNightResolution = null
+  const piper = state.players.find((player) => player.role === 'PIPER')
+  if (
+    piper?.alive &&
+    state.players
+      .filter((player) => player.alive && player.id !== piper.id)
+      .every((player) => state.charmedPlayerIds?.includes(player.id))
+  ) {
+    state.winner = 'PIPER'
+    transitionPhase(state, 'GAME_OVER', events)
+    events.push({ type: 'GAME_ENDED', winner: 'PIPER' })
+    return success(state, events)
+  }
   return transitionAfterElimination(state, 'DAY', events)
 }
 

@@ -13,13 +13,13 @@ export function GameResultDialog({
 }) {
   const dialogRef = useRef<HTMLDialogElement>(null)
   const playerTeam = getRoleTeam(role)
-  const won =
-    winner === 'FOOL'
-      ? role === 'FOOL'
-      : role !== 'FOOL' && playerTeam === winner
+  const neutralWinner = winner === 'FOOL' || winner === 'PIPER'
+  const won = neutralWinner
+    ? role === winner
+    : role !== 'FOOL' && role !== 'PIPER' && playerTeam === winner
   const isWerewolf = playerTeam === 'WEREWOLF'
   const alignmentName =
-    role === 'FOOL'
+    role === 'FOOL' || role === 'PIPER'
       ? 'phe Trung lập'
       : isWerewolf
         ? 'phe Ma sói'
@@ -34,9 +34,11 @@ export function GameResultDialog({
   const winnerName =
     winner === 'FOOL'
       ? 'Thằng ngốc'
-      : winner === 'WEREWOLF'
-        ? 'Phe Ma sói'
-        : 'Phe Dân làng'
+      : winner === 'PIPER'
+        ? 'Người thổi sáo'
+        : winner === 'WEREWOLF'
+          ? 'Phe Ma sói'
+          : 'Phe Dân làng'
 
   return (
     <dialog
@@ -79,8 +81,10 @@ export function GameResultDialog({
             className="max-w-[38ch] text-pretty text-base/7 text-stone-400 sm:text-sm/6"
           >
             {won
-              ? winner === 'FOOL'
-                ? 'Bạn đã khiến cả làng biểu quyết loại mình và giành chiến thắng một mình.'
+              ? neutralWinner
+                ? winner === 'FOOL'
+                  ? 'Bạn đã khiến cả làng biểu quyết loại mình và giành chiến thắng một mình.'
+                  : 'Bạn đã mê hoặc tất cả những người chơi còn sống và giành chiến thắng một mình.'
                 : `Bạn thuộc ${alignmentName}. Mọi quyết định trong ván đấu đã đưa phe của bạn đến chiến thắng.`
               : `Bạn thuộc ${alignmentName}. ${winnerName} đã giành chiến thắng trong ván này.`}
           </p>
@@ -132,6 +136,8 @@ function roleLabel(role: Role): string {
       return 'Già làng'
     case 'FOOL':
       return 'Thằng ngốc'
+    case 'PIPER':
+      return 'Người thổi sáo'
     case 'VILLAGER':
       return 'Dân làng'
   }

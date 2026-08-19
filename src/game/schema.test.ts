@@ -20,6 +20,7 @@ describe('game domain schemas', () => {
     expect(roleSchema.safeParse('ALPHA_WEREWOLF').success).toBe(true)
     expect(roleSchema.safeParse('ELDER').success).toBe(true)
     expect(roleSchema.safeParse('FOOL').success).toBe(true)
+    expect(roleSchema.safeParse('PIPER').success).toBe(true)
     expect(gamePhaseSchema.safeParse('LOBBY').success).toBe(false)
   })
 

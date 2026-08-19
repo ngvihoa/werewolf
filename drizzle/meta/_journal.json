@@ -57,6 +57,13 @@
       "when": 1787120250487,
       "tag": "0007_complete_pepper_potts",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1787154212212,
+      "tag": "0008_bent_randall",
+      "breakpoints": true
     }
   ]
 }

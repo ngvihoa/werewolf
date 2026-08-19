@@ -56,6 +56,11 @@ export function PlayerGamePanel({
       </div>
 
       {view.me.role ? <RoleCard role={view.me.role} /> : null}
+      {view.isCharmed ? (
+        <p className="rounded-xl bg-violet-400/10 px-4 py-3 text-sm/6 text-violet-200 ring-1 ring-violet-300/20">
+          Bạn đã bị Người thổi sáo mê hoặc.
+        </p>
+      ) : null}
 
       {view.turn.werewolfTeammates.length > 0 ? (
         <SecretNotice

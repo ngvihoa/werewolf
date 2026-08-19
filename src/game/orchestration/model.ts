@@ -27,6 +27,7 @@ export type GameState = {
   queue: NightQueueItem[]
   pendingNightAction: NightAction | null
   confirmedNightActions: NightAction[]
+  charmedPlayerIds?: string[]
   lastProtectedTargetId?: string | null
   pendingNightResolution: NightResolution | null
   voteAttempt: 1 | 2

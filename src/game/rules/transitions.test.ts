@@ -37,4 +37,13 @@ describe('phase transitions', () => {
       'WEREWOLF_ATTACK',
     ])
   })
+
+  it('runs the Piper charm after the other night roles', () => {
+    expect(getNightQueue(['WEREWOLF', 'SEER', 'WITCH', 'PIPER'])).toEqual([
+      'SEER_INSPECT',
+      'WEREWOLF_ATTACK',
+      'WITCH_ACTION',
+      'PIPER_CHARM',
+    ])
+  })
 })

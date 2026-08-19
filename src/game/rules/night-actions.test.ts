@@ -27,6 +27,27 @@ const players: Player[] = [
 ]
 
 describe('night action validation', () => {
+  it('prevents Piper from charming an already charmed player', () => {
+    const players: Player[] = [
+      { id: 'piper', role: 'PIPER', alive: true, abilityState: null },
+      { id: 'villager', role: 'VILLAGER', alive: true, abilityState: null },
+    ]
+
+    const result = validateNightAction(
+      { type: 'PIPER_CHARM', actorId: 'piper', targetId: 'villager' },
+      {
+        activeStep: 'PIPER_CHARM',
+        players,
+        charmedPlayerIds: ['villager'],
+      },
+    )
+
+    expect(result).toMatchObject({
+      ok: false,
+      error: { code: 'INVALID_TARGET' },
+    })
+  })
+
   it('allows self-protection but rejects the previous night target', () => {
     const protector: Player = {
       id: 'protector',

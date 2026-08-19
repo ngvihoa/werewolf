@@ -21,6 +21,7 @@ type ValidationContext = {
   players: readonly Player[]
   werewolfTargetId?: string
   lastProtectedTargetId?: string | null
+  charmedPlayerIds?: readonly string[]
 }
 
 function failure(code: Parameters<typeof makeError>[0], message: string) {
@@ -76,6 +77,12 @@ export function validateNightAction(
       )
     }
     return { ok: true, value: action }
+  }
+  if (
+    action.type === 'PIPER_CHARM' &&
+    context.charmedPlayerIds?.includes(target.id)
+  ) {
+    return failure('INVALID_TARGET', 'Piper must charm a new target')
   }
   if (target.id === actor.id) {
     return failure('INVALID_TARGET', 'Target must be another living player')

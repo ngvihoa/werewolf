@@ -293,6 +293,49 @@ describe('player projections', () => {
     )
     expect(JSON.stringify(seerView)).not.toContain('secret rejected target')
   })
+
+  it('shows charm targets only to Piper and charm status only to its owner', () => {
+    const game = createGame()
+    game.lobbyPlayers.push({
+      id: 'piper',
+      displayName: 'Piper',
+      ready: true,
+      role: 'PIPER',
+    })
+    game.state!.players.push({
+      id: 'piper',
+      role: 'PIPER',
+      alive: true,
+      abilityState: null,
+    })
+    game.state!.charmedPlayerIds = ['seer']
+
+    const piperView = projectGameView(game, {
+      kind: 'PLAYER',
+      playerId: 'piper',
+    })
+    const seerView = projectGameView(game, {
+      kind: 'PLAYER',
+      playerId: 'seer',
+    })
+    const wolfView = projectGameView(game, {
+      kind: 'PLAYER',
+      playerId: 'wolf',
+    })
+    if (
+      piperView?.viewer !== 'PLAYER' ||
+      seerView?.viewer !== 'PLAYER' ||
+      wolfView?.viewer !== 'PLAYER'
+    ) {
+      return
+    }
+
+    expect(piperView.turn.charmedPlayerIds).toEqual(['seer'])
+    expect(seerView.isCharmed).toBe(true)
+    expect(seerView.turn.charmedPlayerIds).toEqual([])
+    expect(wolfView.isCharmed).toBe(false)
+    expect(wolfView.turn.charmedPlayerIds).toEqual([])
+  })
 })
 
 describe('moderator projection', () => {

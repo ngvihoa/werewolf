@@ -86,9 +86,11 @@ function eventSummary(
     case 'GAME_ENDED':
       return event.winner === 'FOOL'
         ? 'Thằng ngốc chiến thắng'
-        : event.winner === 'WEREWOLF'
-          ? 'Phe Ma sói chiến thắng'
-          : 'Phe Dân làng chiến thắng'
+        : event.winner === 'PIPER'
+          ? 'Người thổi sáo chiến thắng'
+          : event.winner === 'WEREWOLF'
+            ? 'Phe Ma sói chiến thắng'
+            : 'Phe Dân làng chiến thắng'
   }
 }
 

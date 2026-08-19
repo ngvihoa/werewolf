@@ -49,6 +49,10 @@ Từ 9 người chơi trở lên, composition mặc định thay một Villager 
 Elder là vai thụ động, không thêm queue step; khả năng sống sót được xử lý khi
 Moderator xác nhận Night Resolution.
 
+Từ 10 người chơi trở lên, composition thay một Villager bằng Fool. Từ 11 người
+chơi trở lên, composition tiếp tục thay một Villager bằng Piper và thêm step
+`PIPER_CHARM` ở cuối queue đêm.
+
 Mục tiêu của MVP là kiểm tra toàn bộ flow và state management trước khi tối ưu balance.
 
 ---
@@ -75,6 +79,12 @@ Ví dụ:
 ```
 
 Nếu muốn dùng luật khác, nên đưa thành Game Setting sau MVP.
+
+### Neutral
+
+- Fool thắng một mình khi bị loại bởi biểu quyết đã được Moderator xác nhận.
+- Piper thắng một mình sau Night Resolution khi còn sống và mọi người chơi còn
+  sống khác đều đã bị mê hoặc.
 
 ---
 
