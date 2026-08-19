@@ -24,6 +24,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
+    "env:pull": "mkdir -p .vercel-cli && cd .vercel-cli && ([ -f .vercel/project.json ] || pnpm dlx vercel link) && pnpm dlx vercel env pull ../.env --environment=production",
     "dev:reset": "fuser -k 3000/tcp"
   },
   "dependencies": {

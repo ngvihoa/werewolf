@@ -12,6 +12,7 @@ dist-ssr
 .output
 .vinxi
 .vercel
+.vercel-cli
 .workspace-notes/*
 __unconfig*
 todos.json
