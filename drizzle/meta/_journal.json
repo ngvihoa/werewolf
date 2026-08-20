@@ -85,6 +85,13 @@
       "when": 1787226107064,
       "tag": "0011_orange_jasper_sitwell",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1787238649569,
+      "tag": "0012_blushing_giant_man",
+      "breakpoints": true
     }
   ]
 }

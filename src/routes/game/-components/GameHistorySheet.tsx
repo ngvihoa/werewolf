@@ -91,11 +91,13 @@ function eventSummary(
         ? 'Thằng ngốc chiến thắng'
         : event.winner === 'PIPER'
           ? 'Người thổi sáo chiến thắng'
-          : event.winner === 'LOVERS'
-            ? 'Cặp tình nhân chiến thắng'
-            : event.winner === 'WEREWOLF'
-              ? 'Phe Ma sói chiến thắng'
-              : 'Phe Dân làng chiến thắng'
+          : event.winner === 'WHITE_WOLF'
+            ? 'Sói Trắng chiến thắng'
+            : event.winner === 'LOVERS'
+              ? 'Cặp tình nhân chiến thắng'
+              : event.winner === 'WEREWOLF'
+                ? 'Phe Ma sói chiến thắng'
+                : 'Phe Dân làng chiến thắng'
   }
 }
 

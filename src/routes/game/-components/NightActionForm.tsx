@@ -38,6 +38,7 @@ export function NightActionForm({
       (step !== 'PROTECTOR_PROTECT' ||
         player.id !== view.turn.lastProtectedTargetId) &&
       (step !== 'WEREWOLF_ATTACK' || !teammateIds.has(player.id)) &&
+      (step !== 'WHITE_WOLF_KILL' || teammateIds.has(player.id)) &&
       (step !== 'PIPER_CHARM' ||
         !view.turn.charmedPlayerIds.includes(player.id)) &&
       (step !== 'COURTESAN_VISIT' ||

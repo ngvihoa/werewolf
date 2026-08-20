@@ -7,7 +7,7 @@ export type TeamCount = {
   werewolves: number
 }
 
-export type WinningTeam = 'VILLAGE' | 'WEREWOLF' | null
+export type WinningTeam = 'VILLAGE' | 'WEREWOLF' | 'WHITE_WOLF' | null
 
 export function getWinningTeam({
   villagers,
@@ -22,7 +22,16 @@ export function getWinningTeamFromPlayers(
   players: readonly Player[],
 ): WinningTeam {
   const alivePlayers = players.filter((player) => player.alive)
-  const werewolves = alivePlayers.filter(isWerewolfPlayer).length
+  if (alivePlayers.length === 1 && alivePlayers[0]?.role === 'WHITE_WOLF') {
+    return 'WHITE_WOLF'
+  }
+  const whiteWolves = alivePlayers.filter(
+    (player) => player.role === 'WHITE_WOLF',
+  ).length
+  const werewolves =
+    alivePlayers.filter(isWerewolfPlayer).length - whiteWolves
+
+  if (werewolves === 0 && whiteWolves > 0) return null
 
   return getWinningTeam({
     werewolves,

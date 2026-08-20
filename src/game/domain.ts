@@ -10,6 +10,7 @@ import type {
   winnerSchema,
   witchResourcesSchema,
   alphaWerewolfResourcesSchema,
+  whiteWolfResourcesSchema,
   elderResourcesSchema,
   hybridWolfResourcesSchema,
 } from './schema'
@@ -29,6 +30,7 @@ export type WitchResources = z.infer<typeof witchResourcesSchema>
 export type AlphaWerewolfResources = z.infer<
   typeof alphaWerewolfResourcesSchema
 >
+export type WhiteWolfResources = z.infer<typeof whiteWolfResourcesSchema>
 export type ElderResources = z.infer<typeof elderResourcesSchema>
 export type HybridWolfResources = z.infer<typeof hybridWolfResourcesSchema>
 export type Player = z.infer<typeof playerSchema>
@@ -45,7 +47,11 @@ export function getRoleTeam(role: Role): Team {
 }
 
 export function isWerewolfRole(role: Role | null | undefined): boolean {
-  return role === 'WEREWOLF' || role === 'ALPHA_WEREWOLF'
+  return (
+    role === 'WEREWOLF' ||
+    role === 'ALPHA_WEREWOLF' ||
+    role === 'WHITE_WOLF'
+  )
 }
 
 export function getPlayerTeam(player: Player): Team {

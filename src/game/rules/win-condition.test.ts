@@ -55,4 +55,27 @@ describe('getWinningTeam', () => {
       ]),
     ).toBe('WEREWOLF')
   })
+
+  it('gives White Wolf only a sole-survivor victory', () => {
+    const whiteWolf = {
+      id: 'white',
+      role: 'WHITE_WOLF' as const,
+      alive: true,
+      abilityState: { killAvailable: false },
+    }
+    expect(getWinningTeamFromPlayers([whiteWolf])).toBe('WHITE_WOLF')
+    expect(
+      getWinningTeamFromPlayers([
+        whiteWolf,
+        { id: 'villager', role: 'VILLAGER', alive: true, abilityState: null },
+      ]),
+    ).toBeNull()
+    expect(
+      getWinningTeamFromPlayers([
+        whiteWolf,
+        { id: 'wolf', role: 'WEREWOLF', alive: true, abilityState: null },
+        { id: 'villager', role: 'VILLAGER', alive: true, abilityState: null },
+      ]),
+    ).toBeNull()
+  })
 })

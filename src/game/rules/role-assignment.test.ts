@@ -199,6 +199,29 @@ describe('role composition', () => {
     })
   })
 
+  it('counts White Wolf as one default Wolf slot', () => {
+    expect(
+      resolveRoleComposition(10, {
+        mode: 'CUSTOM',
+        roles: ['WHITE_WOLF', 'SEER'],
+      }),
+    ).toEqual({
+      ok: true,
+      value: [
+        'WHITE_WOLF',
+        'SEER',
+        'WEREWOLF',
+        'WEREWOLF',
+        'VILLAGER',
+        'VILLAGER',
+        'VILLAGER',
+        'VILLAGER',
+        'VILLAGER',
+        'VILLAGER',
+      ],
+    })
+  })
+
   it('rejects duplicate special roles and too many selected roles', () => {
     const duplicate = resolveRoleComposition(5, {
       mode: 'CUSTOM',

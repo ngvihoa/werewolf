@@ -52,6 +52,35 @@ Trạng thái kích hoạt và số lần sử dụng chỉ được hiển th�
 Moderator. Protector, Witch và các player khác không được biết đòn cắn có xuyên
 bảo vệ hay không.
 
+### White Wolf (Sói Trắng)
+
+Sói Trắng được tính là thành viên phe Werewolf trong các tương tác thông thường:
+
+- Nhận biết đồng đội và tham gia action chung `WEREWOLF_ATTACK`.
+- Không thể bị đàn Sói chọn làm target của action chung.
+- Seer thấy kết quả `WEREWOLF`; Courtesan chết khi đến thăm Sói Trắng.
+
+Ngoài action chung, Sói Trắng có một lần **săn Sói** trong cả game. Step
+`WHITE_WOLF_KILL` diễn ra ngay sau `WEREWOLF_ATTACK`:
+
+- Chỉ Sói Trắng còn sống và chưa dùng năng lực mới được hành động.
+- Target phải là một thành viên phe Werewolf hiệu lực khác còn sống, bao gồm Sói
+  Lai đã chuyển hóa.
+- Đây là action riêng của Sói Trắng; target có thể được thay đổi trước khi
+  Moderator xác nhận.
+- Năng lực chỉ bị tiêu hao sau khi Moderator xác nhận action.
+- Cái chết do Sói Trắng gây ra không phải đòn cắn chung nên Protector, Healing
+  Potion và năng lực sống sót của Elder không ngăn được.
+
+Sói Trắng không chia sẻ chiến thắng thông thường của phe Werewolf. Sói Trắng chỉ
+thắng với kết quả `WHITE_WOLF` khi là người sống sót duy nhất; nếu chỉ còn Sói
+Trắng và không còn thành viên Werewolf nào khác, game tiếp tục cho đến khi đạt
+một điều kiện thắng khác.
+
+Trạng thái năng lực và action săn Sói chỉ được hiển thị cho Sói Trắng và
+Moderator. Các thành viên Werewolf khác vẫn nhận biết Sói Trắng là đồng đội,
+nhưng không được xem lựa chọn riêng của Sói Trắng.
+
 ### Hybrid Wolf (Sói Lai)
 
 Sói Lai xuất hiện từ bàn 14 người, bắt đầu thuộc phe Village và có trạng thái

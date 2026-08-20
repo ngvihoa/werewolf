@@ -24,6 +24,7 @@ export function queueStepLabel(step: GameState['queue'][number]['step']) {
     PROTECTOR_PROTECT: 'Bảo vệ chọn người bảo hộ',
     SEER_INSPECT: 'Tiên tri soi',
     WEREWOLF_ATTACK: 'Ma sói tấn công',
+    WHITE_WOLF_KILL: 'Sói trắng săn Sói',
     WITCH_ACTION: 'Phù thủy hành động',
     PIPER_CHARM: 'Người thổi sáo mê hoặc',
     CUPID_LINK: 'Thần tình yêu ghép đôi',
@@ -46,6 +47,7 @@ export function roleLabel(role: Role) {
     VILLAGER: 'Dân làng',
     WEREWOLF: 'Ma sói',
     ALPHA_WEREWOLF: 'Sói Đầu Đàn',
+    WHITE_WOLF: 'Sói Trắng',
     HYBRID_WOLF: 'Sói Lai',
     SEER: 'Tiên tri',
     WITCH: 'Phù thủy',
@@ -64,6 +66,8 @@ export function roleDescription(role: Role) {
     VILLAGER: 'Quan sát, thảo luận và tìm ra Ma sói vào ban ngày.',
     WEREWOLF: 'Mỗi đêm chọn một người chơi để tấn công.',
     ALPHA_WEREWOLF: 'Cùng đàn Sói tấn công và có một lần cắn xuyên qua Bảo vệ.',
+    WHITE_WOLF:
+      'Cùng đàn Sói tấn công, có một lần giết riêng một Sói khác và chỉ thắng khi sống sót một mình.',
     HYBRID_WOLF:
       'Khởi đầu cùng phe Làng; nếu bị Ma sói cắn thành công, bạn sống sót và chuyển sang phe Sói.',
     SEER: 'Mỗi đêm soi một người để biết họ thuộc phe nào.',

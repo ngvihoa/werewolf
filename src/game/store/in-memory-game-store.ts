@@ -482,6 +482,14 @@ function createDomainPlayer(id: string, role: Role): Player {
       abilityState: { enhancedAttackAvailable: true },
     }
   }
+  if (role === 'WHITE_WOLF') {
+    return {
+      id,
+      role,
+      alive: true,
+      abilityState: { killAvailable: true },
+    }
+  }
   if (role === 'ELDER') {
     return {
       id,

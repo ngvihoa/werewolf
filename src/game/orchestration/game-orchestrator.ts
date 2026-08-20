@@ -123,6 +123,7 @@ function confirmStep(
   state.pendingNightAction = null
   consumeWitchResources(state, action)
   consumeAlphaWerewolfAbility(state, action)
+  consumeWhiteWolfAbility(state, action)
   if (action.type === 'CUPID_LINK') state.loverIds = [...action.targetIds]
   events.push({ type: 'NIGHT_ACTION_CONFIRMED', action })
   if (action.type === 'SEER_INSPECT') {
@@ -212,6 +213,10 @@ function advanceNight(state: GameState, events: GameEvent[]): void {
       courtesanTargetId:
         state.confirmedNightActions.find(
           (action) => action.type === 'COURTESAN_VISIT',
+        )?.targetId ?? null,
+      whiteWolfTargetId:
+        state.confirmedNightActions.find(
+          (action) => action.type === 'WHITE_WOLF_KILL',
         )?.targetId ?? null,
     }),
     state.loverIds,
@@ -582,7 +587,10 @@ function activateNextRunnableStep(
         player.alive &&
         (item.step === 'WEREWOLF_ATTACK'
           ? isWerewolfPlayer(player)
-          : player.role === STEP_ROLE[item.step]),
+          : player.role === STEP_ROLE[item.step]) &&
+        (item.step !== 'WHITE_WOLF_KILL' ||
+          (player.role === 'WHITE_WOLF' &&
+            player.abilityState.killAvailable)),
     )
     if (!ownerAlive) {
       item.status = 'SKIPPED'
@@ -630,6 +638,17 @@ function consumeAlphaWerewolfAbility(
   const alpha = state.players.find((player) => player.id === action.actorId)
   if (alpha?.role === 'ALPHA_WEREWOLF') {
     alpha.abilityState.enhancedAttackAvailable = false
+  }
+}
+
+function consumeWhiteWolfAbility(
+  state: GameState,
+  action: NightAction,
+): void {
+  if (action.type !== 'WHITE_WOLF_KILL') return
+  const whiteWolf = state.players.find((player) => player.id === action.actorId)
+  if (whiteWolf?.role === 'WHITE_WOLF') {
+    whiteWolf.abilityState.killAvailable = false
   }
 }
 

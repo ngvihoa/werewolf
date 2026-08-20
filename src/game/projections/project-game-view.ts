@@ -80,6 +80,7 @@ export function projectGameView(
       abilityState:
         domainPlayer?.role === 'WITCH' ||
         domainPlayer?.role === 'ALPHA_WEREWOLF' ||
+        domainPlayer?.role === 'WHITE_WOLF' ||
         domainPlayer?.role === 'ELDER' ||
         domainPlayer?.role === 'HYBRID_WOLF'
           ? structuredClone(domainPlayer.abilityState)

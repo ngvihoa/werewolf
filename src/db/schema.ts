@@ -2,6 +2,7 @@ import type {
   AlphaWerewolfResources,
   ElderResources,
   HybridWolfResources,
+  WhiteWolfResources,
   WitchResources,
 } from '#/game/domain'
 import type { EventActor, PersistedGameEvent } from '#/game/store/model'
@@ -120,6 +121,7 @@ export const gamePlayers = pgTable(
       | AlphaWerewolfResources
       | ElderResources
       | HybridWolfResources
+      | WhiteWolfResources
     >(),
     isModerator: boolean('is_moderator').notNull().default(false),
     isReady: boolean('is_ready').notNull().default(false),
@@ -142,7 +144,7 @@ export const gamePlayers = pgTable(
     ),
     check(
       'game_players_role_ability_check',
-      sql`(${table.role} IN ('WITCH', 'ALPHA_WEREWOLF', 'ELDER', 'HYBRID_WOLF') AND ${table.abilityState} IS NOT NULL) OR (${table.role} NOT IN ('WITCH', 'ALPHA_WEREWOLF', 'ELDER', 'HYBRID_WOLF') AND ${table.abilityState} IS NULL) OR (${table.role} IS NULL AND ${table.abilityState} IS NULL)`,
+      sql`(${table.role} IN ('WITCH', 'ALPHA_WEREWOLF', 'WHITE_WOLF', 'ELDER', 'HYBRID_WOLF') AND ${table.abilityState} IS NOT NULL) OR (${table.role} NOT IN ('WITCH', 'ALPHA_WEREWOLF', 'WHITE_WOLF', 'ELDER', 'HYBRID_WOLF') AND ${table.abilityState} IS NULL) OR (${table.role} IS NULL AND ${table.abilityState} IS NULL)`,
     ),
   ],
 )

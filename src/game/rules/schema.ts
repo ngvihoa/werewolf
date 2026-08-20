@@ -25,6 +25,11 @@ export const nightActionSchema = z.discriminatedUnion('type', [
     enhanced: z.boolean().optional(),
   }),
   z.object({
+    type: z.literal('WHITE_WOLF_KILL'),
+    actorId: z.string().min(1),
+    targetId: z.string().min(1),
+  }),
+  z.object({
     type: z.literal('WITCH_ACTION'),
     actorId: z.string().min(1),
     heal: z.boolean(),
@@ -55,6 +60,7 @@ export const eliminationCauseSchema = z.enum([
   'HUNTER_SHOT',
   'HEARTBREAK',
   'COURTESAN_VISIT',
+  'WHITE_WOLF_KILL',
 ])
 
 export const nightResolutionSchema = z.object({

@@ -6,6 +6,7 @@ export const ROLE_VALUES = [
   'VILLAGER',
   'WEREWOLF',
   'ALPHA_WEREWOLF',
+  'WHITE_WOLF',
   'HYBRID_WOLF',
   'SEER',
   'WITCH',
@@ -24,6 +25,7 @@ export const WINNER_VALUES = [
   'FOOL',
   'PIPER',
   'LOVERS',
+  'WHITE_WOLF',
 ] as const
 
 export const GAME_PHASE_VALUES = [
@@ -44,6 +46,7 @@ export const QUEUE_STEP_VALUES = [
   'PROTECTOR_PROTECT',
   'SEER_INSPECT',
   'WEREWOLF_ATTACK',
+  'WHITE_WOLF_KILL',
   'WITCH_ACTION',
   'PIPER_CHARM',
   'CUPID_LINK',
@@ -90,6 +93,10 @@ export const alphaWerewolfResourcesSchema = z.object({
   enhancedAttackAvailable: z.boolean(),
 })
 
+export const whiteWolfResourcesSchema = z.object({
+  killAvailable: z.boolean(),
+})
+
 export const elderResourcesSchema = z.object({
   werewolfAttackSurvivalAvailable: z.boolean(),
 })
@@ -125,6 +132,11 @@ export const playerSchema = z.discriminatedUnion('role', [
     ...basePlayerFields,
     role: z.literal('ALPHA_WEREWOLF'),
     abilityState: alphaWerewolfResourcesSchema,
+  }),
+  z.object({
+    ...basePlayerFields,
+    role: z.literal('WHITE_WOLF'),
+    abilityState: whiteWolfResourcesSchema,
   }),
   z.object({
     ...basePlayerFields,

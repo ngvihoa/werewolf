@@ -18,6 +18,7 @@ export const STEP_ROLE = {
   PROTECTOR_PROTECT: 'PROTECTOR',
   SEER_INSPECT: 'SEER',
   WEREWOLF_ATTACK: 'WEREWOLF',
+  WHITE_WOLF_KILL: 'WHITE_WOLF',
   WITCH_ACTION: 'WITCH',
   PIPER_CHARM: 'PIPER',
   CUPID_LINK: 'CUPID',
@@ -36,6 +37,7 @@ export function getNightQueue(roles: readonly Role[], round = 1): QueueStep[] {
   queue.push('SEER_INSPECT')
   if (roles.includes('COURTESAN')) queue.push('COURTESAN_VISIT')
   queue.push('WEREWOLF_ATTACK')
+  if (roles.includes('WHITE_WOLF')) queue.push('WHITE_WOLF_KILL')
   if (roles.includes('WITCH')) queue.push('WITCH_ACTION')
   if (roles.includes('PIPER')) queue.push('PIPER_CHARM')
   return queue

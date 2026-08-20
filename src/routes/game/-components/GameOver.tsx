@@ -11,11 +11,13 @@ export function GameOver({ winner }: { winner: GameState['winner'] }) {
           ? 'Thằng ngốc chiến thắng'
           : winner === 'PIPER'
             ? 'Người thổi sáo chiến thắng'
-            : winner === 'LOVERS'
-              ? 'Cặp tình nhân chiến thắng'
-              : winner === 'WEREWOLF'
-                ? 'Phe Ma sói chiến thắng'
-                : 'Phe Dân làng chiến thắng'}
+            : winner === 'WHITE_WOLF'
+              ? 'Sói Trắng chiến thắng'
+              : winner === 'LOVERS'
+                ? 'Cặp tình nhân chiến thắng'
+                : winner === 'WEREWOLF'
+                  ? 'Phe Ma sói chiến thắng'
+                  : 'Phe Dân làng chiến thắng'}
       </h2>
       <p className="text-pretty text-base/7 text-stone-400 sm:text-sm/6">
         Toàn bộ diễn biến vẫn được giữ trong lịch sử append-only của phòng.

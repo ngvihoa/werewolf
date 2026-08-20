@@ -515,11 +515,13 @@ export class PostgresGameStore implements GameStore {
                   }
                 : role === 'ALPHA_WEREWOLF'
                   ? { enhancedAttackAvailable: true }
-                  : role === 'ELDER'
-                    ? { werewolfAttackSurvivalAvailable: true }
-                    : role === 'HYBRID_WOLF'
-                      ? { converted: false }
-                      : null,
+                  : role === 'WHITE_WOLF'
+                    ? { killAvailable: true }
+                    : role === 'ELDER'
+                      ? { werewolfAttackSurvivalAvailable: true }
+                      : role === 'HYBRID_WOLF'
+                        ? { converted: false }
+                        : null,
             isReady: false,
           })
           .where(

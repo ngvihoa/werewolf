@@ -2,6 +2,7 @@ import z from 'zod'
 
 import {
   alphaWerewolfResourcesSchema,
+  whiteWolfResourcesSchema,
   hybridWolfResourcesSchema,
   elderResourcesSchema,
   witchResourcesSchema,
@@ -48,6 +49,7 @@ export const playerPrivateViewSchema = z.object({
     .union([
       witchResourcesSchema,
       alphaWerewolfResourcesSchema,
+      whiteWolfResourcesSchema,
       elderResourcesSchema,
       hybridWolfResourcesSchema,
     ])

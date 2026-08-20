@@ -91,6 +91,25 @@ export function validateNightAction(
     return { ok: true, value: action }
   }
 
+  if (action.type === 'WHITE_WOLF_KILL') {
+    if (actor.role !== 'WHITE_WOLF' || !actor.abilityState.killAvailable) {
+      return failure(
+        'ABILITY_UNAVAILABLE',
+        'White Wolf has already used the private kill',
+      )
+    }
+    const target = context.players.find(
+      (player) => player.id === action.targetId,
+    )
+    if (!target?.alive || target.id === actor.id || !isWerewolfPlayer(target)) {
+      return failure(
+        'INVALID_TARGET',
+        'White Wolf must target another living Werewolf',
+      )
+    }
+    return { ok: true, value: action }
+  }
+
   const target = context.players.find((player) => player.id === action.targetId)
   if (!target?.alive) {
     return failure('INVALID_TARGET', 'Target must be a living player')

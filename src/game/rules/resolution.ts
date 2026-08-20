@@ -23,6 +23,7 @@ type NightResolutionInput = {
   hunterTargetId?: string | null
   courtesanId?: string | null
   courtesanTargetId?: string | null
+  whiteWolfTargetId?: string | null
 }
 
 export function resolveNight(input: NightResolutionInput): NightResolution {
@@ -71,6 +72,11 @@ export function resolveNight(input: NightResolutionInput): NightResolution {
     const causes = causesByPlayer.get(input.witchPoisonTargetId) ?? []
     causes.push('WITCH_POISON')
     causesByPlayer.set(input.witchPoisonTargetId, causes)
+  }
+  if (input.whiteWolfTargetId) {
+    const causes = causesByPlayer.get(input.whiteWolfTargetId) ?? []
+    causes.push('WHITE_WOLF_KILL')
+    causesByPlayer.set(input.whiteWolfTargetId, causes)
   }
 
   if (

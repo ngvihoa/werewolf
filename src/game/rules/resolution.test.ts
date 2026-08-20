@@ -18,6 +18,18 @@ describe('night resolution', () => {
     abilityState: null,
   }
 
+  it('applies the White Wolf private kill independently', () => {
+    expect(
+      resolveNight({
+        players,
+        werewolfTargetId: null,
+        witchHealed: false,
+        witchPoisonTargetId: null,
+        whiteWolfTargetId: 'wolf',
+      }).deaths,
+    ).toEqual([{ playerId: 'wolf', causes: ['WHITE_WOLF_KILL'] }])
+  })
+
   it('kills Courtesan when visiting a Werewolf', () => {
     expect(
       resolveNight({

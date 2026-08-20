@@ -18,15 +18,19 @@ export function GameResultDialog({
   const dialogRef = useRef<HTMLDialogElement>(null)
   const playerTeam =
     role === 'HYBRID_WOLF' && hybridConverted ? 'WEREWOLF' : getRoleTeam(role)
-  const neutralWinner = winner === 'FOOL' || winner === 'PIPER'
+  const neutralWinner =
+    winner === 'FOOL' || winner === 'PIPER' || winner === 'WHITE_WOLF'
   const won = neutralWinner
     ? role === winner
     : winner === 'LOVERS'
       ? isLover
-      : role !== 'FOOL' && role !== 'PIPER' && playerTeam === winner
+      : role !== 'FOOL' &&
+        role !== 'PIPER' &&
+        role !== 'WHITE_WOLF' &&
+        playerTeam === winner
   const isWerewolf = playerTeam === 'WEREWOLF'
   const alignmentName =
-    role === 'FOOL' || role === 'PIPER'
+    role === 'FOOL' || role === 'PIPER' || role === 'WHITE_WOLF'
       ? 'phe Trung lập'
       : isWerewolf
         ? 'phe Ma sói'
@@ -43,6 +47,8 @@ export function GameResultDialog({
       ? 'Thằng ngốc'
       : winner === 'PIPER'
         ? 'Người thổi sáo'
+        : winner === 'WHITE_WOLF'
+          ? 'Sói Trắng'
         : winner === 'LOVERS'
           ? 'Cặp tình nhân'
           : winner === 'WEREWOLF'
@@ -93,7 +99,9 @@ export function GameResultDialog({
               ? neutralWinner
                 ? winner === 'FOOL'
                   ? 'Bạn đã khiến cả làng biểu quyết loại mình và giành chiến thắng một mình.'
-                  : 'Bạn đã mê hoặc tất cả những người chơi còn sống và giành chiến thắng một mình.'
+                  : winner === 'PIPER'
+                    ? 'Bạn đã mê hoặc tất cả những người chơi còn sống và giành chiến thắng một mình.'
+                    : 'Bạn là người sống sót cuối cùng và giành chiến thắng một mình.'
                 : winner === 'LOVERS'
                   ? 'Hai bạn đã sống sót đến cuối cùng và giành chiến thắng cùng nhau.'
                   : `Bạn thuộc ${alignmentName}. Mọi quyết định trong ván đấu đã đưa phe của bạn đến chiến thắng.`
@@ -135,6 +143,8 @@ function roleLabel(role: Role): string {
       return 'Ma sói'
     case 'ALPHA_WEREWOLF':
       return 'Sói Đầu Đàn'
+    case 'WHITE_WOLF':
+      return 'Sói Trắng'
     case 'HYBRID_WOLF':
       return 'Sói Lai'
     case 'SEER':

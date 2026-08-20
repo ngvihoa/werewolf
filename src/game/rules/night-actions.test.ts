@@ -27,6 +27,42 @@ const players: Player[] = [
 ]
 
 describe('night action validation', () => {
+  it('lets White Wolf spend its one kill only on another living Werewolf', () => {
+    const whiteWolf: Player = {
+      id: 'white',
+      role: 'WHITE_WOLF',
+      alive: true,
+      abilityState: { killAvailable: true },
+    }
+    const action = {
+      type: 'WHITE_WOLF_KILL' as const,
+      actorId: 'white',
+      targetId: 'alpha',
+    }
+    expect(
+      validateNightAction(action, {
+        activeStep: 'WHITE_WOLF_KILL',
+        players: [...players, whiteWolf],
+      }),
+    ).toEqual({ ok: true, value: action })
+    expect(
+      validateNightAction(
+        { ...action, targetId: 'villager' },
+        {
+          activeStep: 'WHITE_WOLF_KILL',
+          players: [...players, whiteWolf],
+        },
+      ),
+    ).toMatchObject({ ok: false, error: { code: 'INVALID_TARGET' } })
+    whiteWolf.abilityState.killAvailable = false
+    expect(
+      validateNightAction(action, {
+        activeStep: 'WHITE_WOLF_KILL',
+        players: [...players, whiteWolf],
+      }),
+    ).toMatchObject({ ok: false, error: { code: 'ABILITY_UNAVAILABLE' } })
+  })
+
   it('allows only a converted Hybrid Wolf to join the shared attack', () => {
     const hybridPlayers: Player[] = [
       {
