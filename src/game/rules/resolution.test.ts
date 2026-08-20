@@ -11,6 +11,64 @@ const players: Player[] = [
 ]
 
 describe('night resolution', () => {
+  const courtesan: Player = {
+    id: 'courtesan',
+    role: 'COURTESAN',
+    alive: true,
+    abilityState: null,
+  }
+
+  it('kills Courtesan when visiting a Werewolf', () => {
+    expect(
+      resolveNight({
+        players: [...players, courtesan],
+        werewolfTargetId: 'a',
+        witchHealed: false,
+        witchPoisonTargetId: null,
+        courtesanId: 'courtesan',
+        courtesanTargetId: 'wolf',
+      }).deaths,
+    ).toEqual([
+      { playerId: 'a', causes: ['WEREWOLF_ATTACK'] },
+      { playerId: 'courtesan', causes: ['COURTESAN_VISIT'] },
+    ])
+  })
+
+  it('makes an attack on Courtesan miss while she is visiting', () => {
+    expect(
+      resolveNight({
+        players: [...players, courtesan],
+        werewolfTargetId: 'courtesan',
+        witchHealed: false,
+        witchPoisonTargetId: null,
+        courtesanId: 'courtesan',
+        courtesanTargetId: 'a',
+      }).deaths,
+    ).toEqual([])
+  })
+
+  it('kills Courtesan only when the attack kills the visited player', () => {
+    const baseInput = {
+      players: [...players, courtesan],
+      werewolfTargetId: 'a',
+      witchPoisonTargetId: null,
+      courtesanId: 'courtesan',
+      courtesanTargetId: 'a',
+    }
+    expect(resolveNight({ ...baseInput, witchHealed: false }).deaths).toEqual([
+      { playerId: 'a', causes: ['WEREWOLF_ATTACK'] },
+      { playerId: 'courtesan', causes: ['COURTESAN_VISIT'] },
+    ])
+    expect(resolveNight({ ...baseInput, witchHealed: true }).deaths).toEqual([])
+    expect(
+      resolveNight({
+        ...baseInput,
+        witchHealed: false,
+        protectedTargetId: 'a',
+      }).deaths,
+    ).toEqual([])
+  })
+
   it('triggers the confirmed Hunter mark only when the Hunter dies', () => {
     expect(
       resolveNight({

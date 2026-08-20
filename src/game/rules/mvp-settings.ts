@@ -93,7 +93,7 @@ export const MVP_ROLE_COMPOSITIONS = {
     'FOOL',
     'PIPER',
     'CUPID',
-    'VILLAGER',
+    'COURTESAN',
     'VILLAGER',
   ],
   14: [
@@ -109,7 +109,7 @@ export const MVP_ROLE_COMPOSITIONS = {
     'FOOL',
     'PIPER',
     'CUPID',
-    'VILLAGER',
+    'COURTESAN',
     'VILLAGER',
   ],
   15: [
@@ -125,7 +125,7 @@ export const MVP_ROLE_COMPOSITIONS = {
     'FOOL',
     'PIPER',
     'CUPID',
-    'VILLAGER',
+    'COURTESAN',
     'VILLAGER',
     'VILLAGER',
   ],

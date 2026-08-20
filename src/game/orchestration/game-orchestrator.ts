@@ -28,6 +28,7 @@ export function createFirstNightState(players: readonly Player[]): GameState {
     confirmedNightActions: [],
     charmedPlayerIds: [],
     loverIds: null,
+    lastCourtesanTargetId: null,
     lastProtectedTargetId: null,
     pendingNightResolution: null,
     voteAttempt: 1,
@@ -94,6 +95,7 @@ function submitNightAction(
     charmedPlayerIds: state.charmedPlayerIds,
     round: state.round,
     loverIds: state.loverIds,
+    lastCourtesanTargetId: state.lastCourtesanTargetId,
   })
   if (!validation.ok) return validation
 
@@ -204,6 +206,12 @@ function advanceNight(state: GameState, events: GameEvent[]): void {
       hunterTargetId:
         state.confirmedNightActions.find(
           (action) => action.type === 'HUNTER_MARK',
+        )?.targetId ?? null,
+      courtesanId:
+        state.players.find((player) => player.role === 'COURTESAN')?.id ?? null,
+      courtesanTargetId:
+        state.confirmedNightActions.find(
+          (action) => action.type === 'COURTESAN_VISIT',
         )?.targetId ?? null,
     }),
     state.loverIds,
@@ -459,6 +467,10 @@ function transitionAfterElimination(
     state.lastProtectedTargetId =
       state.confirmedNightActions.find(
         (action) => action.type === 'PROTECTOR_PROTECT',
+      )?.targetId ?? null
+    state.lastCourtesanTargetId =
+      state.confirmedNightActions.find(
+        (action) => action.type === 'COURTESAN_VISIT',
       )?.targetId ?? null
     state.round += 1
     state.voteAttempt = 1

@@ -24,6 +24,7 @@ type ValidationContext = {
   charmedPlayerIds?: readonly string[]
   round?: number
   loverIds?: readonly string[] | null
+  lastCourtesanTargetId?: string | null
 }
 
 function failure(code: Parameters<typeof makeError>[0], message: string) {
@@ -108,6 +109,15 @@ export function validateNightAction(
     context.charmedPlayerIds?.includes(target.id)
   ) {
     return failure('INVALID_TARGET', 'Piper must charm a new target')
+  }
+  if (
+    action.type === 'COURTESAN_VISIT' &&
+    action.targetId === context.lastCourtesanTargetId
+  ) {
+    return failure(
+      'INVALID_TARGET',
+      'Courtesan cannot visit the same player on consecutive nights',
+    )
   }
   if (target.id === actor.id) {
     return failure('INVALID_TARGET', 'Target must be another living player')

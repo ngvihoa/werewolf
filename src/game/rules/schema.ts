@@ -40,6 +40,11 @@ export const nightActionSchema = z.discriminatedUnion('type', [
     actorId: z.string().min(1),
     targetIds: z.tuple([z.string().min(1), z.string().min(1)]),
   }),
+  z.object({
+    type: z.literal('COURTESAN_VISIT'),
+    actorId: z.string().min(1),
+    targetId: z.string().min(1),
+  }),
 ])
 
 export const eliminationCauseSchema = z.enum([
@@ -49,6 +54,7 @@ export const eliminationCauseSchema = z.enum([
   'MODERATOR_OVERRIDE',
   'HUNTER_SHOT',
   'HEARTBREAK',
+  'COURTESAN_VISIT',
 ])
 
 export const nightResolutionSchema = z.object({

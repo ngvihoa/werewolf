@@ -6,6 +6,8 @@ import type {
 import type { Player } from '../domain'
 import type { z } from 'zod'
 
+import { isWerewolfRole } from '../domain'
+
 // Resolution được persist trong event payload nên schema runtime là source of truth.
 export type EliminationCause = z.infer<typeof eliminationCauseSchema>
 export type NightResolution = z.infer<typeof nightResolutionSchema>
@@ -19,15 +21,21 @@ type NightResolutionInput = {
   protectedTargetId?: string | null
   hunterId?: string | null
   hunterTargetId?: string | null
+  courtesanId?: string | null
+  courtesanTargetId?: string | null
 }
 
 export function resolveNight(input: NightResolutionInput): NightResolution {
   const causesByPlayer = new Map<string, EliminationCause[]>()
   const elderSurvivalConsumedPlayerIds: string[] = []
+  let werewolfKilledTarget = false
 
   if (
     input.werewolfTargetId &&
     !input.witchHealed &&
+    !(
+      input.werewolfTargetId === input.courtesanId && input.courtesanTargetId
+    ) &&
     (input.werewolfAttackEnhanced ||
       input.werewolfTargetId !== input.protectedTargetId)
   ) {
@@ -41,7 +49,20 @@ export function resolveNight(input: NightResolutionInput): NightResolution {
       elderSurvivalConsumedPlayerIds.push(target.id)
     } else {
       causesByPlayer.set(input.werewolfTargetId, ['WEREWOLF_ATTACK'])
+      werewolfKilledTarget = true
     }
+  }
+
+  const courtesanTarget = input.players.find(
+    (player) => player.id === input.courtesanTargetId,
+  )
+  if (
+    input.courtesanId &&
+    (isWerewolfRole(courtesanTarget?.role) ||
+      (werewolfKilledTarget &&
+        input.werewolfTargetId === input.courtesanTargetId))
+  ) {
+    causesByPlayer.set(input.courtesanId, ['COURTESAN_VISIT'])
   }
   if (input.witchPoisonTargetId) {
     const causes = causesByPlayer.get(input.witchPoisonTargetId) ?? []

@@ -54,6 +54,8 @@ chơi trở lên, composition tiếp tục thay một Villager bằng Piper và 
 `PIPER_CHARM` ở cuối queue đêm.
 Từ 12 người chơi trở lên, composition thay thêm một Villager bằng Cupid; step
 `CUPID_LINK` chỉ xuất hiện trong đêm đầu tiên.
+Từ 13 người chơi trở lên, composition thay thêm một Villager bằng Courtesan và
+thêm `COURTESAN_VISIT` trước `WEREWOLF_ATTACK`.
 
 Mục tiêu của MVP là kiểm tra toàn bộ flow và state management trước khi tối ưu balance.
 

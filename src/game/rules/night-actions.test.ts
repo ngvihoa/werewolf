@@ -27,6 +27,31 @@ const players: Player[] = [
 ]
 
 describe('night action validation', () => {
+  it('prevents Courtesan from visiting the same player consecutively', () => {
+    const courtesanPlayers: Player[] = [
+      { id: 'courtesan', role: 'COURTESAN', alive: true, abilityState: null },
+      { id: 'villager', role: 'VILLAGER', alive: true, abilityState: null },
+    ]
+
+    const result = validateNightAction(
+      {
+        type: 'COURTESAN_VISIT',
+        actorId: 'courtesan',
+        targetId: 'villager',
+      },
+      {
+        activeStep: 'COURTESAN_VISIT',
+        players: courtesanPlayers,
+        lastCourtesanTargetId: 'villager',
+      },
+    )
+
+    expect(result).toMatchObject({
+      ok: false,
+      error: { code: 'INVALID_TARGET' },
+    })
+  })
+
   it('allows Cupid to link two other living players only on first night', () => {
     const cupidPlayers: Player[] = [
       { id: 'cupid', role: 'CUPID', alive: true, abilityState: null },

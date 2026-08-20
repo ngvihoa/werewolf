@@ -236,6 +236,27 @@ Thần tình yêu xuất hiện từ bàn 12 người và chỉ hành động tr
 
 ---
 
+## 11. Courtesan
+
+**Team:** Village
+
+Kỹ nữ xuất hiện từ bàn 13 người và mỗi đêm đến thăm một người chơi khác:
+
+- Không được thăm cùng một người trong hai đêm liên tiếp.
+- Nếu Sói cắn Kỹ nữ khi cô đang đi thăm, đòn cắn tại nhà cô không trúng.
+- Nếu Kỹ nữ thăm Werewolf hoặc Alpha Werewolf, cô chết với cause
+  `COURTESAN_VISIT`.
+- Nếu Sói cắn đúng người được thăm và đòn cắn thực sự giết mục tiêu, Kỹ nữ cũng
+  chết với cause `COURTESAN_VISIT`.
+- Nếu Protector, Witch hoặc mạng đặc biệt của Elder khiến mục tiêu sống sót, Kỹ
+  nữ cũng sống.
+- Kỹ nữ không chết theo Witch Poison, Hunter Shot hoặc nguồn chết khác xảy ra với
+  người được thăm.
+- Chuyến thăm không chặn năng lực của mục tiêu và chỉ Kỹ nữ cùng Moderator thấy.
+- Seer soi Kỹ nữ nhận kết quả `VILLAGE`.
+
+---
+
 # 8. Information Visibility
 
 Không phải mọi state đều được hiển thị cho mọi player.

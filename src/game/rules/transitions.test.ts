@@ -58,4 +58,12 @@ describe('phase transitions', () => {
       'WEREWOLF_ATTACK',
     ])
   })
+
+  it('runs Courtesan immediately before the Werewolf attack', () => {
+    expect(getNightQueue(['COURTESAN', 'WEREWOLF', 'SEER'])).toEqual([
+      'SEER_INSPECT',
+      'COURTESAN_VISIT',
+      'WEREWOLF_ATTACK',
+    ])
+  })
 })

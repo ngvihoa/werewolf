@@ -39,7 +39,9 @@ export function NightActionForm({
         player.id !== view.turn.lastProtectedTargetId) &&
       (step !== 'WEREWOLF_ATTACK' || !teammateIds.has(player.id)) &&
       (step !== 'PIPER_CHARM' ||
-        !view.turn.charmedPlayerIds.includes(player.id)),
+        !view.turn.charmedPlayerIds.includes(player.id)) &&
+      (step !== 'COURTESAN_VISIT' ||
+        player.id !== view.turn.lastCourtesanTargetId),
   )
 
   function submit(event: FormEvent<HTMLFormElement>) {

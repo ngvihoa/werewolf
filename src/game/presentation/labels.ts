@@ -27,6 +27,7 @@ export function queueStepLabel(step: GameState['queue'][number]['step']) {
     WITCH_ACTION: 'Phù thủy hành động',
     PIPER_CHARM: 'Người thổi sáo mê hoặc',
     CUPID_LINK: 'Thần tình yêu ghép đôi',
+    COURTESAN_VISIT: 'Kỹ nữ đến thăm',
   }[step]
 }
 
@@ -53,6 +54,7 @@ export function roleLabel(role: Role) {
     FOOL: 'Thằng ngốc',
     PIPER: 'Người thổi sáo',
     CUPID: 'Thần tình yêu',
+    COURTESAN: 'Kỹ nữ',
   }[role]
 }
 
@@ -74,5 +76,7 @@ export function roleDescription(role: Role) {
       'Mỗi đêm mê hoặc một người mới; thắng khi mọi người còn sống khác đều đã bị mê hoặc.',
     CUPID:
       'Đêm đầu tiên ghép hai người khác thành tình nhân; một người chết thì người kia chết theo.',
+    COURTESAN:
+      'Mỗi đêm đến thăm một người khác; tránh đòn cắn tại nhà nhưng gặp nguy hiểm nếu đến nơi Sói xuất hiện.',
   }[role]
 }

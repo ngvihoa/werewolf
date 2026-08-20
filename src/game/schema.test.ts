@@ -22,6 +22,7 @@ describe('game domain schemas', () => {
     expect(roleSchema.safeParse('FOOL').success).toBe(true)
     expect(roleSchema.safeParse('PIPER').success).toBe(true)
     expect(roleSchema.safeParse('CUPID').success).toBe(true)
+    expect(roleSchema.safeParse('COURTESAN').success).toBe(true)
     expect(gamePhaseSchema.safeParse('LOBBY').success).toBe(false)
   })
 

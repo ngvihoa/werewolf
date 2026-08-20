@@ -148,6 +148,8 @@ function roleLabel(role: Role): string {
       return 'Người thổi sáo'
     case 'CUPID':
       return 'Thần tình yêu'
+    case 'COURTESAN':
+      return 'Kỹ nữ'
     case 'VILLAGER':
       return 'Dân làng'
   }
