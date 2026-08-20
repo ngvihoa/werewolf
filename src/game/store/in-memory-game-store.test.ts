@@ -148,6 +148,40 @@ describe('InMemoryGameStore lobby', () => {
     expect(afterAssignment).toEqual(beforeAssignment)
   })
 
+  it('assigns a custom composition and includes it in idempotency identity', () => {
+    const store = createStore()
+    const created = store.createGame('Moderator')
+    if (!created.ok) throw new Error(created.error.message)
+    for (const name of ['An', 'Binh', 'Cuong', 'Dung', 'Hoa']) {
+      store.joinGame(created.value.roomCode, name)
+    }
+
+    const assigned = store.assignRoles(
+      created.value.moderatorSessionToken,
+      6,
+      'custom-assign',
+      { mode: 'CUSTOM', roles: ['WEREWOLF', 'SEER', 'WITCH'] },
+    )
+    expect(assigned.ok).toBe(true)
+
+    const game = store.getGame(created.value.gameId)
+    if (!game.ok) throw new Error(game.error.message)
+    expect(game.value.lobbyPlayers.map((player) => player.role).sort()).toEqual(
+      ['WEREWOLF', 'SEER', 'WITCH', 'VILLAGER', 'VILLAGER'].sort(),
+    )
+
+    const reused = store.assignRoles(
+      created.value.moderatorSessionToken,
+      6,
+      'custom-assign',
+      { mode: 'DEFAULT' },
+    )
+    expect(reused).toMatchObject({
+      ok: false,
+      error: { code: 'IDEMPOTENCY_KEY_REUSED' },
+    })
+  })
+
   it('requires assignment and every player to be ready before start', () => {
     const store = createStore()
     const created = store.createGame('Moderator')

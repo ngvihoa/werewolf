@@ -1,3 +1,4 @@
+import { roleCompositionSelectionSchema } from '#/game/schema'
 import { getGameViewResultSchema } from '#/game/projections/schema'
 import { gameCommandSchema } from '#/game/orchestration/schema'
 import {
@@ -42,7 +43,11 @@ export const lobbyContract = {
     )
     .output(operationResultSchema),
   assignRoles: oc
-    .input(versionedSessionInputSchema)
+    .input(
+      versionedSessionInputSchema.extend({
+        composition: roleCompositionSelectionSchema,
+      }),
+    )
     .output(operationResultSchema),
   startGame: oc
     .input(versionedSessionInputSchema)

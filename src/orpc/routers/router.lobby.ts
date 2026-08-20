@@ -39,6 +39,7 @@ export const lobbyRouter = baseRouter.lobby.router({
       input.sessionToken,
       input.expectedVersion,
       input.idempotencyKey,
+      input.composition,
     )
     return toOperationResult(result)
   }),

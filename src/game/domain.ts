@@ -5,6 +5,7 @@ import type {
   playerSchema,
   queueStepSchema,
   roleSchema,
+  roleCompositionSelectionSchema,
   teamSchema,
   winnerSchema,
   witchResourcesSchema,
@@ -17,6 +18,9 @@ import type { z } from 'zod'
 // Runtime schemas là source of truth; domain types được suy ra tự động.
 // Khi schema đổi, TypeScript buộc mọi consumer liên quan cập nhật theo.
 export type Role = z.infer<typeof roleSchema>
+export type RoleCompositionSelection = z.infer<
+  typeof roleCompositionSelectionSchema
+>
 export type Team = z.infer<typeof teamSchema>
 export type Winner = z.infer<typeof winnerSchema>
 export type GamePhase = z.infer<typeof gamePhaseSchema>

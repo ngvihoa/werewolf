@@ -1,3 +1,5 @@
+import type { RoleCompositionSelection } from '#/game/domain'
+
 import { gameViewQueryKey, useGameView } from '#/hooks/useGameView'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute, Navigate } from '@tanstack/react-router'
@@ -55,11 +57,18 @@ function LobbyPage() {
     onSuccess: invalidateView,
   })
   const assignMutation = useMutation({
-    mutationFn: async ({ idempotencyKey }: { idempotencyKey: string }) => {
+    mutationFn: async ({
+      composition,
+      idempotencyKey,
+    }: {
+      composition: RoleCompositionSelection
+      idempotencyKey: string
+    }) => {
       let result = await orpcClient.lobby.assignRoles({
         sessionToken: activeSessionToken,
         expectedVersion: gameViewVersion(viewQuery.data),
         idempotencyKey,
+        composition,
       })
       if (!result.ok && result.error.code === 'STALE_VERSION') {
         const refreshed = await viewQuery.refetch()
@@ -68,6 +77,7 @@ function LobbyPage() {
             sessionToken: activeSessionToken,
             expectedVersion: gameViewVersion(refreshed.data),
             idempotencyKey,
+            composition,
           })
         }
       }
@@ -164,8 +174,9 @@ function LobbyPage() {
                 assigning={assignMutation.isPending}
                 starting={startMutation.isPending}
                 error={mutationError}
-                onAssign={() =>
+                onAssign={(composition) =>
                   assignMutation.mutate({
+                    composition,
                     idempotencyKey: createIdempotencyKey(),
                   })
                 }

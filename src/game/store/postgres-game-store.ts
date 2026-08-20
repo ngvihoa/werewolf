@@ -10,6 +10,7 @@ import type {
 } from './model'
 import type { ExecuteGameCommandInput, GameStore } from './game-store'
 import type { GameView, ProjectionViewer } from '../projections/model'
+import type { RoleCompositionSelection } from '../domain'
 import type { GameCommand } from '../orchestration/commands'
 import type { GameState } from '../orchestration/model'
 import type { GameEvent } from '../orchestration/events'
@@ -423,6 +424,7 @@ export class PostgresGameStore implements GameStore {
     sessionToken: string,
     expectedVersion: number,
     idempotencyKey: string,
+    composition: RoleCompositionSelection = { mode: 'DEFAULT' },
   ): Promise<StoreResult<GameMutationResult>> {
     const sessionTokenHash = this.#hashSessionToken(sessionToken)
     const now = this.#now()
@@ -453,6 +455,7 @@ export class PostgresGameStore implements GameStore {
       const requestHash = hashMutationRequest({
         type: 'ASSIGN_ROLES',
         expectedVersion,
+        composition,
       })
       const replay = await replayCommandReceipt(
         transaction,
@@ -479,7 +482,10 @@ export class PostgresGameStore implements GameStore {
           ),
         )
 
-      const assignment = assignRoles(players.map((player) => player.id))
+      const assignment = assignRoles(
+        players.map((player) => player.id),
+        composition,
+      )
 
       if (!assignment.ok) {
         return failure(

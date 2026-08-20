@@ -10,8 +10,8 @@ import type {
   StoreErrorCode,
   StoreResult,
 } from './model'
+import type { Player, Role, RoleCompositionSelection } from '../domain'
 import type { ExecuteGameCommandInput, GameStore } from './game-store'
-import type { Player, Role } from '../domain'
 import type { GameEvent } from '../orchestration/events'
 import type { GameView } from '../projections/model'
 
@@ -183,12 +183,17 @@ export class InMemoryGameStore implements GameStore {
     sessionToken: string,
     expectedVersion: number,
     idempotencyKey: string,
+    composition: RoleCompositionSelection = { mode: 'DEFAULT' },
   ): StoreResult<GameMutationResult> {
     const resolved = this.#resolveModerator(sessionToken)
     if (!resolved.ok) return resolved
     const game = resolved.value
     const receiptKey = `${sessionToken}:${idempotencyKey}`
-    const request = JSON.stringify({ type: 'ASSIGN_ROLES', expectedVersion })
+    const request = JSON.stringify({
+      type: 'ASSIGN_ROLES',
+      expectedVersion,
+      composition,
+    })
     const receipt = this.#commandReceipts.get(receiptKey)
     if (receipt) return replayReceipt(receipt, request)
 
@@ -203,6 +208,7 @@ export class InMemoryGameStore implements GameStore {
 
     const assigned = assignRoles(
       game.lobbyPlayers.map((player) => player.id),
+      composition,
       this.#randomIndex,
     )
     if (!assigned.ok) {

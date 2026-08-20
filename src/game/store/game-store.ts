@@ -4,6 +4,7 @@ import type {
   JoinedGame,
   StoreResult,
 } from './model'
+import type { RoleCompositionSelection } from '../domain'
 import type { GameCommand } from '../orchestration/commands'
 import type { GameView } from '../projections/model'
 
@@ -76,6 +77,7 @@ export interface GameStore {
     sessionToken: string,
     expectedVersion: number,
     idempotencyKey: string,
+    composition?: RoleCompositionSelection,
   ): Awaitable<StoreResult<GameMutationResult>>
 
   /**

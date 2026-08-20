@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   validateRoleComposition,
+  resolveRoleComposition,
   getRoleComposition,
   assignRoles,
 } from './role-assignment'
@@ -34,7 +35,7 @@ describe('role composition', () => {
     },
   )
 
-  it.each([14, 15])('adds exactly one Hybrid Wolf for %i players', (count) => {
+  it.each([13, 15])('adds exactly one Hybrid Wolf for %i players', (count) => {
     const result = getRoleComposition(count)
     expect(result.ok).toBe(true)
     if (result.ok) {
@@ -129,9 +130,9 @@ describe('role composition', () => {
 
   it('rejects a composition with the wrong roles', () => {
     const result = validateRoleComposition([
-      'WEREWOLF',
       'SEER',
-      'WITCH',
+      'SEER',
+      'VILLAGER',
       'VILLAGER',
       'VILLAGER',
     ])
@@ -139,8 +140,92 @@ describe('role composition', () => {
     if (!result.ok) expect(result.error.code).toBe('INVALID_ROLE_COMPOSITION')
   })
 
+  it('replaces every Villager with a unique special role', () => {
+    expect(resolveRoleComposition(5, { mode: 'NO_VILLAGER' })).toEqual({
+      ok: true,
+      value: ['WEREWOLF', 'SEER', 'WITCH', 'PROTECTOR', 'HUNTER'],
+    })
+  })
+
+  it('rejects the no-villager preset for 15 players', () => {
+    const result = resolveRoleComposition(15, { mode: 'NO_VILLAGER' })
+    expect(result.ok).toBe(false)
+    if (!result.ok) expect(result.error.code).toBe('INVALID_ROLE_COMPOSITION')
+  })
+
+  it('fills a partial custom selection with default Wolves then Villagers', () => {
+    expect(
+      resolveRoleComposition(10, {
+        mode: 'CUSTOM',
+        roles: ['SEER', 'WITCH'],
+      }),
+    ).toEqual({
+      ok: true,
+      value: [
+        'SEER',
+        'WITCH',
+        'WEREWOLF',
+        'WEREWOLF',
+        'WEREWOLF',
+        'VILLAGER',
+        'VILLAGER',
+        'VILLAGER',
+        'VILLAGER',
+        'VILLAGER',
+      ],
+    })
+  })
+
+  it('preserves a custom Wolf count above the default', () => {
+    const result = resolveRoleComposition(5, {
+      mode: 'CUSTOM',
+      roles: ['WEREWOLF', 'WEREWOLF', 'SEER'],
+    })
+    expect(result).toEqual({
+      ok: true,
+      value: ['WEREWOLF', 'WEREWOLF', 'SEER', 'VILLAGER', 'VILLAGER'],
+    })
+  })
+
+  it('does not force Wolves when the Moderator fills every custom slot', () => {
+    expect(
+      resolveRoleComposition(5, {
+        mode: 'CUSTOM',
+        roles: ['SEER', 'WITCH', 'PROTECTOR', 'HUNTER', 'ELDER'],
+      }),
+    ).toEqual({
+      ok: true,
+      value: ['SEER', 'WITCH', 'PROTECTOR', 'HUNTER', 'ELDER'],
+    })
+  })
+
+  it('rejects duplicate special roles and too many selected roles', () => {
+    const duplicate = resolveRoleComposition(5, {
+      mode: 'CUSTOM',
+      roles: ['SEER', 'SEER'],
+    })
+    expect(duplicate.ok).toBe(false)
+
+    const excessive = resolveRoleComposition(5, {
+      mode: 'CUSTOM',
+      roles: [
+        'WEREWOLF',
+        'WEREWOLF',
+        'WEREWOLF',
+        'WEREWOLF',
+        'WEREWOLF',
+        'WEREWOLF',
+      ],
+    })
+    expect(excessive.ok).toBe(false)
+  })
+
   it('assigns every role exactly once using an injectable shuffle', () => {
-    const result = assignRoles(['a', 'b', 'c', 'd', 'e'], () => 0)
+    const result = assignRoles(
+      ['a', 'b', 'c', 'd', 'e'],
+      { mode: 'DEFAULT' },
+      () => 0,
+    )
     expect(result.ok).toBe(true)
     if (result.ok) {
       expect([...result.value.keys()]).toEqual(['a', 'b', 'c', 'd', 'e'])

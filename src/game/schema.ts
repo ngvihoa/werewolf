@@ -65,6 +65,16 @@ export const DOMAIN_ERROR_CODE_VALUES = [
 // Các schema này tồn tại ở runtime, nên có thể kiểm tra dữ liệu từ API,
 // database hoặc bất kỳ nguồn nào không được TypeScript bảo đảm.
 export const roleSchema = z.enum(ROLE_VALUES)
+export const roleCompositionSelectionSchema = z
+  .discriminatedUnion('mode', [
+    z.object({ mode: z.literal('DEFAULT') }),
+    z.object({ mode: z.literal('NO_VILLAGER') }),
+    z.object({
+      mode: z.literal('CUSTOM'),
+      roles: z.array(roleSchema).max(15),
+    }),
+  ])
+  .default({ mode: 'DEFAULT' })
 export const teamSchema = z.enum(TEAM_VALUES)
 export const winnerSchema = z.enum(WINNER_VALUES)
 export const gamePhaseSchema = z.enum(GAME_PHASE_VALUES)
