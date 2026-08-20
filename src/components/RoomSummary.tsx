@@ -89,7 +89,7 @@ export function RoomSummary({
         </div>
         <div className="flex items-center gap-2 font-mono text-sm text-stone-500">
           <span className="size-1.5 rounded-full bg-emerald-400" />
-          Local sync · v<span className="tabular-nums">{version}</span>
+          Đã đồng bộ · v<span className="tabular-nums">{version}</span>
         </div>
       </div>
     </div>

@@ -1314,7 +1314,7 @@ async function syncGamePlayers(
   gameId: string,
   state: GameState,
 ): Promise<void> {
-  // Player count is small (5-12); explicit row updates keep this easy to audit.
+  // Player count is small (5-15); explicit row updates keep this easy to audit.
   for (const player of state.players) {
     await transaction
       .update(gamePlayers)

@@ -25,7 +25,7 @@ function EntryPage() {
       if (result.ok) handleSessionCreated(result.value.moderatorSessionToken)
       else setError(result.error.message)
     },
-    onError: () => setError('Không thể kết nối local server. Hãy thử lại.'),
+    onError: () => setError('Không thể kết nối máy chủ. Hãy thử lại.'),
   })
   const joinMutation = useMutation({
     mutationFn: (input: { roomCode: string; displayName: string }) =>
@@ -34,7 +34,7 @@ function EntryPage() {
       if (result.ok) handleSessionCreated(result.value.playerSessionToken)
       else setError(result.error.message)
     },
-    onError: () => setError('Không thể kết nối local server. Hãy thử lại.'),
+    onError: () => setError('Không thể kết nối máy chủ. Hãy thử lại.'),
   })
   const isPending = createMutation.isPending || joinMutation.isPending
 
@@ -73,25 +73,25 @@ function EntryPage() {
           <header className="relative flex items-center gap-3">
             <span className="size-2 rounded-full bg-red-500 shadow-[0_0_24px_var(--color-red-500)]" />
             <p className="font-mono text-sm tracking-wide text-stone-400 uppercase">
-              Werewolf / Local table 01
+              Werewolf / Bàn chơi trực tuyến
             </p>
           </header>
           <div className="relative flex max-w-2xl flex-col gap-7 lg:pb-12">
             <p className="font-mono text-sm tracking-wide text-red-300 uppercase">
-              Moderator assistant
+              Trợ lý Quản trò
             </p>
             <h1 className="max-w-[15ch] text-balance text-5xl font-medium tracking-tight text-stone-50 sm:text-6xl lg:text-7xl">
               Giữ bí mật trong đêm. Giữ nhịp cho cả bàn.
             </h1>
             <p className="max-w-[55ch] text-pretty text-lg text-stone-400 sm:text-base/7">
-              Tạo một phòng local, mời 5–15 người chơi và để hệ thống điều phối
-              từng lượt. Quản trò vẫn là người đưa ra quyết định cuối cùng.
+              Tạo một phòng chơi, mời 5–15 người và để hệ thống điều phối từng
+              lượt. Quản trò vẫn là người đưa ra quyết định cuối cùng.
             </p>
           </div>
           <div className="relative grid grid-cols-3 divide-x divide-white/10 border-t border-white/10 pt-5">
-            <EntryStat value="5–12" label="Người chơi" />
-            <EntryStat value="4" label="Vai trò" />
-            <EntryStat value="Local" label="Dữ liệu" />
+            <EntryStat value="5–15" label="Người chơi" />
+            <EntryStat value="14" label="Vai trò" />
+            <EntryStat value="PostgreSQL" label="Lưu trữ" />
           </div>
         </section>
 
@@ -139,9 +139,7 @@ function EntryPage() {
                   placeholder="Ví dụ: Hoa"
                   autoComplete="name"
                 />
-                <PrimaryButton pending={isPending}>
-                  Tạo phòng local
-                </PrimaryButton>
+                <PrimaryButton pending={isPending}>Tạo phòng</PrimaryButton>
               </form>
             ) : (
               <form className="flex flex-col gap-5" onSubmit={submitJoin}>
@@ -170,8 +168,8 @@ function EntryPage() {
               </p>
             ) : null}
             <p className="text-pretty text-base/7 text-stone-500 sm:text-sm/6">
-              Dữ liệu chỉ tồn tại trong server memory và sẽ mất khi dừng tiến
-              trình local.
+              Mỗi người chơi dùng phiên riêng; thông tin vai trò được giữ bí mật
+              trên thiết bị của họ.
             </p>
           </div>
         </section>
