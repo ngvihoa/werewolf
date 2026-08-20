@@ -155,19 +155,73 @@ Exit criteria:
 
 Goal: keep all devices synchronized without exposing private data.
 
-- [ ] Subscribe each client to its game channel.
-- [ ] Broadcast only game ID and state version invalidations.
-- [ ] Invalidate the appropriate oRPC/TanStack Query keys.
-- [ ] Detect stale versions and refetch before retrying.
-- [ ] Handle offline, reconnect and duplicate events.
-- [ ] Add heartbeat or presence only if playtesting proves it necessary.
-- [ ] Test backgrounding and restoring mobile browsers.
+Implementation plan:
+
+1. Define the Realtime boundary.
+   - [ ] Add a closed schema for an invalidation payload containing only
+         `{ gameId, version }`.
+   - [ ] Use one channel per opaque game ID; never publish room codes, roles,
+         targets, actions, ability state, sessions or projected game views.
+   - [ ] Do not subscribe clients directly to `games`, `game_events` or other
+         PostgreSQL tables because the application uses its own session tokens
+         rather than Supabase Auth and those rows contain hidden information.
+
+2. Publish invalidations after successful commits.
+   - [ ] Add one server-side publisher shared by every accepted mutation.
+   - [ ] Publish only after the state, events and idempotency receipt commit.
+   - [ ] Treat publication as best-effort: a Realtime failure must not roll back
+         or report failure for an already committed game command.
+   - [ ] Log publication failures without including private payloads or session
+         tokens.
+
+3. Subscribe and refetch on the client.
+   - [ ] Subscribe each lobby and game client to its current game channel.
+   - [ ] Validate every incoming payload and ignore a version that is not newer
+         than the currently rendered version.
+   - [ ] Invalidate the existing `getGameView` TanStack Query key instead of
+         applying Realtime data directly to the cache.
+   - [ ] Keep `getGameView(sessionToken)` as the only source of the
+         permission-aware Moderator or Player projection.
+   - [ ] Unsubscribe when leaving a room, changing game or unmounting the view.
+
+4. Preserve recovery without Realtime.
+   - [ ] Refetch immediately after the local client completes a mutation.
+   - [ ] Retain fallback polling at 3–5 seconds while waiting for an active step
+         and 10–15 seconds while the game is stable.
+   - [ ] Pause polling for hidden tabs and refetch immediately when a tab becomes
+         visible again.
+   - [ ] On socket reconnect, refetch the current view rather than replaying
+         missed events.
+   - [ ] Continue using stale-version handling and the original idempotency key
+         when a mutation is retried.
+
+5. Verify privacy and multi-device behavior.
+   - [ ] Unit-test payload validation, duplicate/old-version suppression and
+         query invalidation.
+   - [ ] Add multi-context Playwright coverage proving one Moderator mutation
+         refreshes all Player views without manual reload.
+   - [ ] Verify that reconnecting, backgrounding a mobile browser and receiving
+         duplicate or out-of-order events converge on the latest version.
+   - [ ] Verify that Realtime payloads never contain private role/action fields,
+         including Seer, Witch, Lovers, Hybrid Wolf and White Wolf state.
+   - [ ] Simulate Realtime being unavailable and confirm fallback polling still
+         completes a game.
+
+Deferred until playtesting demonstrates a need:
+
+- [ ] Add heartbeat or presence indicators.
+- [ ] Replace the invalidation-only channel with authenticated private channels
+      or minted Realtime JWTs. The initial implementation must not introduce
+      Supabase Auth solely for Realtime.
 
 Exit criteria:
 
 - State changes appear on all connected devices promptly.
 - Reconnect restores current state without replaying a mutation.
 - Realtime payloads contain no role, target or ability information.
+- A Realtime outage degrades to polling without blocking mutations or gameplay.
+- One committed version causes at most one immediate refetch per connected
+  client, excluding the slower fallback poll.
 
 ## Phase 7 - Moderator overrides and history
 
