@@ -6,7 +6,7 @@ import type {
 import type { Player } from '../domain'
 import type { z } from 'zod'
 
-import { isWerewolfRole } from '../domain'
+import { isWerewolfPlayer } from '../domain'
 
 // Resolution được persist trong event payload nên schema runtime là source of truth.
 export type EliminationCause = z.infer<typeof eliminationCauseSchema>
@@ -28,6 +28,7 @@ type NightResolutionInput = {
 export function resolveNight(input: NightResolutionInput): NightResolution {
   const causesByPlayer = new Map<string, EliminationCause[]>()
   const elderSurvivalConsumedPlayerIds: string[] = []
+  const convertedHybridPlayerIds: string[] = []
   let werewolfKilledTarget = false
 
   if (
@@ -42,7 +43,9 @@ export function resolveNight(input: NightResolutionInput): NightResolution {
     const target = input.players.find(
       (player) => player.id === input.werewolfTargetId,
     )
-    if (
+    if (target?.role === 'HYBRID_WOLF' && !target.abilityState.converted) {
+      convertedHybridPlayerIds.push(target.id)
+    } else if (
       target?.role === 'ELDER' &&
       target.abilityState.werewolfAttackSurvivalAvailable
     ) {
@@ -58,7 +61,7 @@ export function resolveNight(input: NightResolutionInput): NightResolution {
   )
   if (
     input.courtesanId &&
-    (isWerewolfRole(courtesanTarget?.role) ||
+    (isWerewolfPlayer(courtesanTarget) ||
       (werewolfKilledTarget &&
         input.werewolfTargetId === input.courtesanTargetId))
   ) {
@@ -88,6 +91,7 @@ export function resolveNight(input: NightResolutionInput): NightResolution {
   return {
     deaths,
     elderSurvivalConsumedPlayerIds,
+    convertedHybridPlayerIds,
     survivors: input.players
       .filter((player) => player.alive && !deadIds.has(player.id))
       .map((player) => player.id),

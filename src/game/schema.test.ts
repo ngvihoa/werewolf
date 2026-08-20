@@ -23,6 +23,7 @@ describe('game domain schemas', () => {
     expect(roleSchema.safeParse('PIPER').success).toBe(true)
     expect(roleSchema.safeParse('CUPID').success).toBe(true)
     expect(roleSchema.safeParse('COURTESAN').success).toBe(true)
+    expect(roleSchema.safeParse('HYBRID_WOLF').success).toBe(true)
     expect(gamePhaseSchema.safeParse('LOBBY').success).toBe(false)
   })
 
@@ -96,6 +97,25 @@ describe('game domain schemas', () => {
       playerSchema.safeParse({
         id: 'elder-1',
         role: 'ELDER',
+        alive: true,
+        abilityState: null,
+      }).success,
+    ).toBe(false)
+  })
+
+  it('requires conversion state for Hybrid Wolf players', () => {
+    expect(
+      playerSchema.safeParse({
+        id: 'hybrid-1',
+        role: 'HYBRID_WOLF',
+        alive: true,
+        abilityState: { converted: false },
+      }).success,
+    ).toBe(true)
+    expect(
+      playerSchema.safeParse({
+        id: 'hybrid-1',
+        role: 'HYBRID_WOLF',
         alive: true,
         abilityState: null,
       }).success,

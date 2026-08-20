@@ -511,7 +511,9 @@ export class PostgresGameStore implements GameStore {
                   ? { enhancedAttackAvailable: true }
                   : role === 'ELDER'
                     ? { werewolfAttackSurvivalAvailable: true }
-                    : null,
+                    : role === 'HYBRID_WOLF'
+                      ? { converted: false }
+                      : null,
             isReady: false,
           })
           .where(

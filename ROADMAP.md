@@ -48,6 +48,7 @@ Goal: encode deterministic game rules independently from UI and persistence.
 - [x] Add the neutral Piper role with one charm per night and a solo victory.
 - [x] Add Cupid, private lovers, heartbreak deaths, and mixed-lover victory.
 - [x] Add Courtesan movement and Werewolf-visit resolution rules.
+- [x] Add Hybrid Wolf conversion and dynamic Village/Werewolf alignment.
 - [x] Add shared Werewolf teammate and target visibility.
 - [x] Add Alpha Werewolf for 13–15 players with one enhanced attack per game.
 - [x] Implement secure role randomization.

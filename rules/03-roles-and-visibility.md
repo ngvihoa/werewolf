@@ -52,6 +52,25 @@ Trạng thái kích hoạt và số lần sử dụng chỉ được hiển th�
 Moderator. Protector, Witch và các player khác không được biết đòn cắn có xuyên
 bảo vệ hay không.
 
+### Hybrid Wolf (Sói Lai)
+
+Sói Lai xuất hiện từ bàn 14 người, bắt đầu thuộc phe Village và có trạng thái
+`converted: false`:
+
+- Nếu đòn cắn bị Protector chặn hoặc Witch cứu, Sói Lai không chuyển hóa.
+- Cắn xuyên bảo vệ bỏ qua Protector và vẫn chuyển hóa Sói Lai; Witch vẫn cứu
+  được và ngăn chuyển hóa.
+- Khi Moderator xác nhận Night Resolution của một đòn cắn có hiệu lực, Sói Lai
+  sống sót, chuyển sang phe Werewolf và tham gia hành động chung từ đêm kế tiếp.
+- Seer thấy `VILLAGE` trước chuyển hóa và `WEREWOLF` sau chuyển hóa.
+- Courtesan chỉ chết khi thăm Sói Lai đã chuyển hóa.
+- Trước chuyển hóa, Sói có thể chọn Sói Lai làm mục tiêu; sau chuyển hóa, Sói
+  Lai là đồng đội và không thể bị đàn Sói chọn cắn.
+- Sói Lai thắng theo phe hiệu lực tại thời điểm game kết thúc.
+
+Chỉ Sói Lai và Moderator thấy trạng thái chuyển hóa. Các player khác không nhận
+event công khai về việc chuyển phe; đàn Sói nhận biết đồng đội mới từ đêm kế tiếp.
+
 ---
 
 ## 3. Seer

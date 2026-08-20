@@ -204,6 +204,68 @@ describe('player projections', () => {
     )
   })
 
+  it('reveals conversion only to Hybrid Wolf and grants wolf controls after conversion', () => {
+    const game = createGame()
+    game.state!.players.push({
+      id: 'hybrid',
+      role: 'HYBRID_WOLF',
+      alive: true,
+      abilityState: { converted: false },
+    })
+    game.lobbyPlayers.push({
+      id: 'hybrid',
+      displayName: 'Hybrid',
+      ready: true,
+      role: 'HYBRID_WOLF',
+    })
+    game.state!.queue = [
+      { step: 'WEREWOLF_ATTACK', status: 'ACTIVE', skipReason: null },
+    ]
+
+    const before = projectGameView(game, {
+      kind: 'PLAYER',
+      playerId: 'hybrid',
+    })
+    if (before?.viewer !== 'PLAYER') return
+    expect(before.me.abilityState).toEqual({ converted: false })
+    expect(before.turn.canAct).toBe(false)
+    expect(before.turn.werewolfTeammates).toEqual([])
+
+    const hybrid = game.state!.players.find(
+      (player) => player.role === 'HYBRID_WOLF',
+    )
+    if (hybrid?.role !== 'HYBRID_WOLF') return
+    hybrid.abilityState.converted = true
+
+    const after = projectGameView(game, {
+      kind: 'PLAYER',
+      playerId: 'hybrid',
+    })
+    const wolfView = projectGameView(game, {
+      kind: 'PLAYER',
+      playerId: 'wolf',
+    })
+    const seerView = projectGameView(game, {
+      kind: 'PLAYER',
+      playerId: 'seer',
+    })
+    if (
+      after?.viewer !== 'PLAYER' ||
+      wolfView?.viewer !== 'PLAYER' ||
+      seerView?.viewer !== 'PLAYER'
+    ) {
+      return
+    }
+    expect(after.turn.canAct).toBe(true)
+    expect(after.turn.werewolfTeammates.map((player) => player.id)).toContain(
+      'wolf',
+    )
+    expect(
+      wolfView.turn.werewolfTeammates.map((player) => player.id),
+    ).toContain('hybrid')
+    expect(JSON.stringify(seerView)).not.toContain('converted')
+  })
+
   it('contains only public player fields and the viewer private state', () => {
     const view = projectGameView(createGame(), {
       kind: 'PLAYER',

@@ -484,6 +484,14 @@ function createDomainPlayer(id: string, role: Role): Player {
       abilityState: { werewolfAttackSurvivalAvailable: true },
     }
   }
+  if (role === 'HYBRID_WOLF') {
+    return {
+      id,
+      role,
+      alive: true,
+      abilityState: { converted: false },
+    }
+  }
   return { id, role, alive: true, abilityState: null }
 }
 

@@ -1,6 +1,6 @@
 import type { Player } from '../domain'
 
-import { getRoleTeam } from '../domain'
+import { isWerewolfPlayer } from '../domain'
 
 export type TeamCount = {
   villagers: number
@@ -22,9 +22,7 @@ export function getWinningTeamFromPlayers(
   players: readonly Player[],
 ): WinningTeam {
   const alivePlayers = players.filter((player) => player.alive)
-  const werewolves = alivePlayers.filter(
-    (player) => getRoleTeam(player.role) === 'WEREWOLF',
-  ).length
+  const werewolves = alivePlayers.filter(isWerewolfPlayer).length
 
   return getWinningTeam({
     werewolves,

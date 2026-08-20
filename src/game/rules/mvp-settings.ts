@@ -94,7 +94,7 @@ export const MVP_ROLE_COMPOSITIONS = {
     'PIPER',
     'CUPID',
     'COURTESAN',
-    'VILLAGER',
+    'HYBRID_WOLF',
   ],
   14: [
     'WEREWOLF',
@@ -126,7 +126,7 @@ export const MVP_ROLE_COMPOSITIONS = {
     'PIPER',
     'CUPID',
     'COURTESAN',
-    'VILLAGER',
+    'HYBRID_WOLF',
     'VILLAGER',
   ],
 } as const satisfies Record<number, readonly Role[]>

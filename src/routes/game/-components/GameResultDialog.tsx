@@ -7,14 +7,17 @@ import { getRoleTeam } from '#/game/domain'
 export function GameResultDialog({
   winner,
   role,
+  hybridConverted,
   isLover,
 }: {
   winner: Winner
   role: Role
+  hybridConverted: boolean
   isLover: boolean
 }) {
   const dialogRef = useRef<HTMLDialogElement>(null)
-  const playerTeam = getRoleTeam(role)
+  const playerTeam =
+    role === 'HYBRID_WOLF' && hybridConverted ? 'WEREWOLF' : getRoleTeam(role)
   const neutralWinner = winner === 'FOOL' || winner === 'PIPER'
   const won = neutralWinner
     ? role === winner
@@ -132,6 +135,8 @@ function roleLabel(role: Role): string {
       return 'Ma sói'
     case 'ALPHA_WEREWOLF':
       return 'Sói Đầu Đàn'
+    case 'HYBRID_WOLF':
+      return 'Sói Lai'
     case 'SEER':
       return 'Tiên tri'
     case 'WITCH':

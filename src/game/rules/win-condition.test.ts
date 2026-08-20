@@ -24,4 +24,35 @@ describe('getWinningTeam', () => {
       ]),
     ).toBe('WEREWOLF')
   })
+
+  it('counts Hybrid Wolf on its current effective team', () => {
+    const village = {
+      id: 'a',
+      role: 'VILLAGER' as const,
+      alive: true,
+      abilityState: null,
+    }
+    expect(
+      getWinningTeamFromPlayers([
+        village,
+        {
+          id: 'hybrid',
+          role: 'HYBRID_WOLF',
+          alive: true,
+          abilityState: { converted: false },
+        },
+      ]),
+    ).toBe('VILLAGE')
+    expect(
+      getWinningTeamFromPlayers([
+        village,
+        {
+          id: 'hybrid',
+          role: 'HYBRID_WOLF',
+          alive: true,
+          abilityState: { converted: true },
+        },
+      ]),
+    ).toBe('WEREWOLF')
+  })
 })

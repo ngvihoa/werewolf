@@ -73,6 +73,9 @@ export function ModeratorGamePanel({
       {state.phase === 'NIGHT_RESOLUTION' ? (
         <ResolutionControl
           deaths={state.pendingNightResolution?.deaths ?? []}
+          convertedHybridPlayerIds={
+            state.pendingNightResolution?.convertedHybridPlayerIds ?? []
+          }
           names={names}
           pending={pending}
           onConfirm={() => onCommand({ type: 'CONFIRM_NIGHT_RESOLUTION' })}

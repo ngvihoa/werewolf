@@ -10,6 +10,7 @@ import type {
   witchResourcesSchema,
   alphaWerewolfResourcesSchema,
   elderResourcesSchema,
+  hybridWolfResourcesSchema,
 } from './schema'
 import type { z } from 'zod'
 
@@ -25,6 +26,7 @@ export type AlphaWerewolfResources = z.infer<
   typeof alphaWerewolfResourcesSchema
 >
 export type ElderResources = z.infer<typeof elderResourcesSchema>
+export type HybridWolfResources = z.infer<typeof hybridWolfResourcesSchema>
 export type Player = z.infer<typeof playerSchema>
 export type DomainErrorCode = z.infer<typeof domainErrorCodeSchema>
 export type DomainError = z.infer<typeof domainErrorSchema>
@@ -40,4 +42,15 @@ export function getRoleTeam(role: Role): Team {
 
 export function isWerewolfRole(role: Role | null | undefined): boolean {
   return role === 'WEREWOLF' || role === 'ALPHA_WEREWOLF'
+}
+
+export function getPlayerTeam(player: Player): Team {
+  if (player.role === 'HYBRID_WOLF') {
+    return player.abilityState.converted ? 'WEREWOLF' : 'VILLAGE'
+  }
+  return getRoleTeam(player.role)
+}
+
+export function isWerewolfPlayer(player: Player | null | undefined): boolean {
+  return player ? getPlayerTeam(player) === 'WEREWOLF' : false
 }

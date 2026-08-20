@@ -2,6 +2,7 @@ import z from 'zod'
 
 import {
   alphaWerewolfResourcesSchema,
+  hybridWolfResourcesSchema,
   elderResourcesSchema,
   witchResourcesSchema,
   gamePhaseSchema,
@@ -48,6 +49,7 @@ export const playerPrivateViewSchema = z.object({
       witchResourcesSchema,
       alphaWerewolfResourcesSchema,
       elderResourcesSchema,
+      hybridWolfResourcesSchema,
     ])
     .nullable(),
 })

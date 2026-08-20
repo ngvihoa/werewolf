@@ -27,6 +27,70 @@ const players: Player[] = [
 ]
 
 describe('night action validation', () => {
+  it('allows only a converted Hybrid Wolf to join the shared attack', () => {
+    const hybridPlayers: Player[] = [
+      {
+        id: 'hybrid',
+        role: 'HYBRID_WOLF',
+        alive: true,
+        abilityState: { converted: false },
+      },
+      { id: 'villager', role: 'VILLAGER', alive: true, abilityState: null },
+    ]
+    const action = {
+      type: 'WEREWOLF_ATTACK' as const,
+      actorId: 'hybrid',
+      targetId: 'villager',
+    }
+
+    expect(
+      validateNightAction(action, {
+        activeStep: 'WEREWOLF_ATTACK',
+        players: hybridPlayers,
+      }),
+    ).toMatchObject({ ok: false, error: { code: 'ROLE_MISMATCH' } })
+
+    hybridPlayers[0] = {
+      id: 'hybrid',
+      role: 'HYBRID_WOLF',
+      alive: true,
+      abilityState: { converted: true },
+    }
+    expect(
+      validateNightAction(action, {
+        activeStep: 'WEREWOLF_ATTACK',
+        players: hybridPlayers,
+      }),
+    ).toEqual({ ok: true, value: action })
+  })
+
+  it('prevents Werewolves from attacking a converted Hybrid teammate', () => {
+    const result = validateNightAction(
+      {
+        type: 'WEREWOLF_ATTACK',
+        actorId: 'wolf',
+        targetId: 'hybrid',
+      },
+      {
+        activeStep: 'WEREWOLF_ATTACK',
+        players: [
+          { id: 'wolf', role: 'WEREWOLF', alive: true, abilityState: null },
+          {
+            id: 'hybrid',
+            role: 'HYBRID_WOLF',
+            alive: true,
+            abilityState: { converted: true },
+          },
+        ],
+      },
+    )
+
+    expect(result).toMatchObject({
+      ok: false,
+      error: { code: 'INVALID_TARGET' },
+    })
+  })
+
   it('prevents Courtesan from visiting the same player consecutively', () => {
     const courtesanPlayers: Player[] = [
       { id: 'courtesan', role: 'COURTESAN', alive: true, abilityState: null },
@@ -316,5 +380,24 @@ describe('night action validation', () => {
     ['VILLAGER', 'VILLAGE'],
   ] as const)('returns team alignment for %s', (role, team) => {
     expect(getSeerResult(role)).toBe(team)
+  })
+
+  it('returns the current Hybrid Wolf alignment for Seer', () => {
+    expect(
+      getSeerResult({
+        id: 'hybrid',
+        role: 'HYBRID_WOLF',
+        alive: true,
+        abilityState: { converted: false },
+      }),
+    ).toBe('VILLAGE')
+    expect(
+      getSeerResult({
+        id: 'hybrid',
+        role: 'HYBRID_WOLF',
+        alive: true,
+        abilityState: { converted: true },
+      }),
+    ).toBe('WEREWOLF')
   })
 })

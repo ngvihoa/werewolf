@@ -10,7 +10,7 @@ import type {
 } from './model'
 import type { LocalGame } from '../store/model'
 
-import { isWerewolfRole } from '../domain'
+import { isWerewolfPlayer } from '../domain'
 import { STEP_ROLE } from '../rules/transitions'
 
 export function projectGameView(
@@ -38,7 +38,7 @@ export function projectGameView(
         )
   const werewolfTargetId =
     (domainPlayer?.role === 'WITCH' && activeStep === 'WITCH_ACTION') ||
-    (domainPlayer && isWerewolfRole(domainPlayer.role))
+    isWerewolfPlayer(domainPlayer)
       ? (visibleWerewolfAction?.targetId ?? null)
       : null
 
@@ -80,7 +80,8 @@ export function projectGameView(
       abilityState:
         domainPlayer?.role === 'WITCH' ||
         domainPlayer?.role === 'ALPHA_WEREWOLF' ||
-        domainPlayer?.role === 'ELDER'
+        domainPlayer?.role === 'ELDER' ||
+        domainPlayer?.role === 'HYBRID_WOLF'
           ? structuredClone(domainPlayer.abilityState)
           : null,
     },
@@ -96,7 +97,7 @@ export function projectGameView(
         (Boolean(domainPlayer?.alive) &&
           activeStep !== null &&
           (activeStep === 'WEREWOLF_ATTACK'
-            ? isWerewolfRole(domainPlayer?.role)
+            ? isWerewolfPlayer(domainPlayer)
             : domainPlayer?.role === STEP_ROLE[activeStep])) ||
         (game.state?.phase === 'HUNTER_SHOT' &&
           domainPlayer?.role === 'HUNTER' &&
@@ -104,32 +105,30 @@ export function projectGameView(
           game.state.pendingHunterShot.targetId === null),
       activeStep,
       werewolfTargetId,
-      werewolfAttackEnhanced:
-        domainPlayer && isWerewolfRole(domainPlayer.role)
-          ? (visibleWerewolfAction?.enhanced ?? false)
-          : null,
+      werewolfAttackEnhanced: isWerewolfPlayer(domainPlayer)
+        ? (visibleWerewolfAction?.enhanced ?? false)
+        : null,
       enhancedAttackAvailable:
         domainPlayer?.role === 'ALPHA_WEREWOLF'
           ? domainPlayer.abilityState.enhancedAttackAvailable
           : null,
-      werewolfTeammates:
-        domainPlayer && isWerewolfRole(domainPlayer.role)
-          ? game
-              .state!.players.filter(
-                (player) =>
-                  isWerewolfRole(player.role) && player.id !== domainPlayer.id,
-              )
-              .map((player) => ({
-                id: player.id,
-                displayName:
-                  game.lobbyPlayers.find((item) => item.id === player.id)
-                    ?.displayName ?? '',
-                ready:
-                  game.lobbyPlayers.find((item) => item.id === player.id)
-                    ?.ready ?? false,
-                alive: player.alive,
-              }))
-          : [],
+      werewolfTeammates: isWerewolfPlayer(domainPlayer)
+        ? game
+            .state!.players.filter(
+              (player) =>
+                isWerewolfPlayer(player) && player.id !== domainPlayer!.id,
+            )
+            .map((player) => ({
+              id: player.id,
+              displayName:
+                game.lobbyPlayers.find((item) => item.id === player.id)
+                  ?.displayName ?? '',
+              ready:
+                game.lobbyPlayers.find((item) => item.id === player.id)
+                  ?.ready ?? false,
+              alive: player.alive,
+            }))
+        : [],
       lastProtectedTargetId:
         domainPlayer?.role === 'PROTECTOR'
           ? (game.state?.lastProtectedTargetId ?? null)

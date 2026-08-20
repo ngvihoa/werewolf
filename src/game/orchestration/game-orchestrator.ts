@@ -8,7 +8,7 @@ import { getSeerResult, validateNightAction } from '../rules/night-actions'
 import { getWinningTeamFromPlayers } from '../rules/win-condition'
 import { resolveNight, resolveVote } from '../rules/resolution'
 import { getNightQueue, STEP_ROLE } from '../rules/transitions'
-import { isWerewolfRole } from '../domain'
+import { isWerewolfPlayer } from '../domain'
 
 export type CommandOutcome = {
   state: GameState
@@ -132,7 +132,7 @@ function confirmStep(
         type: 'SEER_RESULT_RECORDED',
         seerPlayerId: action.actorId,
         targetPlayerId: action.targetId,
-        result: getSeerResult(target.role),
+        result: getSeerResult(target),
       })
     }
   }
@@ -242,6 +242,12 @@ function confirmNightResolution(
     if (elder?.role === 'ELDER') {
       elder.abilityState.werewolfAttackSurvivalAvailable = false
     }
+  }
+
+  for (const playerId of state.pendingNightResolution
+    .convertedHybridPlayerIds) {
+    const hybrid = state.players.find((player) => player.id === playerId)
+    if (hybrid?.role === 'HYBRID_WOLF') hybrid.abilityState.converted = true
   }
 
   applyDeaths(state, state.pendingNightResolution.deaths, events)
@@ -546,7 +552,7 @@ function hasLoversWon(state: GameState): boolean {
   )
   if (lovers.some((player) => !player?.alive)) return false
   const mixedAlignment =
-    isWerewolfRole(lovers[0]?.role) !== isWerewolfRole(lovers[1]?.role)
+    isWerewolfPlayer(lovers[0]) !== isWerewolfPlayer(lovers[1])
   return (
     mixedAlignment &&
     state.players.filter((player) => player.alive).length === 2
@@ -575,7 +581,7 @@ function activateNextRunnableStep(
       (player) =>
         player.alive &&
         (item.step === 'WEREWOLF_ATTACK'
-          ? isWerewolfRole(player.role)
+          ? isWerewolfPlayer(player)
           : player.role === STEP_ROLE[item.step]),
     )
     if (!ownerAlive) {

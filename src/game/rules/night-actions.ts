@@ -2,7 +2,7 @@ import type { Player, QueueStep, Result, Role, Team } from '../domain'
 import type { nightActionSchema } from './schema'
 import type { z } from 'zod'
 
-import { getRoleTeam, isWerewolfRole } from '../domain'
+import { getPlayerTeam, getRoleTeam, isWerewolfPlayer } from '../domain'
 
 import { STEP_ROLE } from './transitions'
 
@@ -58,7 +58,7 @@ export function validateNightAction(
   if (!actor.alive) return failure('ACTOR_DEAD', 'Dead players cannot act')
   const actorCanPerformStep =
     context.activeStep === 'WEREWOLF_ATTACK'
-      ? isWerewolfRole(actor.role)
+      ? isWerewolfPlayer(actor)
       : actor.role === STEP_ROLE[context.activeStep]
   if (!actorCanPerformStep) {
     return failure('ROLE_MISMATCH', 'Actor role cannot perform this action')
@@ -123,7 +123,7 @@ export function validateNightAction(
     return failure('INVALID_TARGET', 'Target must be another living player')
   }
   if (action.type === 'WEREWOLF_ATTACK') {
-    if (isWerewolfRole(target.role)) {
+    if (isWerewolfPlayer(target)) {
       return failure('INVALID_TARGET', 'Werewolves cannot attack a teammate')
     }
     if (action.enhanced) {
@@ -182,6 +182,8 @@ function validateWitchAction(
   return { ok: true, value: action }
 }
 
-export function getSeerResult(targetRole: Role): Team {
-  return getRoleTeam(targetRole)
+export function getSeerResult(target: Player | Role): Team {
+  return typeof target === 'string'
+    ? getRoleTeam(target)
+    : getPlayerTeam(target)
 }

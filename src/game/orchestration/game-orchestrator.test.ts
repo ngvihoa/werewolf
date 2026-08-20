@@ -166,6 +166,7 @@ describe('night orchestration', () => {
       deaths: [],
       survivors: state.players.map((player) => player.id),
       elderSurvivalConsumedPlayerIds: ['elder'],
+      convertedHybridPlayerIds: [],
     }
 
     expect(elder.abilityState.werewolfAttackSurvivalAvailable).toBe(true)
@@ -177,6 +178,31 @@ describe('night orchestration', () => {
       werewolfAttackSurvivalAvailable: false,
     })
     expect(confirmedElder?.alive).toBe(true)
+  })
+
+  it('converts the Hybrid Wolf only when Moderator confirms the resolution', () => {
+    const hybrid: Player = {
+      id: 'hybrid',
+      role: 'HYBRID_WOLF',
+      alive: true,
+      abilityState: { converted: false },
+    }
+    const state = createFirstNightState([...fivePlayers, hybrid])
+    state.phase = 'NIGHT_RESOLUTION'
+    state.pendingNightResolution = {
+      deaths: [],
+      survivors: state.players.map((player) => player.id),
+      elderSurvivalConsumedPlayerIds: [],
+      convertedHybridPlayerIds: ['hybrid'],
+    }
+
+    expect(hybrid.abilityState.converted).toBe(false)
+    const confirmed = run(state, { type: 'CONFIRM_NIGHT_RESOLUTION' })
+    const confirmedHybrid = confirmed.state.players.find(
+      (player) => player.id === 'hybrid',
+    )
+    expect(confirmedHybrid?.abilityState).toEqual({ converted: true })
+    expect(confirmedHybrid?.alive).toBe(true)
   })
 
   it('awards Piper a solo victory after night deaths leave every survivor charmed', () => {
@@ -195,6 +221,7 @@ describe('night orchestration', () => {
       deaths: [{ playerId: 'a', causes: ['WEREWOLF_ATTACK'] }],
       survivors: ['piper', 'wolf'],
       elderSurvivalConsumedPlayerIds: [],
+      convertedHybridPlayerIds: [],
     }
 
     const outcome = run(state, { type: 'CONFIRM_NIGHT_RESOLUTION' })
@@ -219,6 +246,7 @@ describe('night orchestration', () => {
       deaths: [{ playerId: 'piper', causes: ['WEREWOLF_ATTACK'] }],
       survivors: ['wolf'],
       elderSurvivalConsumedPlayerIds: [],
+      convertedHybridPlayerIds: [],
     }
 
     const outcome = run(state, { type: 'CONFIRM_NIGHT_RESOLUTION' })

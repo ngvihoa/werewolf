@@ -146,7 +146,90 @@ describe('night resolution', () => {
       deaths: [],
       survivors: ['a', 'b', 'wolf'],
       elderSurvivalConsumedPlayerIds: [],
+      convertedHybridPlayerIds: [],
     })
+  })
+
+  it('converts an unprotected and unhealed Hybrid Wolf instead of killing them', () => {
+    const hybrid: Player = {
+      id: 'hybrid',
+      role: 'HYBRID_WOLF',
+      alive: true,
+      abilityState: { converted: false },
+    }
+    const result = resolveNight({
+      players: [...players, hybrid],
+      werewolfTargetId: 'hybrid',
+      witchHealed: false,
+      witchPoisonTargetId: null,
+    })
+
+    expect(result.deaths).toEqual([])
+    expect(result.convertedHybridPlayerIds).toEqual(['hybrid'])
+  })
+
+  it('does not convert a Hybrid Wolf when healing or protection prevents the attack', () => {
+    const hybrid: Player = {
+      id: 'hybrid',
+      role: 'HYBRID_WOLF',
+      alive: true,
+      abilityState: { converted: false },
+    }
+    for (const prevention of [
+      { witchHealed: true },
+      { witchHealed: false, protectedTargetId: 'hybrid' },
+    ]) {
+      expect(
+        resolveNight({
+          players: [...players, hybrid],
+          werewolfTargetId: 'hybrid',
+          witchPoisonTargetId: null,
+          ...prevention,
+        }).convertedHybridPlayerIds,
+      ).toEqual([])
+    }
+  })
+
+  it('converts a protected Hybrid Wolf after an enhanced attack', () => {
+    const hybrid: Player = {
+      id: 'hybrid',
+      role: 'HYBRID_WOLF',
+      alive: true,
+      abilityState: { converted: false },
+    }
+    expect(
+      resolveNight({
+        players: [...players, hybrid],
+        werewolfTargetId: 'hybrid',
+        werewolfAttackEnhanced: true,
+        protectedTargetId: 'hybrid',
+        witchHealed: false,
+        witchPoisonTargetId: null,
+      }).convertedHybridPlayerIds,
+    ).toEqual(['hybrid'])
+  })
+
+  it('kills Courtesan only when visiting an already converted Hybrid Wolf', () => {
+    const hybrid: Player = {
+      id: 'hybrid',
+      role: 'HYBRID_WOLF',
+      alive: true,
+      abilityState: { converted: false },
+    }
+    const input = {
+      players: [...players, hybrid],
+      werewolfTargetId: null,
+      witchHealed: false,
+      witchPoisonTargetId: null,
+      courtesanId: 'courtesan',
+      courtesanTargetId: 'hybrid',
+    }
+
+    expect(resolveNight(input).deaths).toEqual([])
+    hybrid.abilityState.converted = true
+    expect(resolveNight(input).deaths).toEqual([
+      { playerId: 'courtesan', causes: ['COURTESAN_VISIT'] },
+    ])
   })
 
   it('lets the Elder survive only the first unprevented Werewolf attack', () => {

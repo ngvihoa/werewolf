@@ -56,6 +56,9 @@ Từ 12 người chơi trở lên, composition thay thêm một Villager bằng 
 `CUPID_LINK` chỉ xuất hiện trong đêm đầu tiên.
 Từ 13 người chơi trở lên, composition thay thêm một Villager bằng Courtesan và
 thêm `COURTESAN_VISIT` trước `WEREWOLF_ATTACK`.
+Từ 14 người chơi trở lên, composition thay thêm một Villager bằng Hybrid Wolf.
+Vai này không thêm queue step: bắt đầu thuộc phe Village và chuyển sang phe
+Werewolf khi sống sót qua một đòn cắn thực sự có hiệu lực.
 
 Mục tiêu của MVP là kiểm tra toàn bộ flow và state management trước khi tối ưu balance.
 

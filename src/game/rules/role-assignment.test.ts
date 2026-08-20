@@ -34,6 +34,17 @@ describe('role composition', () => {
     },
   )
 
+  it.each([14, 15])('adds exactly one Hybrid Wolf for %i players', (count) => {
+    const result = getRoleComposition(count)
+    expect(result.ok).toBe(true)
+    if (result.ok) {
+      expect(
+        result.value.filter((role) => role === 'HYBRID_WOLF'),
+      ).toHaveLength(1)
+      expect(result.value).toHaveLength(count)
+    }
+  })
+
   it('adds one Hunter from eight players onward', () => {
     const result = getRoleComposition(8)
     expect(result.ok).toBe(true)

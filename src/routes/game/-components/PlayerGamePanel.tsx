@@ -56,6 +56,15 @@ export function PlayerGamePanel({
       </div>
 
       {view.me.role ? <RoleCard role={view.me.role} /> : null}
+      {view.me.role === 'HYBRID_WOLF' &&
+      view.me.abilityState !== null &&
+      'converted' in view.me.abilityState &&
+      view.me.abilityState.converted ? (
+        <p className="rounded-xl bg-red-500/10 px-4 py-3 text-sm/6 text-red-200 ring-1 ring-red-400/20">
+          Bạn đã bị cắn và chuyển sang phe Ma sói. Từ đêm tiếp theo, bạn hành
+          động cùng đàn Sói.
+        </p>
+      ) : null}
       {view.isCharmed ? (
         <p className="rounded-xl bg-violet-400/10 px-4 py-3 text-sm/6 text-violet-200 ring-1 ring-violet-300/20">
           Bạn đã bị Người thổi sáo mê hoặc.
@@ -174,6 +183,12 @@ export function PlayerGamePanel({
         <GameResultDialog
           winner={view.winner}
           role={view.me.role}
+          hybridConverted={
+            view.me.role === 'HYBRID_WOLF' &&
+            view.me.abilityState !== null &&
+            'converted' in view.me.abilityState &&
+            view.me.abilityState.converted
+          }
           isLover={view.lover !== null}
         />
       ) : null}
