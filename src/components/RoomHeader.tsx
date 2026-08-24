@@ -10,7 +10,7 @@ export function RoomHeader({
   onLeave: () => void
 }) {
   return (
-    <header className="flex items-center justify-between gap-4 border-b border-white/10 pb-5">
+    <header className="flex items-center justify-between gap-4 border-b border-white/15 pb-5">
       <div className="flex min-w-0 items-center gap-3">
         <span className="size-2 shrink-0 rounded-full bg-red-500 shadow-[0_0_24px_var(--color-red-500)]" />
         <p className="truncate font-mono text-sm tracking-wide text-stone-400 uppercase">

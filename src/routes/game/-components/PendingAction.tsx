@@ -19,7 +19,7 @@ export function PendingAction({
 }) {
   const [reason, setReason] = useState('')
   return (
-    <div className="flex flex-col gap-5 rounded-lg bg-white/5 p-5 ring-1 ring-white/10">
+    <div className="flex flex-col gap-5 rounded-xl bg-white/8 p-5 ring-1 ring-white/15 shadow-lg shadow-black/10">
       <div className="flex flex-col gap-2">
         <p className="font-mono text-sm tracking-wide text-red-300 uppercase">
           Chờ xác nhận
@@ -35,7 +35,7 @@ export function PendingAction({
       >
         Xác nhận hành động
       </CommandButton>
-      <div className="flex flex-col gap-3 border-t border-white/10 pt-4">
+      <div className="flex flex-col gap-3 border-t border-white/15 pt-4">
         <label
           className="text-base/7 text-stone-400 sm:text-sm/6"
           htmlFor="reject-reason"
@@ -43,7 +43,7 @@ export function PendingAction({
           Lý do từ chối
         </label>
         <input
-          className="rounded-md bg-stone-950 px-3 py-2.5 text-base text-stone-100 ring-1 ring-white/10 placeholder:text-stone-600 focus-visible:-outline-offset-1 focus-visible:outline-2 focus-visible:outline-red-500 sm:py-2 sm:text-sm"
+          className="rounded-md bg-stone-900 px-3 py-2.5 text-base text-stone-50 ring-1 ring-white/15 placeholder:text-stone-500 focus-visible:-outline-offset-1 focus-visible:outline-2 focus-visible:outline-red-500 sm:py-2 sm:text-sm"
           id="reject-reason"
           name="reason"
           placeholder="Ví dụ: chọn sai người"

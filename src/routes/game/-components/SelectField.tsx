@@ -26,7 +26,7 @@ export function SelectField({
       </label>
       <div className="inline-grid grid-cols-[1fr_--spacing(8)]">
         <select
-          className="col-span-full row-start-1 appearance-none rounded-md bg-stone-950 px-3 py-2.5 pr-8 text-base text-stone-100 ring-1 ring-white/10 focus-visible:-outline-offset-1 focus-visible:outline-2 focus-visible:outline-red-500 disabled:opacity-40 sm:py-2 sm:text-sm"
+          className="col-span-full row-start-1 appearance-none rounded-md bg-stone-900 px-3 py-2.5 pr-8 text-base text-stone-50 ring-1 ring-white/15 focus-visible:-outline-offset-1 focus-visible:outline-2 focus-visible:outline-red-500 disabled:opacity-40 sm:py-2 sm:text-sm"
           id={id}
           name={name}
           value={value}

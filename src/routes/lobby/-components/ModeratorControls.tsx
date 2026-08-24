@@ -116,7 +116,7 @@ export function ModeratorControls({
       </fieldset>
 
       {mode === 'CUSTOM' ? (
-        <div className="flex flex-col gap-3 border-t border-white/10 pt-5">
+        <div className="flex flex-col gap-3 border-t border-white/15 pt-5">
           <div className="flex items-center justify-between gap-4">
             <p className="text-sm font-medium text-stone-200">Danh sách vai</p>
             <p
@@ -133,7 +133,7 @@ export function ModeratorControls({
             {ROLE_VALUES.map((role) => {
               return (
                 <label
-                  className="flex items-center justify-between gap-3 rounded-md bg-white/[0.03] px-3 py-2 text-sm text-stone-300 ring-1 ring-white/10"
+                  className="flex items-center justify-between gap-3 rounded-md bg-white/[0.07] px-3 py-2 text-sm text-stone-200 ring-1 ring-white/15"
                   key={role}
                 >
                   <span>{roleLabel(role)}</span>
@@ -158,7 +158,7 @@ export function ModeratorControls({
 
       <div className="flex flex-col gap-3">
         <button
-          className="rounded-md bg-white/5 px-3 py-2 text-sm font-medium text-stone-200 ring-1 ring-white/10 transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500"
+          className="rounded-md bg-white/8 px-3 py-2 text-sm font-medium text-stone-100 ring-1 ring-white/15 transition-colors hover:bg-white/12 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500"
           type="button"
           disabled={invalidSelection || assigning || starting}
           onClick={() => onAssign(composition)}

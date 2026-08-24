@@ -139,7 +139,7 @@ export function GameHistorySheet({
 
       <dialog
         aria-labelledby="game-history-title"
-        className="fixed inset-y-0 right-0 left-auto m-0 h-dvh w-full max-w-md overflow-hidden bg-stone-950 p-0 text-stone-100 shadow-2xl backdrop:bg-black/70 open:flex open:flex-col"
+        className="fixed inset-y-0 right-0 left-auto m-0 h-dvh w-full max-w-md overflow-hidden bg-stone-900 p-0 text-stone-100 shadow-2xl ring-1 ring-white/15 backdrop:bg-black/60 open:flex open:flex-col"
         ref={dialogRef}
         onClick={(event) => {
           if (event.target === event.currentTarget) event.currentTarget.close()

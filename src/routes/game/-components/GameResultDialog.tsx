@@ -49,18 +49,18 @@ export function GameResultDialog({
         ? 'Người thổi sáo'
         : winner === 'WHITE_WOLF'
           ? 'Sói Trắng'
-        : winner === 'LOVERS'
-          ? 'Cặp tình nhân'
-          : winner === 'WEREWOLF'
-            ? 'Phe Ma sói'
-            : 'Phe Dân làng'
+          : winner === 'LOVERS'
+            ? 'Cặp tình nhân'
+            : winner === 'WEREWOLF'
+              ? 'Phe Ma sói'
+              : 'Phe Dân làng'
 
   return (
     <dialog
       ref={dialogRef}
       aria-labelledby="game-result-title"
       aria-describedby="game-result-description"
-      className="m-auto w-[calc(100%-2.5rem)] max-w-md overflow-hidden rounded-3xl bg-stone-950 p-0 text-stone-50 shadow-2xl ring-1 ring-white/15 backdrop:bg-stone-950/85 backdrop:backdrop-blur-sm"
+      className="m-auto w-[calc(100%-2.5rem)] max-w-md overflow-hidden rounded-3xl bg-stone-900 p-0 text-stone-50 shadow-2xl ring-1 ring-white/20 backdrop:bg-stone-950/80 backdrop:backdrop-blur-sm"
     >
       <div
         className={`h-1.5 w-full ${won ? 'bg-emerald-400' : 'bg-red-500'}`}
@@ -109,7 +109,7 @@ export function GameResultDialog({
           </p>
         </div>
 
-        <div className="flex w-full items-center gap-3 rounded-2xl bg-white/5 p-4 text-left ring-1 ring-white/10">
+        <div className="flex w-full items-center gap-3 rounded-2xl bg-white/8 p-4 text-left ring-1 ring-white/15">
           <ShieldCheck
             className="size-6 shrink-0 text-stone-300 sm:size-5"
             aria-hidden="true"

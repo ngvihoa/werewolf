@@ -31,7 +31,7 @@ export function StatusBadge({
             ? 'bg-red-500/15 text-red-200 ring-red-400/30'
             : ready && assigned
               ? 'bg-emerald-400/10 text-emerald-300 ring-emerald-400/20'
-              : 'bg-white/5 text-stone-400 ring-white/10'
+              : 'bg-white/8 text-stone-300 ring-white/15'
       }`}
     >
       {label}

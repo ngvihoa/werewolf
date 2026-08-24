@@ -29,7 +29,7 @@ export function PlayerList({
 }) {
   return (
     <div className="flex flex-col">
-      <div className="flex items-center justify-between border-b border-white/10 pb-3">
+      <div className="flex items-center justify-between border-b border-white/15 pb-3">
         <h2 className="text-xl font-medium text-stone-100">Người chơi</h2>
         <p className="font-mono text-sm tabular-nums text-stone-500">
           {players.length} / 15
@@ -46,7 +46,7 @@ export function PlayerList({
                 className={`grid min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-xl border px-3 py-3 transition-colors sm:gap-4 sm:py-4 ${
                   active
                     ? 'border-red-400/25 bg-red-500/10'
-                    : 'border-white/10 bg-white/[0.02]'
+                    : 'border-white/15 bg-white/[0.055]'
                 }`}
                 key={player.id}
               >
@@ -54,7 +54,7 @@ export function PlayerList({
                   className={`grid size-10 place-items-center overflow-hidden rounded-full font-mono text-sm ring-1 ${
                     active
                       ? 'bg-red-500/15 text-red-200 ring-red-400/40'
-                      : 'bg-white/5 text-stone-400 ring-white/10'
+                      : 'bg-white/8 text-stone-300 ring-white/15'
                   }`}
                 >
                   {isModerator && player.role ? (

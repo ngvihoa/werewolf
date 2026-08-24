@@ -19,7 +19,7 @@ export function ResolutionControl({
 }) {
   return (
     <div className="flex flex-col gap-5">
-      <div className="rounded-lg bg-white/5 p-5 ring-1 ring-white/10">
+      <div className="rounded-xl bg-white/8 p-5 ring-1 ring-white/15 shadow-lg shadow-black/10">
         <p className="font-mono text-sm tracking-wide text-stone-500 uppercase">
           Kết quả dự kiến
         </p>

@@ -58,7 +58,7 @@ export function RoomSummary({
                   ? 'Đã sao chép mã phòng'
                   : 'Sao chép mã phòng'
               }
-              className="grid size-10 shrink-0 place-items-center rounded-full text-stone-400 ring-1 ring-white/10 transition-colors hover:bg-white/5 hover:text-stone-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500"
+              className="grid size-10 shrink-0 place-items-center rounded-full text-stone-300 ring-1 ring-white/15 transition-colors hover:bg-white/10 hover:text-stone-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500"
               title={
                 copyStatus === 'COPIED'
                   ? 'Đã sao chép'

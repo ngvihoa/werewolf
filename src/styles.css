@@ -1,5 +1,184 @@
 @import 'tailwindcss';
 
+:root,
+html[data-theme='occult-parchment'] {
+  color-scheme: light;
+  --theme-canvas-start: #ded4c3;
+  --theme-canvas-middle: #d4c8b5;
+  --theme-canvas-end: #c8baa5;
+  --theme-glow-primary: 255 248 232;
+  --theme-glow-secondary: 142 52 65;
+  --theme-text: #302724;
+  --theme-switcher-bg: rgb(247 239 225 / 0.88);
+  --theme-switcher-text: #493a35;
+  --theme-switcher-border: rgb(73 55 46 / 0.2);
+
+  --color-stone-50: #fbf7f0;
+  --color-stone-100: #eee5d7;
+  --color-stone-200: #dfd3c1;
+  --color-stone-300: #c9baa6;
+  --color-stone-400: #aa9989;
+  --color-stone-500: #8b796f;
+  --color-stone-600: #6f5f58;
+  --color-stone-700: #594b46;
+  --color-stone-800: #493d38;
+  --color-stone-900: #392f2c;
+  --color-stone-950: #2b2422;
+
+  --color-red-100: #f8e8e8;
+  --color-red-200: #efcdcf;
+  --color-red-300: #dda5aa;
+  --color-red-400: #c87680;
+  --color-red-500: #ad5260;
+  --color-red-600: #973e4d;
+  --color-red-700: #8e3441;
+  --color-red-800: #702b36;
+  --color-red-900: #59252d;
+  --color-red-950: #351318;
+}
+
+html[data-theme='moonlit-lodge'] {
+  color-scheme: dark;
+  --theme-canvas-start: #1d1920;
+  --theme-canvas-middle: #181519;
+  --theme-canvas-end: #141216;
+  --theme-glow-primary: 132 108 151;
+  --theme-glow-secondary: 168 59 72;
+  --theme-text: #fffaf3;
+  --theme-switcher-bg: rgb(41 36 43 / 0.88);
+  --theme-switcher-text: #eee7df;
+  --theme-switcher-border: rgb(255 255 255 / 0.15);
+
+  --color-stone-50: #fffaf3;
+  --color-stone-100: #f7f2eb;
+  --color-stone-200: #eee7df;
+  --color-stone-300: #ded5cf;
+  --color-stone-400: #c2b9b7;
+  --color-stone-500: #a1989d;
+  --color-stone-600: #756a72;
+  --color-stone-700: #504651;
+  --color-stone-800: #373039;
+  --color-stone-900: #29242b;
+  --color-stone-950: #201c22;
+
+  --color-red-100: #fce8e8;
+  --color-red-200: #f9d4d5;
+  --color-red-300: #f3b5b8;
+  --color-red-400: #ed8c92;
+  --color-red-500: #df6670;
+  --color-red-600: #c64d58;
+  --color-red-700: #a83b48;
+  --color-red-800: #852936;
+  --color-red-900: #641f29;
+  --color-red-950: #4b1820;
+}
+
+html[data-theme='moonlit-indigo'] {
+  color-scheme: dark;
+  --theme-canvas-start: #343251;
+  --theme-canvas-middle: #292842;
+  --theme-canvas-end: #222137;
+  --theme-glow-primary: 121 112 170;
+  --theme-glow-secondary: 217 93 105;
+  --theme-text: #faf4ea;
+  --theme-switcher-bg: rgb(56 54 83 / 0.9);
+  --theme-switcher-text: #eeeafa;
+  --theme-switcher-border: rgb(255 255 255 / 0.17);
+
+  --color-stone-50: #faf4ea;
+  --color-stone-100: #eeeafa;
+  --color-stone-200: #ded8ee;
+  --color-stone-300: #c8c1db;
+  --color-stone-400: #aaa4c1;
+  --color-stone-500: #8d87a3;
+  --color-stone-600: #6f6985;
+  --color-stone-700: #54506c;
+  --color-stone-800: #484563;
+  --color-stone-900: #383653;
+  --color-stone-950: #292842;
+
+  --color-red-100: #fae8e9;
+  --color-red-200: #f4ced1;
+  --color-red-300: #eaa9af;
+  --color-red-400: #df7b84;
+  --color-red-500: #d95d69;
+  --color-red-600: #c64755;
+  --color-red-700: #a83745;
+  --color-red-800: #862f3a;
+  --color-red-900: #6f2b34;
+  --color-red-950: #3d141b;
+}
+
+html[data-theme='misty-forest'] {
+  color-scheme: dark;
+  --theme-canvas-start: #355048;
+  --theme-canvas-middle: #263a36;
+  --theme-canvas-end: #1f302d;
+  --theme-glow-primary: 119 158 139;
+  --theme-glow-secondary: 212 168 95;
+  --theme-text: #f7f5ec;
+  --theme-switcher-bg: rgb(53 74 68 / 0.9);
+  --theme-switcher-text: #edf3e9;
+  --theme-switcher-border: rgb(255 255 255 / 0.16);
+
+  --color-stone-50: #f7f5ec;
+  --color-stone-100: #edf3e9;
+  --color-stone-200: #dce7d7;
+  --color-stone-300: #c3d3bd;
+  --color-stone-400: #9fb49f;
+  --color-stone-500: #809783;
+  --color-stone-600: #617769;
+  --color-stone-700: #4b6056;
+  --color-stone-800: #40554e;
+  --color-stone-900: #354a44;
+  --color-stone-950: #263a36;
+
+  --color-red-300: #e8c38a;
+  --color-red-400: #deb06a;
+  --color-red-500: #d4a85f;
+  --color-red-600: #ba8845;
+  --color-red-700: #966a36;
+  --color-red-800: #75522e;
+  --color-red-900: #5f4328;
+  --color-red-950: #352316;
+}
+
+html[data-theme='burgundy-dusk'] {
+  color-scheme: dark;
+  --theme-canvas-start: #603646;
+  --theme-canvas-middle: #4a2935;
+  --theme-canvas-end: #3b222c;
+  --theme-glow-primary: 189 111 130;
+  --theme-glow-secondary: 224 160 166;
+  --theme-text: #fff5f0;
+  --theme-switcher-bg: rgb(93 55 67 / 0.9);
+  --theme-switcher-text: #f5e7e7;
+  --theme-switcher-border: rgb(255 255 255 / 0.17);
+
+  --color-stone-50: #fff5f0;
+  --color-stone-100: #f5e7e7;
+  --color-stone-200: #ead4d7;
+  --color-stone-300: #d9b9c0;
+  --color-stone-400: #bf98a3;
+  --color-stone-500: #a57986;
+  --color-stone-600: #865d69;
+  --color-stone-700: #6d4855;
+  --color-stone-800: #67414e;
+  --color-stone-900: #5d3743;
+  --color-stone-950: #432630;
+
+  --color-red-100: #fcebed;
+  --color-red-200: #f7d7da;
+  --color-red-300: #ecb6bc;
+  --color-red-400: #e0a0a6;
+  --color-red-500: #d77f89;
+  --color-red-600: #c65f6d;
+  --color-red-700: #a84858;
+  --color-red-800: #873746;
+  --color-red-900: #702f3b;
+  --color-red-950: #40171f;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -13,8 +192,90 @@ body,
 body {
   margin: 0;
   background:
-    radial-gradient(circle at 80% 10%, rgb(69 10 10 / 0.35), transparent 32rem),
-    #0c0a09;
-  color: #fafaf9;
+    radial-gradient(
+      circle at 12% -5%,
+      rgb(var(--theme-glow-primary) / 0.24),
+      transparent 34rem
+    ),
+    radial-gradient(
+      circle at 88% 8%,
+      rgb(var(--theme-glow-secondary) / 0.2),
+      transparent 30rem
+    ),
+    linear-gradient(
+      180deg,
+      var(--theme-canvas-start) 0%,
+      var(--theme-canvas-middle) 58%,
+      var(--theme-canvas-end) 100%
+    );
+  background-attachment: fixed;
+  color: var(--theme-text);
   font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  transition:
+    color 180ms ease,
+    background-color 180ms ease;
+}
+
+.theme-switcher {
+  border: 1px solid var(--theme-switcher-border);
+  background: var(--theme-switcher-bg);
+  color: var(--theme-switcher-text);
+}
+
+.theme-switcher option {
+  background: var(--theme-canvas-middle);
+  color: var(--theme-text);
+}
+
+/* Parchment is a true light theme; existing utility classes were authored for
+   dark canvases, so their foreground/surface roles need an explicit inversion. */
+html[data-theme='occult-parchment'] .text-stone-50,
+html[data-theme='occult-parchment'] .text-stone-100,
+html[data-theme='occult-parchment'] .text-stone-200 {
+  color: #302724;
+}
+
+html[data-theme='occult-parchment'] .text-stone-300 {
+  color: #493d38;
+}
+
+html[data-theme='occult-parchment'] .text-stone-400 {
+  color: #6f5f58;
+}
+
+html[data-theme='occult-parchment'] .text-stone-500,
+html[data-theme='occult-parchment'] .text-stone-600 {
+  color: #85736a;
+}
+
+html[data-theme='occult-parchment'] .bg-stone-950 {
+  background-color: #e5dac8;
+}
+
+html[data-theme='occult-parchment'] .bg-stone-900 {
+  background-color: #eee5d7;
+}
+
+html[data-theme='occult-parchment'] [class*='bg-white/'] {
+  background-color: rgb(73 55 46 / 0.075);
+}
+
+html[data-theme='occult-parchment'] [class*='border-white/'] {
+  border-color: rgb(73 55 46 / 0.2);
+}
+
+html[data-theme='occult-parchment'] [class*='ring-white/'] {
+  --tw-ring-color: rgb(73 55 46 / 0.2);
+}
+
+html[data-theme='occult-parchment']
+  [class*='divide-white/']
+  > :not(:last-child) {
+  border-color: rgb(73 55 46 / 0.18);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body {
+    transition: none;
+  }
 }
