@@ -1,7 +1,6 @@
 export const THEME_STORAGE_KEY = 'werewolf.theme.v1'
 
 export const THEMES = [
-  { value: 'occult-parchment', label: 'Occult Parchment' },
   { value: 'moonlit-indigo', label: 'Moonlit Indigo' },
   { value: 'misty-forest', label: 'Misty Forest' },
   { value: 'burgundy-dusk', label: 'Burgundy Dusk' },
@@ -10,7 +9,7 @@ export const THEMES = [
 
 export type ThemeName = (typeof THEMES)[number]['value']
 
-export const DEFAULT_THEME: ThemeName = 'occult-parchment'
+export const DEFAULT_THEME: ThemeName = 'moonlit-indigo'
 
 const THEME_VALUES = new Set<string>(THEMES.map((theme) => theme.value))
 
