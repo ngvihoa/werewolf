@@ -9,7 +9,7 @@ export function NotFound() {
           Đường dẫn này không tồn tại
         </h1>
         <a className="text-sm text-stone-400 underline" href="/">
-          Trở về sảnh
+          Trở về trang chủ
         </a>
       </div>
     </main>
