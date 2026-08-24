@@ -50,7 +50,8 @@ export function RoomSummary({
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-2">
             <h1 className="text-balance text-4xl font-medium tracking-tight text-stone-50 sm:text-5xl">
-              Phòng <span className="font-mono text-red-200">{roomCode}</span>
+              Phòng{' '}
+              <span className="theme-room-code font-mono">{roomCode}</span>
             </h1>
             <button
               aria-label={

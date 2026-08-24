@@ -9,6 +9,7 @@ html[data-theme='occult-parchment'] {
   --theme-glow-primary: 255 248 232;
   --theme-glow-secondary: 142 52 65;
   --theme-text: #302724;
+  --theme-room-code: #8e3441;
   --theme-switcher-bg: rgb(247 239 225 / 0.88);
   --theme-switcher-text: #493a35;
   --theme-switcher-border: rgb(73 55 46 / 0.2);
@@ -45,6 +46,7 @@ html[data-theme='moonlit-lodge'] {
   --theme-glow-primary: 132 108 151;
   --theme-glow-secondary: 168 59 72;
   --theme-text: #fffaf3;
+  --theme-room-code: #f9d4d5;
   --theme-switcher-bg: rgb(41 36 43 / 0.88);
   --theme-switcher-text: #eee7df;
   --theme-switcher-border: rgb(255 255 255 / 0.15);
@@ -81,6 +83,7 @@ html[data-theme='moonlit-indigo'] {
   --theme-glow-primary: 121 112 170;
   --theme-glow-secondary: 217 93 105;
   --theme-text: #faf4ea;
+  --theme-room-code: #c8bfff;
   --theme-switcher-bg: rgb(56 54 83 / 0.9);
   --theme-switcher-text: #eeeafa;
   --theme-switcher-border: rgb(255 255 255 / 0.17);
@@ -117,6 +120,7 @@ html[data-theme='misty-forest'] {
   --theme-glow-primary: 119 158 139;
   --theme-glow-secondary: 212 168 95;
   --theme-text: #f7f5ec;
+  --theme-room-code: #e6bd75;
   --theme-switcher-bg: rgb(53 74 68 / 0.9);
   --theme-switcher-text: #edf3e9;
   --theme-switcher-border: rgb(255 255 255 / 0.16);
@@ -151,6 +155,7 @@ html[data-theme='burgundy-dusk'] {
   --theme-glow-primary: 189 111 130;
   --theme-glow-secondary: 224 160 166;
   --theme-text: #fff5f0;
+  --theme-room-code: #f0b3bd;
   --theme-switcher-bg: rgb(93 55 67 / 0.9);
   --theme-switcher-text: #f5e7e7;
   --theme-switcher-border: rgb(255 255 255 / 0.17);
@@ -225,6 +230,10 @@ body {
 .theme-switcher option {
   background: var(--theme-canvas-middle);
   color: var(--theme-text);
+}
+
+.theme-room-code {
+  color: var(--theme-room-code);
 }
 
 /* Parchment is a true light theme; existing utility classes were authored for
