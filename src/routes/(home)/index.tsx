@@ -72,8 +72,14 @@ function LandingPage() {
             className="flex items-center gap-5"
             aria-label="Điều hướng chính"
           >
+            <Link
+              className="hidden text-sm text-stone-400 transition-colors hover:text-stone-50 md:block"
+              to="/rules"
+            >
+              Luật & vai trò
+            </Link>
             <a
-              className="hidden text-sm text-stone-400 transition-colors hover:text-stone-50 sm:block"
+              className="hidden text-sm text-stone-400 transition-colors hover:text-stone-50 lg:block"
               href="#cach-hoat-dong"
             >
               Cách hoạt động
@@ -112,12 +118,12 @@ function LandingPage() {
                 Bắt đầu ván chơi
                 <ArrowRight aria-hidden="true" className="size-4" />
               </Link>
-              <a
+              <Link
                 className="rounded-lg px-3 py-3 text-base font-medium text-stone-300 transition-colors hover:text-stone-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500"
-                href="#tinh-nang"
+                to="/rules"
               >
-                Khám phá tính năng
-              </a>
+                Xem luật & vai trò
+              </Link>
             </div>
             <div className="grid w-full max-w-xl grid-cols-3 divide-x divide-white/15 border-t border-white/15 pt-5">
               <LandingStat label="Người chơi" value="5–15" />

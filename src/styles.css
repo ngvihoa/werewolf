@@ -194,6 +194,10 @@ body,
   min-height: 100%;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   margin: 0;
   background:
@@ -234,6 +238,224 @@ body {
 
 .theme-room-code {
   color: var(--theme-room-code);
+}
+
+/* Rules page: the hero deck deliberately animates only opacity and transforms.
+   The card gallery writes pointer coordinates into CSS variables, avoiding a
+   React render for every pointer-move event. */
+.rules-hero-orbit {
+  animation: rules-orbit 28s linear infinite;
+}
+
+.rules-hero-orbit::before,
+.rules-hero-orbit::after {
+  position: absolute;
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 9999px;
+  background: var(--color-red-400);
+  box-shadow: 0 0 2rem var(--color-red-500);
+  content: '';
+}
+
+.rules-hero-orbit::before {
+  top: 7%;
+  left: 21%;
+}
+
+.rules-hero-orbit::after {
+  right: 12%;
+  bottom: 17%;
+  width: 0.4rem;
+  height: 0.4rem;
+}
+
+.role-hero-deck {
+  perspective: 1400px;
+  transform-style: preserve-3d;
+}
+
+.role-hero-card {
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+.role-hero-card img {
+  border-radius: 4%;
+}
+
+.role-hero-card-left {
+  animation: role-card-drift-left 7s ease-in-out infinite;
+}
+
+.role-hero-card-center {
+  animation: role-card-drift-center 6s ease-in-out -1.7s infinite;
+}
+
+.role-hero-card-right {
+  animation: role-card-drift-right 7.5s ease-in-out -3.1s infinite;
+}
+
+.role-hero-glint {
+  overflow: hidden;
+}
+
+.role-hero-glint::after {
+  position: absolute;
+  inset: -20%;
+  background: linear-gradient(
+    115deg,
+    transparent 34%,
+    rgb(255 245 198 / 0.08) 43%,
+    rgb(255 255 255 / 0.48) 50%,
+    rgb(255 245 198 / 0.08) 57%,
+    transparent 66%
+  );
+  content: '';
+  transform: translateX(-110%);
+  animation: role-card-glint 5.5s ease-in-out 1.2s infinite;
+}
+
+.role-guide-card-shell {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 31rem;
+  animation: role-card-enter 0.7s both;
+}
+
+.role-guide-card {
+  --card-tilt-x: 0deg;
+  --card-tilt-y: 0deg;
+  --card-shine-x: 50%;
+  --card-shine-y: 50%;
+  perspective: 1200px;
+  transform: rotateX(var(--card-tilt-x)) rotateY(var(--card-tilt-y))
+    translateZ(0);
+  transform-style: preserve-3d;
+  transition: transform 180ms ease-out;
+  will-change: transform;
+}
+
+.role-guide-card:hover {
+  z-index: 2;
+}
+
+.role-guide-card-flipper {
+  transition: transform 0.8s cubic-bezier(0.2, 0.75, 0.2, 1);
+}
+
+.role-guide-card[data-flipped='true'] .role-guide-card-flipper {
+  transform: rotateY(180deg);
+}
+
+.role-guide-card-face {
+  transform-style: preserve-3d;
+}
+
+.role-guide-card-vignette {
+  background:
+    linear-gradient(180deg, rgb(0 0 0 / 0.06), transparent 30%),
+    linear-gradient(0deg, rgb(0 0 0 / 0.32), transparent 28%);
+}
+
+.role-guide-card-shine {
+  background:
+    radial-gradient(
+      circle at var(--card-shine-x) var(--card-shine-y),
+      rgb(255 255 255 / 0.32),
+      transparent 22%
+    ),
+    linear-gradient(
+      115deg,
+      transparent 25%,
+      rgb(255 219 139 / 0.18) 40%,
+      rgb(165 216 255 / 0.2) 55%,
+      transparent 70%
+    );
+  mix-blend-mode: screen;
+}
+
+.role-guide-card-back::after {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background-image:
+    linear-gradient(rgb(255 255 255 / 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(255 255 255 / 0.025) 1px, transparent 1px);
+  background-size: 1.5rem 1.5rem;
+  pointer-events: none;
+  content: '';
+  mask-image: linear-gradient(to bottom, black, transparent 75%);
+}
+
+#luat-choi,
+#vai-tro {
+  scroll-margin-top: 1rem;
+}
+
+@keyframes rules-orbit {
+  to {
+    transform: translateX(-50%) rotate(360deg);
+  }
+}
+
+@keyframes role-card-drift-left {
+  0%,
+  100% {
+    transform: translate3d(0, 0, -3rem) rotateY(12deg) rotateZ(-12deg);
+  }
+  50% {
+    transform: translate3d(-0.5rem, -1.2rem, -2.6rem) rotateY(8deg)
+      rotateZ(-10deg);
+  }
+}
+
+@keyframes role-card-drift-center {
+  0%,
+  100% {
+    transform: translateX(-50%) translate3d(0, 0, 2.5rem) rotateY(-1deg);
+  }
+  50% {
+    transform: translateX(-50%) translate3d(0, -1.5rem, 3.2rem) rotateY(2deg);
+  }
+}
+
+@keyframes role-card-drift-right {
+  0%,
+  100% {
+    transform: translate3d(0, 0, -3rem) rotateY(-12deg) rotateZ(12deg);
+  }
+  50% {
+    transform: translate3d(0.5rem, -1rem, -2.4rem) rotateY(-8deg) rotateZ(10deg);
+  }
+}
+
+@keyframes role-card-glint {
+  0%,
+  18% {
+    transform: translateX(-110%);
+  }
+  42%,
+  100% {
+    transform: translateX(110%);
+  }
+}
+
+@keyframes role-card-enter {
+  from {
+    opacity: 0;
+    transform: translateY(2rem) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@supports (animation-timeline: view()) {
+  .role-guide-card-shell {
+    animation-timeline: view();
+    animation-range: entry 5% cover 28%;
+  }
 }
 
 /* Parchment is a true light theme; existing utility classes were authored for
@@ -284,7 +506,23 @@ html[data-theme='occult-parchment']
 }
 
 @media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
   body {
+    transition: none;
+  }
+
+  .rules-hero-orbit,
+  .role-hero-card,
+  .role-hero-glint::after,
+  .role-guide-card-shell {
+    animation: none;
+  }
+
+  .role-guide-card,
+  .role-guide-card-flipper {
     transition: none;
   }
 }

@@ -75,15 +75,23 @@ function EntryPage() {
       <div className="mx-auto grid min-h-dvh max-w-6xl lg:grid-cols-[5fr_4fr]">
         <section className="relative flex min-w-0 flex-col justify-between gap-16 px-6 py-8 sm:px-10 sm:py-10 lg:px-14 lg:py-12">
           <div className="pointer-events-none absolute -top-48 -left-56 size-128 rounded-full bg-red-950/40 blur-3xl" />
-          <Link
-            className="relative flex w-fit items-center gap-3 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-red-500"
-            to="/"
-          >
-            <span className="size-2 rounded-full bg-red-500 shadow-[0_0_24px_var(--color-red-500)]" />
-            <span className="font-mono text-sm tracking-wide text-stone-400 uppercase">
-              Werewolf / Bàn chơi trực tuyến
-            </span>
-          </Link>
+          <div className="relative flex items-center justify-between gap-5">
+            <Link
+              className="flex min-w-0 items-center gap-3 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-red-500"
+              to="/"
+            >
+              <span className="size-2 shrink-0 rounded-full bg-red-500 shadow-[0_0_24px_var(--color-red-500)]" />
+              <span className="truncate font-mono text-sm tracking-wide text-stone-400 uppercase">
+                Werewolf / Bàn chơi trực tuyến
+              </span>
+            </Link>
+            <Link
+              className="shrink-0 text-sm text-stone-400 transition-colors hover:text-stone-50 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-red-500"
+              to="/rules"
+            >
+              Xem luật
+            </Link>
+          </div>
           <div className="relative flex max-w-2xl flex-col gap-7 lg:pb-12">
             <p className="font-mono text-sm tracking-wide text-red-300 uppercase">
               Trợ lý Quản trò
