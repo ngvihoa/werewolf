@@ -133,6 +133,7 @@ export class PostgresGameStore implements GameStore {
               .returning({
                 id: games.id,
                 roomCode: games.roomCode,
+                version: games.version,
               })
 
             if (!game) {
@@ -177,6 +178,7 @@ export class PostgresGameStore implements GameStore {
                 gameId: game.id,
                 roomCode: game.roomCode,
                 moderatorSessionToken: rawSessionToken,
+                version: game.version,
               },
             }
           },
@@ -277,7 +279,11 @@ export class PostgresGameStore implements GameStore {
         })
 
         // Cập nhật version của game trong cùng transaction.
-        await updateGameAndIncrementVersion(transaction, game, now)
+        const version = await updateGameAndIncrementVersion(
+          transaction,
+          game,
+          now,
+        )
 
         return {
           ok: true as const,
@@ -285,6 +291,7 @@ export class PostgresGameStore implements GameStore {
             gameId: game.id,
             playerId: player.id,
             playerSessionToken: rawSessionToken,
+            version,
           },
         }
       })
@@ -510,9 +517,9 @@ export class PostgresGameStore implements GameStore {
             abilityState:
               role === 'WITCH'
                 ? {
-                    healingPotionAvailable: true,
-                    poisonPotionAvailable: true,
-                  }
+                  healingPotionAvailable: true,
+                  poisonPotionAvailable: true,
+                }
                 : role === 'ALPHA_WEREWOLF'
                   ? { enhancedAttackAvailable: true }
                   : role === 'WHITE_WOLF'
@@ -1294,9 +1301,9 @@ async function persistGameAction(
   const decision =
     input.command.type === 'REJECT_STEP'
       ? {
-          status: 'REJECTED' as const,
-          rejectionReason: input.command.reason.trim(),
-        }
+        status: 'REJECTED' as const,
+        rejectionReason: input.command.reason.trim(),
+      }
       : { status: 'CONFIRMED' as const, rejectionReason: null }
 
   await transaction

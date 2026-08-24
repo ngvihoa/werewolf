@@ -1,13 +1,15 @@
+import type { GameView } from '#/game/projections/model'
+
 import { orpcClient } from '#/orpc/client'
 import { useQuery } from '@tanstack/react-query'
 
-export const gameViewQueryKey = (sessionToken: string) => [
-  'local-game-view',
-  sessionToken,
-]
+import { useGameInvalidation } from './useGameInvalidation'
+import { gameViewQueryKey } from './useGameView.query'
+
+export { gameViewQueryKey } from './useGameView.query'
 
 export function useGameView(sessionToken: string) {
-  return useQuery({
+  const query = useQuery({
     queryKey: gameViewQueryKey(sessionToken),
     queryFn: async () => {
       const result = await orpcClient.lobby.getGameView({ sessionToken })
@@ -15,6 +17,41 @@ export function useGameView(sessionToken: string) {
       return result.value
     },
     enabled: Boolean(sessionToken),
-    refetchInterval: 10_000,
+    refetchInterval: ({ state }) =>
+      needsFastPolling(state.data) ? 4_000 : 12_000,
+    refetchIntervalInBackground: false,
+    refetchOnReconnect: 'always',
+    refetchOnWindowFocus: 'always',
   })
+
+  useGameInvalidation({
+    gameId: gameViewId(query.data),
+    renderedVersion: gameViewVersion(query.data),
+    sessionToken,
+  })
+
+  return query
+}
+
+function gameViewId(view: GameView | undefined): string {
+  if (!view) return ''
+  return view.viewer === 'MODERATOR' ? view.game.id : view.gameId
+}
+
+function gameViewVersion(view: GameView | undefined): number {
+  if (!view) return 0
+  return view.viewer === 'MODERATOR' ? view.game.version : view.version
+}
+
+function needsFastPolling(view: GameView | undefined): boolean {
+  if (!view) return false
+  const queue =
+    view.viewer === 'MODERATOR' ? view.game.state?.queue : view.queue
+  return Boolean(
+    queue?.some(
+      (item) =>
+        item.status === 'ACTIVE' ||
+        item.status === 'WAITING_MODERATOR_CONFIRMATION',
+    ),
+  )
 }

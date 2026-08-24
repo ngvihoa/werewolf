@@ -1,5 +1,6 @@
 import type { StoreResult } from '#/game/store/model'
 
+import { publishGameInvalidation } from '#/realtime/publisher'
 import { localGameStore } from '#/game/store/local-game-store'
 
 import { baseRouter } from './base'
@@ -12,11 +13,28 @@ function toOperationResult<T>(result: StoreResult<T>) {
 
 export const lobbyRouter = baseRouter.lobby.router({
   createGame: baseRouter.lobby.createGame.handler(async ({ input }) => {
-    return localGameStore.createGame(input.moderatorName)
+    const result = await localGameStore.createGame(input.moderatorName)
+    if (result.ok) {
+      await publishGameInvalidation({
+        gameId: result.value.gameId,
+        version: result.value.version,
+      })
+    }
+    return result
   }),
 
   joinGame: baseRouter.lobby.joinGame.handler(async ({ input }) => {
-    return localGameStore.joinGame(input.roomCode, input.displayName)
+    const result = await localGameStore.joinGame(
+      input.roomCode,
+      input.displayName,
+    )
+    if (result.ok) {
+      await publishGameInvalidation({
+        gameId: result.value.gameId,
+        version: result.value.version,
+      })
+    }
+    return result
   }),
 
   getGameView: baseRouter.lobby.getGameView.handler(async ({ input }) => {
@@ -31,6 +49,8 @@ export const lobbyRouter = baseRouter.lobby.router({
       input.idempotencyKey,
     )
 
+    if (result.ok) await publishGameInvalidation(result.value)
+
     return toOperationResult(result)
   }),
 
@@ -41,6 +61,7 @@ export const lobbyRouter = baseRouter.lobby.router({
       input.idempotencyKey,
       input.composition,
     )
+    if (result.ok) await publishGameInvalidation(result.value)
     return toOperationResult(result)
   }),
 
@@ -50,6 +71,7 @@ export const lobbyRouter = baseRouter.lobby.router({
       input.expectedVersion,
       input.idempotencyKey,
     )
+    if (result.ok) await publishGameInvalidation(result.value)
     return toOperationResult(result)
   }),
 
@@ -59,12 +81,14 @@ export const lobbyRouter = baseRouter.lobby.router({
       input.expectedVersion,
       input.idempotencyKey,
     )
+    if (result.ok) await publishGameInvalidation(result.value)
     return toOperationResult(result)
   }),
 
   executeGameCommand: baseRouter.lobby.executeGameCommand.handler(
     async ({ input }) => {
       const result = await localGameStore.execute(input)
+      if (result.ok) await publishGameInvalidation(result.value)
       return toOperationResult(result)
     },
   ),

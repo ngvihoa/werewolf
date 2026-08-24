@@ -158,45 +158,45 @@ Goal: keep all devices synchronized without exposing private data.
 Implementation plan:
 
 1. Define the Realtime boundary.
-   - [ ] Add a closed schema for an invalidation payload containing only
+   - [x] Add a closed schema for an invalidation payload containing only
          `{ gameId, version }`.
-   - [ ] Use one channel per opaque game ID; never publish room codes, roles,
+   - [x] Use one channel per opaque game ID; never publish room codes, roles,
          targets, actions, ability state, sessions or projected game views.
-   - [ ] Do not subscribe clients directly to `games`, `game_events` or other
+   - [x] Do not subscribe clients directly to `games`, `game_events` or other
          PostgreSQL tables because the application uses its own session tokens
          rather than Supabase Auth and those rows contain hidden information.
 
 2. Publish invalidations after successful commits.
-   - [ ] Add one server-side publisher shared by every accepted mutation.
-   - [ ] Publish only after the state, events and idempotency receipt commit.
-   - [ ] Treat publication as best-effort: a Realtime failure must not roll back
+   - [x] Add one server-side publisher shared by every accepted mutation.
+   - [x] Publish only after the state, events and idempotency receipt commit.
+   - [x] Treat publication as best-effort: a Realtime failure must not roll back
          or report failure for an already committed game command.
-   - [ ] Log publication failures without including private payloads or session
+   - [x] Log publication failures without including private payloads or session
          tokens.
 
 3. Subscribe and refetch on the client.
-   - [ ] Subscribe each lobby and game client to its current game channel.
-   - [ ] Validate every incoming payload and ignore a version that is not newer
+   - [x] Subscribe each lobby and game client to its current game channel.
+   - [x] Validate every incoming payload and ignore a version that is not newer
          than the currently rendered version.
-   - [ ] Invalidate the existing `getGameView` TanStack Query key instead of
+   - [x] Invalidate the existing `getGameView` TanStack Query key instead of
          applying Realtime data directly to the cache.
-   - [ ] Keep `getGameView(sessionToken)` as the only source of the
+   - [x] Keep `getGameView(sessionToken)` as the only source of the
          permission-aware Moderator or Player projection.
-   - [ ] Unsubscribe when leaving a room, changing game or unmounting the view.
+   - [x] Unsubscribe when leaving a room, changing game or unmounting the view.
 
 4. Preserve recovery without Realtime.
-   - [ ] Refetch immediately after the local client completes a mutation.
-   - [ ] Retain fallback polling at 3–5 seconds while waiting for an active step
+   - [x] Refetch immediately after the local client completes a mutation.
+   - [x] Retain fallback polling at 3–5 seconds while waiting for an active step
          and 10–15 seconds while the game is stable.
-   - [ ] Pause polling for hidden tabs and refetch immediately when a tab becomes
+   - [x] Pause polling for hidden tabs and refetch immediately when a tab becomes
          visible again.
-   - [ ] On socket reconnect, refetch the current view rather than replaying
+   - [x] On socket reconnect, refetch the current view rather than replaying
          missed events.
-   - [ ] Continue using stale-version handling and the original idempotency key
+   - [x] Continue using stale-version handling and the original idempotency key
          when a mutation is retried.
 
 5. Verify privacy and multi-device behavior.
-   - [ ] Unit-test payload validation, duplicate/old-version suppression and
+   - [x] Unit-test payload validation, duplicate/old-version suppression and
          query invalidation.
    - [ ] Add multi-context Playwright coverage proving one Moderator mutation
          refreshes all Player views without manual reload.

@@ -76,12 +76,14 @@ export const createdGameSchema = z.object({
   gameId: z.string(),
   roomCode: z.string().length(6),
   moderatorSessionToken: sessionTokenSchema,
+  version: expectedVersionSchema,
 })
 
 export const joinedGameSchema = z.object({
   gameId: z.string(),
   playerId: z.string(),
   playerSessionToken: sessionTokenSchema,
+  version: expectedVersionSchema,
 })
 
 // Mutation trả metadata nhỏ thay vì làm lộ raw persistence model.
