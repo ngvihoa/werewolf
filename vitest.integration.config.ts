@@ -9,8 +9,10 @@ export default defineConfig({
     environment: 'node',
     fileParallelism: false,
 
-    // Remote PostgreSQL có thể chậm hơn ngưỡng mặc định 5 giây của unit test.
-    testTimeout: 15_000,
-    hookTimeout: 15_000,
+    // Remote PostgreSQL có thể chậm hơn ngưỢ单 mặc định của unit test.
+    // Test full-flow (create → join → start → night action → confirm) tốn
+    // nhiều round-trip qua pooler nên cần ngưỡng rộng hơn.
+    testTimeout: 45_000,
+    hookTimeout: 45_000,
   },
 })
