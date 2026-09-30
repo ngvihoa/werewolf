@@ -21,7 +21,7 @@ pnpm dev
 
 Fill `.env` with a Supabase pooled PostgreSQL connection string, project URL and anon key.
 
-The playable MVP is developed and tested with local fake data first. Its domain rules do not connect to Supabase; the existing database integration is reserved for a later persistence phase.
+The playable MVP persists game state in PostgreSQL through Drizzle (`src/game/store/postgres-game-store.ts`). Supabase Realtime carries only lightweight `{ gameId, version }` invalidation signals — never game state. Unit tests run without a database; the Postgres integration suite needs a real `DATABASE_URL` (`pnpm test:integration`).
 
 ## Commands
 

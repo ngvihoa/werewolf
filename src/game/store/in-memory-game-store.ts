@@ -332,9 +332,9 @@ export class InMemoryGameStore implements GameStore {
       return receipt.request === request
         ? success(structuredClone(receipt.result))
         : failure(
-          'IDEMPOTENCY_KEY_REUSED',
-          'Idempotency key was already used for another command',
-        )
+            'IDEMPOTENCY_KEY_REUSED',
+            'Idempotency key was already used for another command',
+          )
     }
     if (game.version !== input.expectedVersion) {
       return failure('STALE_VERSION', 'Game version is stale')
@@ -530,7 +530,7 @@ function replayReceipt(
   return receipt.request === request
     ? success(structuredClone(receipt.result))
     : failure(
-      'IDEMPOTENCY_KEY_REUSED',
-      'Idempotency key was already used for another command',
-    )
+        'IDEMPOTENCY_KEY_REUSED',
+        'Idempotency key was already used for another command',
+      )
 }

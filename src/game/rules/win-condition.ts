@@ -28,8 +28,7 @@ export function getWinningTeamFromPlayers(
   const whiteWolves = alivePlayers.filter(
     (player) => player.role === 'WHITE_WOLF',
   ).length
-  const werewolves =
-    alivePlayers.filter(isWerewolfPlayer).length - whiteWolves
+  const werewolves = alivePlayers.filter(isWerewolfPlayer).length - whiteWolves
 
   if (werewolves === 0 && whiteWolves > 0) return null
 

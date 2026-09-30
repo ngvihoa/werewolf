@@ -23,7 +23,7 @@ Goal: establish a deployable, typed and testable application base.
 - [x] Add Vitest and the first domain rule test.
 - [x] Create a Supabase project and populate local environment values.
 - [x] Generate and apply the initial database migration.
-- [ ] Configure CI to run check, test and build.
+- [x] Configure CI to run check, test and build.
 - [ ] Deploy a preview environment.
 
 Exit criteria:
@@ -71,16 +71,15 @@ Goal: expose secure transactional game operations.
 
 - [x] Complete schema for settings, sessions, queue steps and actions.
 - [x] Create migration and indexes.
-- [ ] Implement hashed Moderator and Player session tokens.
-- [ ] Add oRPC authentication and authorization middleware.
-- [ ] Implement `createGame`, `joinGame` and `setReady`.
-- [ ] Implement `configureGame`, `randomizeRoles` and `startGame`.
-- [ ] Implement `submitNightAction`, `confirmStep`, `rejectStep` and `skipStep`.
-- [ ] Implement `submitVoteResult` and game-over commands.
-- [ ] Implement optimistic locking with `games.version`.
-- [ ] Add idempotency protection for mutations.
-- [ ] Write current state and history in the same transaction.
-- [ ] Add integration tests against a test PostgreSQL database.
+- [x] Implement hashed Moderator and Player session tokens.
+- [x] Add oRPC session-token guard middleware and server-side command authorization.
+- [x] Implement `createGame`, `joinGame` and `setReady`.
+- [x] Implement `assignRoles` (configure and randomize role composition), `startGame` and `rematch`.
+- [x] Implement night, vote and hunter-shot commands through the typed `executeGameCommand` endpoint.
+- [x] Implement optimistic locking with `games.version`.
+- [x] Add idempotency protection for mutations.
+- [x] Write current state and history in the same transaction.
+- [x] Add integration tests against a test PostgreSQL database.
 
 Exit criteria:
 
@@ -202,8 +201,10 @@ Implementation plan:
          refreshes all Player views without manual reload.
    - [ ] Verify that reconnecting, backgrounding a mobile browser and receiving
          duplicate or out-of-order events converge on the latest version.
-   - [ ] Verify that Realtime payloads never contain private role/action fields,
-         including Seer, Witch, Lovers, Hybrid Wolf and White Wolf state.
+   - [x] Verify that Realtime payloads never contain private role/action fields,
+         including Seer, Witch, Lovers, Hybrid Wolf and White Wolf state. The
+         publisher only sends data parsed by the closed `{ gameId, version }`
+         schema, and unit tests prove extra fields are refused.
    - [ ] Simulate Realtime being unavailable and confirm fallback polling still
          completes a game.
 

@@ -97,15 +97,11 @@ export function resolveRoleComposition(
   const roles = [...selection.roles]
   const defaultWerewolfCount = defaultComposition.value.filter(
     (role) =>
-      role === 'WEREWOLF' ||
-      role === 'ALPHA_WEREWOLF' ||
-      role === 'WHITE_WOLF',
+      role === 'WEREWOLF' || role === 'ALPHA_WEREWOLF' || role === 'WHITE_WOLF',
   ).length
   const selectedWerewolfCount = roles.filter(
     (role) =>
-      role === 'WEREWOLF' ||
-      role === 'ALPHA_WEREWOLF' ||
-      role === 'WHITE_WOLF',
+      role === 'WEREWOLF' || role === 'ALPHA_WEREWOLF' || role === 'WHITE_WOLF',
   ).length
   const missingWerewolves = Math.min(
     defaultWerewolfCount - selectedWerewolfCount,

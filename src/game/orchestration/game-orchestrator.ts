@@ -589,8 +589,7 @@ function activateNextRunnableStep(
           ? isWerewolfPlayer(player)
           : player.role === STEP_ROLE[item.step]) &&
         (item.step !== 'WHITE_WOLF_KILL' ||
-          (player.role === 'WHITE_WOLF' &&
-            player.abilityState.killAvailable)),
+          (player.role === 'WHITE_WOLF' && player.abilityState.killAvailable)),
     )
     if (!ownerAlive) {
       item.status = 'SKIPPED'
@@ -641,10 +640,7 @@ function consumeAlphaWerewolfAbility(
   }
 }
 
-function consumeWhiteWolfAbility(
-  state: GameState,
-  action: NightAction,
-): void {
+function consumeWhiteWolfAbility(state: GameState, action: NightAction): void {
   if (action.type !== 'WHITE_WOLF_KILL') return
   const whiteWolf = state.players.find((player) => player.id === action.actorId)
   if (whiteWolf?.role === 'WHITE_WOLF') {

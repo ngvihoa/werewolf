@@ -48,9 +48,7 @@ export function getRoleTeam(role: Role): Team {
 
 export function isWerewolfRole(role: Role | null | undefined): boolean {
   return (
-    role === 'WEREWOLF' ||
-    role === 'ALPHA_WEREWOLF' ||
-    role === 'WHITE_WOLF'
+    role === 'WEREWOLF' || role === 'ALPHA_WEREWOLF' || role === 'WHITE_WOLF'
   )
 }
 

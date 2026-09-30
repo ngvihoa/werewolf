@@ -2,8 +2,8 @@ import z from 'zod'
 
 import {
   alphaWerewolfResourcesSchema,
-  whiteWolfResourcesSchema,
   hybridWolfResourcesSchema,
+  whiteWolfResourcesSchema,
   elderResourcesSchema,
   witchResourcesSchema,
   gamePhaseSchema,
