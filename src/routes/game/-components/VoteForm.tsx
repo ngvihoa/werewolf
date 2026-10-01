@@ -58,7 +58,7 @@ export function VoteForm({
         />
         Kết quả hòa
       </label>
-      <div className="sticky bottom-0 -mx-1 bg-linear-to-t from-stone-950 via-stone-950/90 px-1 pt-5 pb-safe">
+      <div className="sticky bottom-0 -mx-1 bg-linear-to-t from-midnight via-midnight/90 px-1 pt-5 pb-safe">
         <CommandButton
           primary
           pending={pending}

@@ -163,80 +163,73 @@ function LobbyPage() {
           onLeave={leaveSession}
         />
       }
-      stage={
-        <>
-          <PhaseIndicator phase="LOBBY" round={1} />
-          <RoomSummary
-            gameStarted={false}
-            roomCode={roomCode}
-            version={version}
-          />
-          <PlayerGrid
-            items={players}
-            renderItem={(player, index) => (
-              <PlayerToken
-                key={player.id}
-                displayName={player.displayName}
-                index={index}
-                isYou={!isModerator && player.id === view.me.id}
-                roleImageSrc={
-                  isModerator && player.role
-                    ? `/role/${player.role.toLowerCase()}.png`
-                    : null
-                }
-                roleLabelText={
-                  isModerator && player.role ? roleLabel(player.role) : null
-                }
-                statusText={
-                  !rolesAssigned
-                    ? 'Đang chờ'
-                    : player.ready
-                      ? 'Sẵn sàng'
-                      : 'Xem vai'
-                }
-              />
-            )}
-          />
-        </>
-      }
-      sidebar={
-        view.viewer === 'MODERATOR' ? (
-          <ModeratorControls
-            playerCount={players.length}
-            rolesAssigned={rolesAssigned}
-            allReady={allReady}
-            assigning={assignMutation.isPending}
-            starting={startMutation.isPending}
-            error={mutationError}
-            onAssign={(composition) =>
-              assignMutation.mutate({
-                composition,
-                idempotencyKey: createIdempotencyKey(),
-              })
-            }
-            // Start game cũng dùng optimistic locking như các lobby mutation khác.
-            onStart={() =>
-              startMutation.mutate({
-                idempotencyKey: createIdempotencyKey(),
-              })
-            }
-          />
-        ) : (
-          <PlayerControls
-            role={view.me.role}
-            ready={view.me.ready}
-            pending={readyMutation.isPending}
-            error={mutationError}
-            onReadyChange={(ready) =>
-              readyMutation.mutate({
-                ready,
-                idempotencyKey: createIdempotencyKey(),
-              })
-            }
-          />
-        )
-      }
-    />
+    >
+      <PhaseIndicator phase="LOBBY" round={1} />
+      <RoomSummary gameStarted={false} roomCode={roomCode} version={version} />
+      {view.viewer === 'MODERATOR' ? (
+        <ModeratorControls
+          playerCount={players.length}
+          rolesAssigned={rolesAssigned}
+          allReady={allReady}
+          assigning={assignMutation.isPending}
+          starting={startMutation.isPending}
+          error={mutationError}
+          onAssign={(composition) =>
+            assignMutation.mutate({
+              composition,
+              idempotencyKey: createIdempotencyKey(),
+            })
+          }
+          // Start game cũng dùng optimistic locking như các lobby mutation khác.
+          onStart={() =>
+            startMutation.mutate({
+              idempotencyKey: createIdempotencyKey(),
+            })
+          }
+        />
+      ) : (
+        <PlayerControls
+          role={view.me.role}
+          ready={view.me.ready}
+          pending={readyMutation.isPending}
+          error={mutationError}
+          onReadyChange={(ready) =>
+            readyMutation.mutate({
+              ready,
+              idempotencyKey: createIdempotencyKey(),
+            })
+          }
+        />
+      )}
+      <div className="mt-1 border-t border-line pt-5 opacity-70">
+        <PlayerGrid
+          items={players}
+          renderItem={(player, index) => (
+            <PlayerToken
+              key={player.id}
+              displayName={player.displayName}
+              index={index}
+              isYou={!isModerator && player.id === view.me.id}
+              roleImageSrc={
+                isModerator && player.role
+                  ? `/role/${player.role.toLowerCase()}.png`
+                  : null
+              }
+              roleLabelText={
+                isModerator && player.role ? roleLabel(player.role) : null
+              }
+              statusText={
+                !rolesAssigned
+                  ? 'Đang chờ'
+                  : player.ready
+                    ? 'Sẵn sàng'
+                    : 'Xem vai'
+              }
+            />
+          )}
+        />
+      </div>
+    </GameShell>
   )
 }
 

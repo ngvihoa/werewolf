@@ -51,7 +51,7 @@ export function RoleCard({ role }: { role: Role }) {
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-64 flex-col items-center gap-4">
+    <div className="mx-auto flex w-full max-w-56 flex-col items-center gap-4">
       <button
         aria-label={revealed ? 'Ẩn thẻ vai' : 'Xem thẻ vai'}
         aria-pressed={revealed}

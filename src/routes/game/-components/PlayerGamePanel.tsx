@@ -53,7 +53,6 @@ export function PlayerGamePanel({
         </p>
       </div>
 
-      {view.me.role ? <RoleCard role={view.me.role} /> : null}
       {view.me.role === 'HYBRID_WOLF' &&
       view.me.abilityState !== null &&
       'converted' in view.me.abilityState &&
@@ -182,6 +181,8 @@ export function PlayerGamePanel({
           onCommand={onCommand}
         />
       ) : null}
+      {/* Thẻ vai là phần phụ — hành động hiện tại ưu tiên nằm trên. */}
+      {view.me.role ? <RoleCard role={view.me.role} /> : null}
       {view.phase === 'GAME_OVER' ? <GameOver winner={view.winner} /> : null}
       {view.phase === 'GAME_OVER' && view.winner && view.me.role ? (
         <GameResultDialog

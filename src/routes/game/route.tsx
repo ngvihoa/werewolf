@@ -174,52 +174,49 @@ function GamePage() {
           onLeave={leaveSession}
         />
       }
-      stage={
-        <>
-          <PhaseIndicator phase={phase} round={round} />
-          <PlayerGrid
-            items={players}
-            renderItem={(player, index) => (
-              <PlayerToken
-                key={player.id}
-                displayName={player.displayName}
-                index={index}
-                dead={player.alive === false}
-                acting={activePlayerIds.has(player.id)}
-                isYou={!isModerator && player.id === view.me.id}
-                roleImageSrc={
-                  isModerator && player.role
-                    ? `/role/${player.role.toLowerCase()}.png`
-                    : null
-                }
-                roleLabelText={
-                  isModerator && player.role ? roleLabel(player.role) : null
-                }
-                statusText={player.alive === false ? 'Đã chết' : null}
-              />
-            )}
-          />
-        </>
-      }
-      sidebar={
-        <GameBoard
-          view={view}
-          pending={commandMutation.isPending || rematchMutation.isPending}
-          error={mutationError}
-          onCommand={(command) =>
-            commandMutation.mutate({
-              command,
-              idempotencyKey: createIdempotencyKey(),
-            })
-          }
-          onRematch={() =>
-            rematchMutation.mutate({
-              idempotencyKey: createIdempotencyKey(),
-            })
-          }
+    >
+      <PhaseIndicator phase={phase} round={round} />
+      <GameBoard
+        view={view}
+        pending={commandMutation.isPending || rematchMutation.isPending}
+        error={mutationError}
+        onCommand={(command) =>
+          commandMutation.mutate({
+            command,
+            idempotencyKey: createIdempotencyKey(),
+          })
+        }
+        onRematch={() =>
+          rematchMutation.mutate({
+            idempotencyKey: createIdempotencyKey(),
+          })
+        }
+      />
+      <div className="mt-1 border-t border-line pt-5 opacity-70">
+        <PlayerGrid
+          items={players}
+          renderItem={(player, index) => (
+            <PlayerToken
+              key={player.id}
+              displayName={player.displayName}
+              index={index}
+              dead={player.alive === false}
+              acting={activePlayerIds.has(player.id)}
+              isYou={!isModerator && player.id === view.me.id}
+              roleImageSrc={
+                isModerator && player.role
+                  ? `/role/${player.role.toLowerCase()}.png`
+                  : null
+              }
+              roleLabelText={
+                isModerator && player.role ? roleLabel(player.role) : null
+              }
+              statusText={player.alive === false ? 'Đã chết' : null}
+            />
+          )}
         />
-      }
-    />
+      </div>
+    </GameShell>
   )
 }
 

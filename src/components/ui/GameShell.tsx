@@ -3,15 +3,6 @@ import type { ReactNode } from 'react'
 
 import { phaseBackdrop } from './PhaseIndicator'
 
-/**
- * Khung chơi dùng chung: mobile xếp action panel (sidebar) lên trước người
- * chơi để "một hành động chính" luôn thấy đầu tiên; desktop tách hai cột
- * theo tỉ lệ sân khấu : ngữ cảnh.
- *
- * Concept "tranh kể chuyện, giao diện im lặng": một bức tranh theo pha nằm
- * full-bleed dưới cùng (crossfade khi đổi pha), màn che scrim đảm bảo chữ
- * đạt contrast; nội dung không thêm khung kính nào khác.
- */
 const BACKDROP_LAYERS = [
   'bg-night',
   'bg-day',
@@ -19,22 +10,25 @@ const BACKDROP_LAYERS = [
   'bg-game-over',
 ] as const
 
+/**
+ * "Sân khấu giữa": tranh theo pha thành cánh gà hai bên, toàn bộ nội dung
+ * chơi nằm trong MỘT cột trung tâm (~672px) trên panel mực gần đặc — mắt
+ * chỉ cần bao một vùng, tranh thở ở rìa. Header trong suốt phía trên panel.
+ */
 export function GameShell({
   phase,
   header,
-  stage,
-  sidebar,
+  children,
 }: {
   phase: PlayerGameView['phase']
   header: ReactNode
-  stage: ReactNode
-  sidebar: ReactNode
+  children: ReactNode
 }) {
   const backdrop = phaseBackdrop(phase)
   return (
     <main
       data-bg={backdrop ?? undefined}
-      className="isolate relative min-h-dvh px-5 py-6 sm:px-8 sm:py-8 lg:px-12"
+      className="isolate relative min-h-dvh px-4 py-5 sm:px-6 sm:py-7 lg:py-9"
     >
       <div aria-hidden="true" className="phase-backdrop">
         {BACKDROP_LAYERS.map((layer) => (
@@ -42,16 +36,11 @@ export function GameShell({
         ))}
       </div>
       <div aria-hidden="true" className="phase-scrim" />
-      <div className="relative mx-auto flex max-w-6xl flex-col gap-8 sm:gap-10">
+      <div className="relative mx-auto flex w-full max-w-2xl flex-col gap-5">
         {header}
-        <div className="grid gap-8 lg:grid-cols-[3fr_2fr] lg:gap-16">
-          <div className="order-2 flex min-w-0 flex-col gap-6 lg:order-1 lg:gap-8">
-            {stage}
-          </div>
-          <aside className="order-1 min-w-0 lg:order-2 lg:sticky lg:top-8 lg:self-start">
-            {sidebar}
-          </aside>
-        </div>
+        <section className="ink-panel rounded-3xl px-5 pt-6 pb-8 sm:px-7">
+          {children}
+        </section>
       </div>
     </main>
   )
