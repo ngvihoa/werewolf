@@ -1,8 +1,8 @@
 import type { Role } from '#/game/domain'
 
+import { roleArtUrl, roleAccentColor } from '#/game/presentation/role-art'
 import { roleDescription, roleLabel } from '#/game/presentation/labels'
 import { useRef, useState } from 'react'
-import { roleArtUrl } from '#/game/presentation/role-art'
 
 const HOLD_REVEAL_MS = 250
 
@@ -84,13 +84,15 @@ export function RoleCard({ role }: { role: Role }) {
           </span>
           <span
             aria-hidden={!revealed}
-            className="absolute inset-0 flex flex-col overflow-hidden rounded-2xl bg-midnight ring-1 ring-line [backface-visibility:hidden] [transform:rotateY(180deg)]"
+            className="absolute inset-0 flex flex-col overflow-hidden rounded-2xl bg-white ring-1 ring-stone-950/10 [backface-visibility:hidden] [transform:rotateY(180deg)]"
           >
             <span
               aria-hidden="true"
               className="relative flex min-h-0 flex-1 items-center justify-center"
+              style={{
+                background: `radial-gradient(closest-side at 50% 45%, ${roleAccentColor(role)}59 0%, ${roleAccentColor(role)}1f 58%, transparent 100%)`,
+              }}
             >
-              <span className="absolute inset-0 bg-[radial-gradient(closest-side,rgb(232_162_94/0.16),transparent)]" />
               <img
                 alt=""
                 className="relative size-full object-contain p-5"
@@ -100,14 +102,14 @@ export function RoleCard({ role }: { role: Role }) {
                 width={512}
               />
             </span>
-            <span className="relative border-t border-line px-4 pt-2.5 pb-4 text-left">
-              <span className="block font-mono text-xs tracking-[0.16em] text-accent uppercase">
+            <span className="relative border-t border-stone-950/10 px-4 pt-2.5 pb-4 text-left">
+              <span className="block font-mono text-xs tracking-[0.16em] text-stone-500 uppercase">
                 Thân phận của bạn
               </span>
-              <span className="block pt-0.5 text-xl font-semibold text-ink">
+              <span className="block pt-0.5 text-xl font-semibold text-stone-900">
                 {roleLabel(role)}
               </span>
-              <span className="mt-1 line-clamp-2 block text-xs/5 text-ink-muted">
+              <span className="mt-1 line-clamp-2 block text-xs/5 text-stone-600">
                 {roleDescription(role)}
               </span>
             </span>

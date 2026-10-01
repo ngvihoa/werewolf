@@ -1,8 +1,8 @@
 import type { RoleGuide } from './role-guide-data'
 
+import { roleAccentColor, roleArtUrl } from '#/game/presentation/role-art'
 import { roleDescription, roleLabel } from '#/game/presentation/labels'
 import { RotateCcw, Sparkles } from 'lucide-react'
-import { roleArtUrl } from '#/game/presentation/role-art'
 import { useState } from 'react'
 import { m } from 'framer-motion'
 
@@ -11,6 +11,7 @@ import { ROLE_FACTIONS } from './role-guide-data'
 export function RoleGuideCard({ guide }: { guide: RoleGuide }) {
   const [flipped, setFlipped] = useState(false)
   const imagePath = roleArtUrl(guide.role)
+  const accent = roleAccentColor(guide.role)
   const faction = ROLE_FACTIONS[guide.faction]
 
   return (
@@ -34,10 +35,13 @@ export function RoleGuideCard({ guide }: { guide: RoleGuide }) {
             mass: 0.8,
           }}
         >
-          <span className="absolute inset-0 block rounded-[1.4rem] bg-stone-950 shadow-2xl ring-1 ring-white/15 [backface-visibility:hidden]">
+          <span className="absolute inset-0 block rounded-[1.4rem] bg-white shadow-2xl ring-1 ring-stone-950/10 [backface-visibility:hidden]">
             <span
               aria-hidden="true"
-              className="absolute inset-0 bg-[radial-gradient(closest-side,rgb(232_162_94/0.14),transparent)]"
+              className="absolute inset-0"
+              style={{
+                background: `radial-gradient(closest-side at 50% 44%, ${accent}66 0%, ${accent}1f 58%, transparent 100%)`,
+              }}
             />
             <img
               alt=""
