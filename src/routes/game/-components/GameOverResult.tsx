@@ -94,7 +94,7 @@ export function GameOverResult({ view }: { view: PlayerGameView }) {
               key={player.id}
               displayName={player.displayName}
               index={index}
-              dead={player.alive === false}
+              // Màn kết quả không phân biệt sống chết — mọi lá bài rõ như nhau.
               winner={playerWon}
               isYou={player.id === view.me.id}
               roleImageSrc={
