@@ -1,11 +1,11 @@
 import type { GameCommand } from '#/game/orchestration/commands'
 
+import { useLocalSession, useIsHydrated } from '#/hooks/useLocalSession'
 import { gameViewQueryKey, useGameView } from '#/hooks/useGameView'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute, Navigate } from '@tanstack/react-router'
 import { createIdempotencyKey } from '#/lib/create-idempotency-key'
 import { mutationErrorMessage } from '#/game/presentation/mutation-error-message'
-import { useLocalSession } from '#/hooks/useLocalSession'
 import { PhaseIndicator } from '#/components/ui/PhaseIndicator'
 import { SessionError } from '#/components/SessionError'
 import { PlayerToken } from '#/components/ui/PlayerToken'
@@ -24,6 +24,7 @@ export const Route = createFileRoute('/game')({ component: GamePage })
 
 function GamePage() {
   const { sessionToken, leaveSession } = useLocalSession()
+  const hydrated = useIsHydrated()
   const activeSessionToken = sessionToken ?? ''
   const queryClient = useQueryClient()
   const viewQuery = useGameView(activeSessionToken)
@@ -88,6 +89,7 @@ function GamePage() {
     },
   })
 
+  if (!hydrated) return <AppLoading />
   if (!sessionToken) return <Navigate to="/" replace />
   if (viewQuery.isPending) return <AppLoading />
   if (viewQuery.isError || !viewQuery.data) {

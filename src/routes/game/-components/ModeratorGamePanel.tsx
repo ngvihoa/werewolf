@@ -42,9 +42,9 @@ export function ModeratorGamePanel({
     <div className="flex flex-col gap-8">
       <div className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="font-mono text-sm tracking-wide text-accent uppercase">
+          <h2 className="text-balance text-2xl font-medium tracking-tight text-ink">
             {moderatorPhaseTitle(state.phase, activeItem?.step)}
-          </p>
+          </h2>
           <p className="font-mono text-sm tabular-nums text-ink-muted">
             {livingPlayers.length} còn sống
           </p>

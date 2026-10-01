@@ -1,4 +1,4 @@
-import { useSyncExternalStore } from 'react'
+import { useEffect, useState, useSyncExternalStore } from 'react'
 
 const SESSION_STORAGE_KEY = 'werewolf.local-session'
 const SESSION_CHANGED_EVENT = 'werewolf:session-changed'
@@ -18,6 +18,17 @@ function getSessionSnapshot() {
 
 function getServerSessionSnapshot() {
   return null
+}
+
+/**
+ * Trong lần render hydration, useSyncExternalStore trả về server snapshot
+ * (null) nên mọi gate kiểu "không có token thì đá về /" đều chạy nhầm nếu
+ * đánh giá trước khi hydration xong. Hook này chặn gate đó tới khi mount.
+ */
+export function useIsHydrated() {
+  const [hydrated, setHydrated] = useState(false)
+  useEffect(() => setHydrated(true), [])
+  return hydrated
 }
 
 export function useLocalSession() {
