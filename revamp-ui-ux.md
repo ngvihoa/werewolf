@@ -78,7 +78,7 @@ Trạng thái: 🔜 cần làm · ✅ đã làm · 💬 đang bàn
 
 ---
 
-## 4. Concept kế tiếp: "Sân khấu giữa" 🔜
+## 4. Concept "Sân khấu giữa" ✅ (đã thực thi)
 
 **Cấu trúc:** một cột trung tâm ~680px (max-w ~42rem) đặt giữa màn; tranh
 thành "cánh gà" hai bên tự do; scrim đậm chỉ phủ vùng cột.
@@ -106,7 +106,7 @@ Desktop 1440
   Sau này có thể thêm nút "bố cục rộng" nếu cần bảng điều khiển.
 - Mobile giữ nguyên logic 1 cột hiện có — hai nền tảng cùng một tâm điểm.
 
-## 5. Theme "Mực & Đèn lồng" 🔜
+## 5. Theme "Mực & Đèn lồng" ✅ (phần cốt lõi đã thực thi)
 
 Palette sample trực tiếp từ tranh (UI và tranh cùng một thế giới):
 
@@ -126,13 +126,14 @@ Palette sample trực tiếp từ tranh (UI và tranh cùng một thế giới):
 
 ## 6. Việc tiếp theo (thứ tự đề xuất) 🔜
 
-1. "Sân khấu giữa": GameShell về cột giữa + scrim theo vùng (mực đặc trong
-   cột, trong suốt ở rìa).
-2. Palette "Mực & Đèn lồng" + hairline đèn lồng.
-3. Chụp lại bộ case UI (390/768/1440, đủ pha) so trước–sau.
-4. Landing: hero dùng tranh đêm (chưa đụng, 340 dòng).
-5. Hạ thẩm mỹ thẻ role về slot trung tính.
+1. ✅ "Sân khấu giữa": GameShell một cột giữa + .ink-panel + scrim rỉa nhẹ.
+2. ✅ Palette "Mực & Đèn lồng": token midnight/lantern + hairline đèn lồng
+   (màu máu #a83240 chưa áp — hệ đỏ theo theme đang giữ vì 4 theme cũ).
+3. ✅ Chụp lại bộ case UI (390/768/1440) qua đủ pha, đã trình user.
+4. ✅ Landing: hero dùng tranh đêm + scrim mực, mask fade vào nền.
+5. ✅ Thẻ role: max-w-56, dời xuống dưới form hành động.
 6. (Tuỳ chọn) schedule `purge_stale_games` bằng pg_cron trong Supabase.
+7. 🔜 Dự thảo: drawer cho queue/lịch sử Quản trò nếu cần; nút "bố cục rộng".
 
 ## 7. Ghi chú kỹ thuật nhanh
 
