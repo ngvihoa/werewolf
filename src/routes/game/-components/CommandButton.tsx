@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react'
 
+import { Button } from '#/components/ui/Button'
+
 export function CommandButton({
   children,
   pending,
@@ -16,17 +18,16 @@ export function CommandButton({
   onClick?: () => void
 }) {
   return (
-    <button
-      className={
-        primary
-          ? 'rounded-md bg-red-700 px-3 py-2 text-sm font-medium text-white ring-1 ring-red-700 hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500'
-          : 'rounded-md bg-white/8 px-3 py-2 text-sm font-medium text-stone-100 ring-1 ring-white/15 hover:bg-white/12 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500'
-      }
+    <Button
+      variant={primary ? 'primary' : 'secondary'}
+      size={primary ? 'lg' : 'md'}
+      fullWidth={primary}
+      pending={pending}
+      disabled={disabled}
       type={type}
-      disabled={pending || disabled}
       onClick={onClick}
     >
-      {pending ? 'Đang cập nhật...' : children}
-    </button>
+      {children}
+    </Button>
   )
 }
