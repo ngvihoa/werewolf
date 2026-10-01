@@ -6,7 +6,7 @@ export function ThemeSwitcher() {
   const { theme, setTheme } = useTheme()
 
   return (
-    <div className="theme-switcher fixed right-4 bottom-4 z-50 flex items-center gap-2 rounded-full px-3 py-2 shadow-xl backdrop-blur-md sm:right-5 sm:bottom-5">
+    <div className="theme-switcher fixed right-4 bottom-20 z-50 flex items-center gap-2 rounded-full px-3 py-2 shadow-xl backdrop-blur-md sm:right-5 sm:bottom-5">
       <Palette aria-hidden="true" className="size-4 shrink-0" />
       <label className="sr-only" htmlFor="theme-select">
         Giao diện
