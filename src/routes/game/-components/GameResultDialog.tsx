@@ -60,13 +60,20 @@ export function GameResultDialog({
       ref={dialogRef}
       aria-labelledby="game-result-title"
       aria-describedby="game-result-description"
-      className="m-auto w-[calc(100%-2.5rem)] max-w-md overflow-hidden rounded-3xl bg-stone-900 p-0 text-stone-50 shadow-2xl ring-1 ring-white/20 backdrop:bg-stone-950/80 backdrop:backdrop-blur-sm"
+      className="relative m-auto w-[calc(100%-2.5rem)] max-w-md overflow-hidden rounded-3xl bg-stone-900 p-0 text-stone-50 shadow-2xl ring-1 ring-white/20 backdrop:bg-stone-950/80 backdrop:backdrop-blur-sm"
     >
       <div
-        className={`h-1.5 w-full ${won ? 'bg-emerald-400' : 'bg-red-500'}`}
         aria-hidden="true"
+        className="absolute inset-0 bg-[url('/bg/result-bg.webp')] bg-cover bg-center opacity-45"
       />
-      <div className="flex flex-col items-center gap-6 p-6 text-center sm:p-8">
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 bg-linear-to-b from-stone-950/75 via-stone-950/55 to-stone-950/85"
+      />
+      <div
+        className={`relative h-1.5 w-full ${won ? 'bg-emerald-400' : 'bg-red-500'}`}
+      />
+      <div className="relative flex flex-col items-center gap-6 p-6 text-center sm:p-8">
         <div
           className={`grid size-20 place-items-center rounded-full ring-1 ${
             won
