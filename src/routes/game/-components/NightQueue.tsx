@@ -54,11 +54,6 @@ export function NightQueue({ queue }: { queue: GameState['queue'] }) {
                 />
               ) : null}
               {done ? <Check aria-hidden="true" className="size-3.5" /> : null}
-              {skipped ? (
-                <span aria-hidden="true" className="text-base leading-none">
-                  –
-                </span>
-              ) : null}
               {queueStatusLabel(item.status)}
             </p>
           </li>
