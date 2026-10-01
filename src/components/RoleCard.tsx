@@ -88,7 +88,7 @@ export function RoleCard({ role }: { role: Role }) {
           >
             <span
               aria-hidden="true"
-              className="relative flex flex-1 items-center justify-center"
+              className="relative flex min-h-0 flex-1 items-center justify-center"
             >
               <span className="absolute inset-0 bg-[radial-gradient(closest-side,rgb(232_162_94/0.16),transparent)]" />
               <img
