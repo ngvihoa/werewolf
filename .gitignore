@@ -21,3 +21,6 @@ playwright-report/
 test-results/
 .vercel
 .now/*
+
+# Ảnh gốc của tranh nền (nặng) — chỉ nén WebP trong public/bg lên git
+public/bg/*.png

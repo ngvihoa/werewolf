@@ -4,18 +4,32 @@ import { Moon, Sun } from 'lucide-react'
 
 type GamePhase = PlayerGameView['phase']
 
-/** Đêm/ngày quyết định khí quyển; các pha trung tính không đổi nền. */
-export function phaseKind(phase: GamePhase): 'night' | 'day' | null {
+export type PhaseBackdrop = 'night' | 'day' | 'voting' | 'game-over'
+
+/**
+ * Tranh nền theo pha — cùng một quảng trường làng đổi mood theo khoảnh khắc
+ * của ván (public/bg/*.webp). Sảnh và chuẩn bị dùng tranh ban ngày; null
+ * chỉ còn là phương án dự phòng khi không map được pha.
+ */
+export function phaseBackdrop(phase: GamePhase): PhaseBackdrop | null {
   if (phase === 'NIGHT' || phase === 'NIGHT_RESOLUTION') return 'night'
   if (
     phase === 'DAY' ||
-    phase === 'VOTE' ||
-    phase === 'VOTE_RESOLUTION' ||
-    phase === 'HUNTER_SHOT' ||
-    phase === 'GAME_OVER'
+    phase === 'LOBBY' ||
+    phase === 'SETUP' ||
+    phase === 'ROLE_REVEAL' ||
+    phase === 'READY_CHECK'
   ) {
     return 'day'
   }
+  if (
+    phase === 'VOTE' ||
+    phase === 'VOTE_RESOLUTION' ||
+    phase === 'HUNTER_SHOT'
+  ) {
+    return 'voting'
+  }
+  if (phase === 'GAME_OVER') return 'game-over'
   return null
 }
 
@@ -62,13 +76,13 @@ export function PhaseIndicator({
   phase: GamePhase
   round: number
 }) {
-  const kind = phaseKind(phase)
-  const Icon = kind === 'day' ? Sun : Moon
+  const isDay = phaseBackdrop(phase) === 'day'
+  const Icon = isDay ? Sun : Moon
   return (
     <div className="flex items-center gap-4">
       <span
         className={`grid size-12 shrink-0 place-items-center rounded-full ring-1 ${
-          kind === 'day'
+          isDay
             ? 'bg-amber-300/10 text-amber-200 ring-amber-300/25'
             : 'bg-surface text-ink ring-line'
         }`}

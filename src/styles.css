@@ -8,8 +8,16 @@
 @theme inline {
   --font-sans: 'Inter Variable', Inter, ui-sans-serif, system-ui, sans-serif;
 
-  --color-surface: rgb(255 255 255 / 5.5%);
-  --color-surface-raised: rgb(255 255 255 / 9%);
+  /*
+   * Bề mặt là "màn che" tối pha từ màu canvas (không phải kính trắng) để
+   * nội dung nổi trên tranh nền theo pha mà không che hết sắc tranh.
+   */
+  --color-surface: color-mix(in srgb, var(--theme-canvas-end) 55%, transparent);
+  --color-surface-raised: color-mix(
+    in srgb,
+    var(--theme-canvas-end) 76%,
+    transparent
+  );
   --color-line: rgb(255 255 255 / 12%);
   --color-line-strong: rgb(255 255 255 / 18%);
   --color-ink: var(--theme-text);
@@ -215,38 +223,73 @@ body {
 }
 
 /*
- * Khí quyển theo pha game: lớp phủ rất nhẹ đè lên nền gốc, đổi mờ dần khi
- * đêm xuống hoặc ngày lên. Chỉ dùng khi phần tử cha mang data-phase.
+ * Concept "Tranh kể chuyện, giao diện im lặng": đúng một bức tranh theo pha
+ * hiện full-bleed phía sau, các lớp xếp chồng và crossfade khi đổi pha.
+ * GameShell đặt data-bg trên <main>; ảnh đã nén WebP trong public/bg.
  */
-.phase-atmosphere {
+.phase-backdrop {
   position: fixed;
   inset: 0;
   z-index: -10;
   pointer-events: none;
+}
+
+.phase-backdrop > div {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center 32%;
   opacity: 0;
-  transition: opacity 900ms ease;
+  transition: opacity 700ms ease;
 }
 
-[data-phase='night'] .phase-atmosphere {
-  opacity: 1;
-  background:
-    radial-gradient(
-      58rem 36rem at 50% -12%,
-      rgb(var(--theme-glow-primary) / 0.14),
-      transparent 72%
-    ),
-    linear-gradient(180deg, transparent 58%, rgb(6 6 14 / 0.5) 100%);
+.phase-backdrop .bg-night {
+  background-image: url('/bg/night-bg.webp');
 }
 
-[data-phase='day'] .phase-atmosphere {
+.phase-backdrop .bg-day {
+  background-image: url('/bg/day-bg.webp');
+}
+
+.phase-backdrop .bg-voting {
+  background-image: url('/bg/voting-bg.webp');
+}
+
+.phase-backdrop .bg-game-over {
+  background-image: url('/bg/game-over-bg.webp');
+}
+
+[data-bg='night'] .phase-backdrop .bg-night {
   opacity: 1;
-  background:
-    radial-gradient(
-      58rem 36rem at 50% -12%,
-      rgb(255 213 150 / 0.09),
-      transparent 72%
-    ),
-    linear-gradient(180deg, transparent 64%, rgb(0 0 0 / 0.32) 100%);
+}
+
+[data-bg='day'] .phase-backdrop .bg-day {
+  opacity: 1;
+}
+
+[data-bg='voting'] .phase-backdrop .bg-voting {
+  opacity: 1;
+}
+
+[data-bg='game-over'] .phase-backdrop .bg-game-over {
+  opacity: 1;
+}
+
+/*
+ * Màn che chung đè lên tranh: đủ tối cho chữ trắng đạt contrast nhưng vẫn
+ * còn nhìn thấy tranh, sẫm dần về đáy để nút hành động nổi.
+ */
+.phase-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: -9;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--theme-canvas-end) 46%, transparent) 0%,
+    color-mix(in srgb, var(--theme-canvas-end) 60%, transparent) 52%,
+    color-mix(in srgb, var(--theme-canvas-end) 82%, transparent) 100%
+  );
 }
 
 .theme-switcher {
@@ -273,7 +316,7 @@ body {
     transition: none;
   }
 
-  .phase-atmosphere {
+  .phase-backdrop > div {
     transition: none;
   }
 }

@@ -1,13 +1,24 @@
 import type { PlayerGameView } from '#/game/projections/model'
 import type { ReactNode } from 'react'
 
-import { phaseKind } from './PhaseIndicator'
+import { phaseBackdrop } from './PhaseIndicator'
 
 /**
  * Khung chơi dùng chung: mobile xếp action panel (sidebar) lên trước người
  * chơi để "một hành động chính" luôn thấy đầu tiên; desktop tách hai cột
  * theo tỉ lệ sân khấu : ngữ cảnh.
+ *
+ * Concept "tranh kể chuyện, giao diện im lặng": một bức tranh theo pha nằm
+ * full-bleed dưới cùng (crossfade khi đổi pha), màn che scrim đảm bảo chữ
+ * đạt contrast; nội dung không thêm khung kính nào khác.
  */
+const BACKDROP_LAYERS = [
+  'bg-night',
+  'bg-day',
+  'bg-voting',
+  'bg-game-over',
+] as const
+
 export function GameShell({
   phase,
   header,
@@ -19,13 +30,18 @@ export function GameShell({
   stage: ReactNode
   sidebar: ReactNode
 }) {
-  const kind = phaseKind(phase)
+  const backdrop = phaseBackdrop(phase)
   return (
     <main
-      data-phase={kind ?? undefined}
+      data-bg={backdrop ?? undefined}
       className="isolate relative min-h-dvh px-5 py-6 sm:px-8 sm:py-8 lg:px-12"
     >
-      {kind ? <div aria-hidden="true" className="phase-atmosphere" /> : null}
+      <div aria-hidden="true" className="phase-backdrop">
+        {BACKDROP_LAYERS.map((layer) => (
+          <div className={layer} key={layer} />
+        ))}
+      </div>
+      <div aria-hidden="true" className="phase-scrim" />
       <div className="relative mx-auto flex max-w-6xl flex-col gap-8 sm:gap-10">
         {header}
         <div className="grid gap-8 lg:grid-cols-[3fr_2fr] lg:gap-16">
