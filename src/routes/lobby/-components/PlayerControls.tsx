@@ -2,6 +2,7 @@ import type { Role } from '#/game/domain'
 
 import { InlineError } from '#/components/InlineError'
 import { RoleCard } from '#/components/RoleCard'
+import { Button } from '#/components/ui/Button'
 
 export function PlayerControls({
   role,
@@ -19,13 +20,13 @@ export function PlayerControls({
   if (!role) {
     return (
       <div className="flex flex-col gap-4">
-        <p className="font-mono text-sm tracking-wide text-red-300 uppercase">
+        <p className="font-mono text-sm tracking-wide text-accent uppercase">
           Đang chờ Quản trò
         </p>
-        <h2 className="text-balance text-3xl font-medium tracking-tight text-stone-50">
+        <h2 className="text-balance text-3xl font-medium tracking-tight text-ink">
           Vai trò chưa được phân
         </h2>
-        <p className="text-pretty text-base/7 text-stone-400 sm:text-sm/6">
+        <p className="text-pretty text-base/7 text-ink-muted sm:text-sm/6">
           Giữ tab này mở. Vai của bạn sẽ xuất hiện riêng tại đây sau khi Quản
           trò xáo vai.
         </p>
@@ -36,42 +37,35 @@ export function PlayerControls({
   return (
     <div className="flex flex-col gap-8">
       <div className="flex flex-col gap-3">
-        <p className="font-mono text-sm tracking-wide text-red-300 uppercase">
+        <p className="font-mono text-sm tracking-wide text-accent uppercase">
           Vai của bạn
         </p>
-        <h2 className="text-4xl font-medium tracking-tight text-stone-50">
+        <h2 className="text-4xl font-medium tracking-tight text-ink">
           Vai trò đã được phân
         </h2>
-        <p className="text-pretty text-base/7 text-stone-400 sm:text-sm/6">
+        <p className="text-pretty text-base/7 text-ink-muted sm:text-sm/6">
           Mở thẻ bên dưới để xem riêng vai trò của bạn.
         </p>
       </div>
       <RoleCard role={role} />
-      <div className="rounded-xl bg-white/8 p-5 ring-1 ring-white/15 shadow-lg shadow-black/10">
-        <p className="font-mono text-sm tracking-wide text-stone-500 uppercase">
+      <div className="rounded-2xl bg-surface p-5 ring-1 ring-line">
+        <p className="font-mono text-sm tracking-wide text-ink-muted uppercase">
           Bảo mật vai
         </p>
-        <p className="pt-3 text-pretty text-base/7 text-stone-300 sm:text-sm/6">
+        <p className="pt-3 text-pretty text-base/7 text-ink sm:text-sm/6">
           Chỉ màn hình của bạn và Quản trò nhận được thông tin này. Đừng chuyền
           thiết bị khi vai đang hiển thị.
         </p>
       </div>
-      <button
-        className={
-          ready
-            ? 'rounded-md bg-white/8 px-3 py-2 text-sm font-medium text-stone-100 ring-1 ring-white/15 transition-colors hover:bg-white/12 disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500'
-            : 'rounded-md bg-red-700 px-3 py-2 text-sm font-medium text-white ring-1 ring-red-700 transition-colors hover:bg-red-600 disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500'
-        }
-        type="button"
-        disabled={pending}
+      <Button
+        variant={ready ? 'secondary' : 'primary'}
+        size="lg"
+        fullWidth
+        pending={pending}
         onClick={() => onReadyChange(!ready)}
       >
-        {pending
-          ? 'Đang cập nhật...'
-          : ready
-            ? 'Hủy sẵn sàng'
-            : 'Tôi đã xem vai và sẵn sàng'}
-      </button>
+        {ready ? 'Hủy sẵn sàng' : 'Tôi đã xem vai và sẵn sàng'}
+      </Button>
       {error ? <InlineError message={error} /> : null}
     </div>
   )

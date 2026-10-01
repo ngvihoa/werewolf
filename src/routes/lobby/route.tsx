@@ -6,12 +6,16 @@ import { createFileRoute, Navigate } from '@tanstack/react-router'
 import { createIdempotencyKey } from '#/lib/create-idempotency-key'
 import { mutationErrorMessage } from '#/game/presentation/mutation-error-message'
 import { useLocalSession } from '#/hooks/useLocalSession'
+import { PhaseIndicator } from '#/components/ui/PhaseIndicator'
 import { SessionError } from '#/components/SessionError'
 import { RoomSummary } from '#/components/RoomSummary'
+import { PlayerToken } from '#/components/ui/PlayerToken'
 import { AppLoading } from '#/components/AppLoading'
-import { PlayerList } from '#/components/PlayerList'
 import { RoomHeader } from '#/components/RoomHeader'
+import { PlayerGrid } from '#/components/ui/PlayerGrid'
 import { orpcClient } from '#/orpc/client'
+import { GameShell } from '#/components/ui/GameShell'
+import { roleLabel } from '#/game/presentation/labels'
 
 import { ModeratorControls } from './-components/ModeratorControls'
 import { PlayerControls } from './-components/PlayerControls'
@@ -148,63 +152,89 @@ function LobbyPage() {
   }
 
   return (
-    <main className="isolate min-h-dvh px-5 py-6 sm:px-8 sm:py-8 lg:px-12">
-      <div className="mx-auto flex max-w-6xl flex-col gap-10">
-        <RoomHeader isModerator={isModerator} onLeave={leaveSession} />
-        <section className="grid gap-10 lg:grid-cols-[3fr_2fr] lg:gap-16">
-          <div className="flex min-w-0 flex-col gap-8">
-            <RoomSummary
-              gameStarted={false}
-              roomCode={roomCode}
-              version={version}
-            />
-            <PlayerList
-              players={players}
-              isModerator={isModerator}
-              rolesAssigned={rolesAssigned}
-              currentPlayerId={isModerator ? undefined : view.me.id}
-            />
-          </div>
-          <aside className="min-w-0 border-t border-white/15 pt-8 lg:sticky lg:top-8 lg:self-start lg:border-t-0 lg:border-l lg:pt-0 lg:pl-10">
-            {view.viewer === 'MODERATOR' ? (
-              <ModeratorControls
-                playerCount={players.length}
-                rolesAssigned={rolesAssigned}
-                allReady={allReady}
-                assigning={assignMutation.isPending}
-                starting={startMutation.isPending}
-                error={mutationError}
-                onAssign={(composition) =>
-                  assignMutation.mutate({
-                    composition,
-                    idempotencyKey: createIdempotencyKey(),
-                  })
+    <GameShell
+      phase="LOBBY"
+      header={
+        <RoomHeader
+          isModerator={isModerator}
+          roomCode={roomCode}
+          onLeave={leaveSession}
+        />
+      }
+      stage={
+        <>
+          <PhaseIndicator phase="LOBBY" round={1} />
+          <RoomSummary
+            gameStarted={false}
+            roomCode={roomCode}
+            version={version}
+          />
+          <PlayerGrid
+            items={players}
+            renderItem={(player, index) => (
+              <PlayerToken
+                key={player.id}
+                displayName={player.displayName}
+                index={index}
+                isYou={!isModerator && player.id === view.me.id}
+                roleImageSrc={
+                  isModerator && player.role
+                    ? `/role/${player.role.toLowerCase()}.png`
+                    : null
                 }
-                // Start game cũng dùng optimistic locking như các lobby mutation khác.
-                onStart={() =>
-                  startMutation.mutate({
-                    idempotencyKey: createIdempotencyKey(),
-                  })
+                roleLabelText={
+                  isModerator && player.role ? roleLabel(player.role) : null
                 }
-              />
-            ) : (
-              <PlayerControls
-                role={view.me.role}
-                ready={view.me.ready}
-                pending={readyMutation.isPending}
-                error={mutationError}
-                onReadyChange={(ready) =>
-                  readyMutation.mutate({
-                    ready,
-                    idempotencyKey: createIdempotencyKey(),
-                  })
+                statusText={
+                  !rolesAssigned
+                    ? 'Đang chờ'
+                    : player.ready
+                      ? 'Sẵn sàng'
+                      : 'Xem vai'
                 }
               />
             )}
-          </aside>
-        </section>
-      </div>
-    </main>
+          />
+        </>
+      }
+      sidebar={
+        view.viewer === 'MODERATOR' ? (
+          <ModeratorControls
+            playerCount={players.length}
+            rolesAssigned={rolesAssigned}
+            allReady={allReady}
+            assigning={assignMutation.isPending}
+            starting={startMutation.isPending}
+            error={mutationError}
+            onAssign={(composition) =>
+              assignMutation.mutate({
+                composition,
+                idempotencyKey: createIdempotencyKey(),
+              })
+            }
+            // Start game cũng dùng optimistic locking như các lobby mutation khác.
+            onStart={() =>
+              startMutation.mutate({
+                idempotencyKey: createIdempotencyKey(),
+              })
+            }
+          />
+        ) : (
+          <PlayerControls
+            role={view.me.role}
+            ready={view.me.ready}
+            pending={readyMutation.isPending}
+            error={mutationError}
+            onReadyChange={(ready) =>
+              readyMutation.mutate({
+                ready,
+                idempotencyKey: createIdempotencyKey(),
+              })
+            }
+          />
+        )
+      }
+    />
   )
 }
 

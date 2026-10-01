@@ -4,6 +4,7 @@ import { InlineError } from '#/components/InlineError'
 import { ROLE_VALUES } from '#/game/schema'
 import { roleLabel } from '#/game/presentation/labels'
 import { useState } from 'react'
+import { Button } from '#/components/ui/Button'
 
 import { ControlStep } from './ControlStep'
 
@@ -157,26 +158,28 @@ export function ModeratorControls({
       ) : null}
 
       <div className="flex flex-col gap-3">
-        <button
-          className="rounded-md bg-white/8 px-3 py-2 text-sm font-medium text-stone-100 ring-1 ring-white/15 transition-colors hover:bg-white/12 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500"
-          type="button"
-          disabled={invalidSelection || assigning || starting}
+        <Button
+          variant="secondary"
+          size="lg"
+          fullWidth
+          pending={assigning}
+          pendingLabel="Đang xáo vai..."
+          disabled={invalidSelection || starting}
           onClick={() => onAssign(composition)}
         >
-          {assigning
-            ? 'Đang xáo vai...'
-            : rolesAssigned
-              ? 'Xáo và phân lại vai'
-              : 'Xáo và phân vai'}
-        </button>
-        <button
-          className="rounded-md bg-red-700 px-3 py-2 text-sm font-medium text-white ring-1 ring-red-700 transition-colors hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500"
-          type="button"
-          disabled={!rolesAssigned || !allReady || starting || assigning}
+          {rolesAssigned ? 'Xáo và phân lại vai' : 'Xáo và phân vai'}
+        </Button>
+        <Button
+          variant="primary"
+          size="lg"
+          fullWidth
+          pending={starting}
+          pendingLabel="Đang bắt đầu..."
+          disabled={!rolesAssigned || !allReady || assigning}
           onClick={onStart}
         >
-          {starting ? 'Đang bắt đầu...' : 'Bắt đầu đêm đầu tiên'}
-        </button>
+          Bắt đầu đêm đầu tiên
+        </Button>
       </div>
       {error ? <InlineError message={error} /> : null}
     </div>
