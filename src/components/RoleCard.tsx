@@ -50,7 +50,7 @@ export function RoleCard({ role }: { role: Role }) {
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-56 flex-col items-center gap-4">
+    <div className="mx-auto flex w-full max-w-64 flex-col items-center gap-4">
       <button
         aria-label={revealed ? 'Ẩn thẻ vai' : 'Xem thẻ vai'}
         aria-pressed={revealed}
@@ -66,7 +66,7 @@ export function RoleCard({ role }: { role: Role }) {
         onClick={handleClick}
       >
         <span
-          className={`relative block aspect-square w-full rounded-2xl shadow-2xl transition-transform duration-700 transform-3d motion-reduce:transition-none ${
+          className={`relative block aspect-2/3 w-full rounded-2xl shadow-2xl transition-transform duration-700 transform-3d motion-reduce:transition-none ${
             revealed ? 'transform-[rotateY(180deg)]' : ''
           }`}
         >
@@ -90,12 +90,12 @@ export function RoleCard({ role }: { role: Role }) {
               aria-hidden="true"
               className="relative flex min-h-0 flex-1 items-center justify-center"
               style={{
-                background: `radial-gradient(closest-side at 50% 45%, ${roleAccentColor(role)}59 0%, ${roleAccentColor(role)}1f 58%, transparent 100%)`,
+                background: `radial-gradient(closest-side at 50% 45%, ${roleAccentColor(role)}99 0%, ${roleAccentColor(role)}52 55%, transparent 100%)`,
               }}
             >
               <img
                 alt=""
-                className="relative size-full object-contain p-5"
+                className="relative size-full object-contain p-4"
                 decoding="async"
                 height={512}
                 src={roleArtUrl(role)}

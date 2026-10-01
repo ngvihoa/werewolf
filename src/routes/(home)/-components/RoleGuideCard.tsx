@@ -40,7 +40,7 @@ export function RoleGuideCard({ guide }: { guide: RoleGuide }) {
               aria-hidden="true"
               className="absolute inset-0"
               style={{
-                background: `radial-gradient(closest-side at 50% 44%, ${accent}66 0%, ${accent}1f 58%, transparent 100%)`,
+                background: `radial-gradient(closest-side at 50% 44%, ${accent}99 0%, ${accent}52 55%, transparent 100%)`,
               }}
             />
             <img
