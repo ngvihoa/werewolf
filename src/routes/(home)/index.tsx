@@ -103,7 +103,7 @@ function LandingPage() {
         />
         <div
           aria-hidden="true"
-          className="absolute inset-0 -z-10 bg-linear-to-b from-midnight/72 via-midnight/55 to-midnight/25"
+          className="absolute inset-0 -z-10 bg-linear-to-b from-midnight/80 via-midnight/65 to-midnight/35"
         />
         <div className="pointer-events-none absolute -top-40 left-[8%] size-96 rounded-full bg-red-500/10 blur-3xl" />
         <div className="mx-auto grid min-h-[calc(100dvh-5rem)] max-w-6xl items-center gap-14 px-5 py-16 sm:px-8 sm:py-20 lg:grid-cols-[1.08fr_0.92fr] lg:px-12 lg:py-24">

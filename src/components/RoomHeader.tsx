@@ -37,7 +37,7 @@ export function RoomHeader({
           aria-hidden="true"
           className="size-2 shrink-0 rounded-full bg-danger shadow-[0_0_24px_var(--color-red-500)]"
         />
-        <p className="truncate font-mono text-sm tracking-wide text-ink-muted uppercase">
+        <p className="truncate font-mono text-sm tracking-wide text-ink uppercase">
           {isModerator ? 'Bảng Quản trò' : 'Phòng người chơi'}
         </p>
       </div>
@@ -50,7 +50,7 @@ export function RoomHeader({
                   ? 'Đã sao chép mã phòng'
                   : 'Sao chép mã phòng'
               }
-              className="flex h-10 items-center gap-2 rounded-full bg-surface pr-3.5 pl-4 ring-1 ring-line transition-colors hover:bg-surface-raised focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500"
+              className="flex h-10 items-center gap-2 rounded-full bg-midnight/75 pr-3.5 pl-4 ring-1 ring-line-strong backdrop-blur-sm transition-colors hover:bg-midnight/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500"
               title={
                 copyStatus === 'COPIED'
                   ? 'Đã sao chép'
@@ -84,7 +84,7 @@ export function RoomHeader({
         ) : null}
         {actions}
         <button
-          className="relative shrink-0 px-2 py-2 text-sm text-ink-muted transition-colors hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500"
+          className="relative shrink-0 px-2 py-2 text-sm text-ink transition-colors hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500"
           type="button"
           onClick={onLeave}
         >
