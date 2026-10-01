@@ -1,33 +1,97 @@
 import type { ReactNode } from 'react'
 
+import { copyToClipboard } from '#/lib/clipboard'
+import { Check, Copy } from 'lucide-react'
+import { useState } from 'react'
+
 export function RoomHeader({
   isModerator,
+  roomCode,
   actions,
   onLeave,
 }: {
   isModerator: boolean
+  roomCode?: string
   actions?: ReactNode
   onLeave: () => void
 }) {
+  const [copyStatus, setCopyStatus] = useState<'IDLE' | 'COPIED' | 'ERROR'>(
+    'IDLE',
+  )
+
+  async function copyRoomCode() {
+    if (!roomCode) return
+    try {
+      await copyToClipboard(roomCode)
+      setCopyStatus('COPIED')
+      window.setTimeout(() => setCopyStatus('IDLE'), 2_000)
+    } catch {
+      setCopyStatus('ERROR')
+    }
+  }
+
   return (
-    <header className="flex items-center justify-between gap-4 border-b border-white/15 pb-5">
+    <header className="flex items-center justify-between gap-3 border-b border-line pb-4">
       <div className="flex min-w-0 items-center gap-3">
-        <span className="size-2 shrink-0 rounded-full bg-red-500 shadow-[0_0_24px_var(--color-red-500)]" />
-        <p className="truncate font-mono text-sm tracking-wide text-stone-400 uppercase">
-          {isModerator ? 'Moderator console' : 'Player room'}
+        <span
+          aria-hidden="true"
+          className="size-2 shrink-0 rounded-full bg-danger shadow-[0_0_24px_var(--color-red-500)]"
+        />
+        <p className="truncate font-mono text-sm tracking-wide text-ink-muted uppercase">
+          {isModerator ? 'Bảng Quản trò' : 'Phòng người chơi'}
         </p>
       </div>
       <div className="flex items-center gap-2">
+        {roomCode ? (
+          <>
+            <button
+              aria-label={
+                copyStatus === 'COPIED'
+                  ? 'Đã sao chép mã phòng'
+                  : 'Sao chép mã phòng'
+              }
+              className="flex h-10 items-center gap-2 rounded-full bg-surface pr-3.5 pl-4 ring-1 ring-line transition-colors hover:bg-surface-raised focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500"
+              title={
+                copyStatus === 'COPIED'
+                  ? 'Đã sao chép'
+                  : copyStatus === 'ERROR'
+                    ? 'Không thể sao chép'
+                    : 'Sao chép mã phòng'
+              }
+              type="button"
+              onClick={() => void copyRoomCode()}
+            >
+              <span className="theme-room-code font-mono text-sm tracking-[0.14em]">
+                {roomCode}
+              </span>
+              {copyStatus === 'COPIED' ? (
+                <Check
+                  aria-hidden="true"
+                  className="size-3.5 text-emerald-300"
+                />
+              ) : (
+                <Copy aria-hidden="true" className="size-3.5 text-ink-muted" />
+              )}
+            </button>
+            <span aria-live="polite" className="sr-only">
+              {copyStatus === 'COPIED'
+                ? 'Đã sao chép mã phòng'
+                : copyStatus === 'ERROR'
+                  ? 'Không thể sao chép mã phòng'
+                  : ''}
+            </span>
+          </>
+        ) : null}
         {actions}
         <button
-          className="relative shrink-0 px-2 py-2 text-sm text-stone-400 transition-colors hover:text-stone-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500"
+          className="relative shrink-0 px-2 py-2 text-sm text-ink-muted transition-colors hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500"
           type="button"
           onClick={onLeave}
         >
           Rời phòng
           <span
-            className="pointer-fine:hidden absolute top-1/2 left-1/2 size-[max(100%,3rem)] -translate-1/2"
             aria-hidden="true"
+            className="pointer-fine:hidden absolute top-1/2 left-1/2 size-[max(100%,3rem)] -translate-1/2"
           />
         </button>
       </div>

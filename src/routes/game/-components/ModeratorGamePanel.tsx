@@ -1,8 +1,8 @@
 import type { CommandHandler } from './types'
 import type { GameState } from '#/game/orchestration/model'
 
+import { WaitingState } from '#/components/ui/WaitingState'
 import { InlineError } from '#/components/InlineError'
-import { phaseLabel } from '#/game/presentation/labels'
 import { useState } from 'react'
 
 import { moderatorPhaseDescription, moderatorPhaseTitle } from './game-copy'
@@ -42,18 +42,14 @@ export function ModeratorGamePanel({
     <div className="flex flex-col gap-8">
       <div className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="font-mono text-sm tracking-wide text-red-300 uppercase">
-            {phaseLabel(state.phase)} · Đêm{' '}
-            {String(state.round).padStart(2, '0')}
+          <p className="font-mono text-sm tracking-wide text-accent uppercase">
+            {moderatorPhaseTitle(state.phase, activeItem?.step)}
           </p>
-          <p className="font-mono text-sm tabular-nums text-stone-500">
+          <p className="font-mono text-sm tabular-nums text-ink-muted">
             {livingPlayers.length} còn sống
           </p>
         </div>
-        <h2 className="text-balance text-3xl font-medium tracking-tight text-stone-50">
-          {moderatorPhaseTitle(state.phase, activeItem?.step)}
-        </h2>
-        <p className="text-pretty text-base/7 text-stone-400 sm:text-sm/6">
+        <p className="text-pretty text-base/7 text-ink-muted sm:text-sm/6">
           {moderatorPhaseDescription(state.phase)}
         </p>
       </div>
@@ -113,8 +109,8 @@ export function ModeratorGamePanel({
       ) : null}
       {state.phase === 'HUNTER_SHOT' ? (
         state.pendingHunterShot?.targetId ? (
-          <div className="flex flex-col gap-4 rounded-xl border border-red-400/20 bg-red-500/5 p-4">
-            <p className="text-base/7 text-stone-300 sm:text-sm/6">
+          <div className="flex flex-col gap-4 rounded-2xl bg-danger/10 p-5 ring-1 ring-danger/25">
+            <p className="text-base/7 text-ink sm:text-sm/6">
               {names.get(state.pendingHunterShot.hunterId) ?? 'Thợ săn'} chọn{' '}
               {names.get(state.pendingHunterShot.targetId) ?? 'người chơi'}.
             </p>
@@ -127,17 +123,15 @@ export function ModeratorGamePanel({
             </CommandButton>
           </div>
         ) : (
-          <p className="text-base/7 text-stone-400 sm:text-sm/6">
-            Đang chờ Thợ săn chọn người kéo theo.
-          </p>
+          <WaitingState title="Đang chờ Thợ săn chọn người kéo theo." />
         )
       ) : null}
       {state.phase === 'GAME_OVER' ? (
         <div className="flex flex-col gap-5">
           <GameOver winner={state.winner} />
           {confirmingRematch ? (
-            <div className="flex flex-col gap-3 rounded-md border border-red-500/30 bg-red-950/20 p-4">
-              <p className="text-sm/6 text-stone-300">
+            <div className="flex flex-col gap-3 rounded-2xl bg-danger/10 p-4 ring-1 ring-danger/30">
+              <p className="text-sm/6 text-ink">
                 Giữ nguyên phòng và người chơi, đồng thời xóa vai trò và trạng
                 thái của ván vừa kết thúc?
               </p>

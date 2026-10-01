@@ -19,11 +19,11 @@ export function ResolutionControl({
 }) {
   return (
     <div className="flex flex-col gap-5">
-      <div className="rounded-xl bg-white/8 p-5 ring-1 ring-white/15 shadow-lg shadow-black/10">
-        <p className="font-mono text-sm tracking-wide text-stone-500 uppercase">
+      <div className="rounded-2xl bg-surface-raised p-5 ring-1 ring-line">
+        <p className="font-mono text-sm tracking-wide text-ink-muted uppercase">
           Kết quả dự kiến
         </p>
-        <p className="pt-3 text-base/7 text-stone-200 sm:text-sm/6">
+        <p className="pt-3 text-base/7 text-ink sm:text-sm/6">
           {deaths.length
             ? deaths
                 .map((death) => names.get(death.playerId) ?? 'Người chơi')
@@ -32,11 +32,11 @@ export function ResolutionControl({
         </p>
       </div>
       {convertedHybridPlayerIds.length ? (
-        <div className="rounded-lg bg-red-500/10 p-5 ring-1 ring-red-400/20">
-          <p className="font-mono text-sm tracking-wide text-red-300 uppercase">
+        <div className="rounded-2xl bg-danger/10 p-5 ring-1 ring-danger/25">
+          <p className="font-mono text-sm tracking-wide text-accent uppercase">
             Chuyển hóa bí mật
           </p>
-          <p className="pt-3 text-base/7 text-red-100 sm:text-sm/6">
+          <p className="pt-3 text-base/7 text-ink sm:text-sm/6">
             {convertedHybridPlayerIds
               .map((playerId) => names.get(playerId) ?? 'Người chơi')
               .join(', ')}{' '}

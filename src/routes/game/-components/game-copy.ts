@@ -7,6 +7,22 @@ export function playerName(players: PlayerGameView['players'], id: string) {
   return players.find((player) => player.id === id)?.displayName ?? 'Người chơi'
 }
 
+export function actionPrompt(step: GameState['queue'][number]['step']): string {
+  return (
+    {
+      HUNTER_MARK: 'Chọn người sẽ kéo theo khi bạn chết',
+      PROTECTOR_PROTECT: 'Chọn người cần bảo hộ đêm nay',
+      SEER_INSPECT: 'Chọn một người để soi phe',
+      WEREWOLF_ATTACK: 'Chọn nạn nhân cho đàn Sói',
+      WHITE_WOLF_KILL: 'Chọn một Sói để thanh trừng',
+      WITCH_ACTION: 'Quyết định dùng bình cứu hay bình độc',
+      PIPER_CHARM: 'Chọn người để mê hoặc',
+      CUPID_LINK: 'Chọn hai người thành tình nhân',
+      COURTESAN_VISIT: 'Chọn một nhà để ghé thăm',
+    } as const
+  )[step]
+}
+
 export function moderatorPhaseTitle(
   phase: GameState['phase'],
   step?: GameState['queue'][number]['step'],

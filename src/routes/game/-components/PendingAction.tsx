@@ -19,12 +19,12 @@ export function PendingAction({
 }) {
   const [reason, setReason] = useState('')
   return (
-    <div className="flex flex-col gap-5 rounded-xl bg-white/8 p-5 ring-1 ring-white/15 shadow-lg shadow-black/10">
+    <div className="flex flex-col gap-5 rounded-2xl bg-surface-raised p-5 ring-1 ring-line-strong shadow-lg shadow-black/10">
       <div className="flex flex-col gap-2">
-        <p className="font-mono text-sm tracking-wide text-red-300 uppercase">
+        <p className="font-mono text-sm tracking-wide text-accent uppercase">
           Chờ xác nhận
         </p>
-        <p className="text-base/7 text-stone-200 sm:text-sm/6">
+        <p className="text-base/7 text-ink sm:text-sm/6">
           {actionSummary(action, names)}
         </p>
       </div>
@@ -35,15 +35,15 @@ export function PendingAction({
       >
         Xác nhận hành động
       </CommandButton>
-      <div className="flex flex-col gap-3 border-t border-white/15 pt-4">
+      <div className="flex flex-col gap-3 border-t border-line pt-4">
         <label
-          className="text-base/7 text-stone-400 sm:text-sm/6"
+          className="text-base/7 text-ink-muted sm:text-sm/6"
           htmlFor="reject-reason"
         >
           Lý do từ chối
         </label>
         <input
-          className="rounded-md bg-stone-900 px-3 py-2.5 text-base text-stone-50 ring-1 ring-white/15 placeholder:text-stone-500 focus-visible:-outline-offset-1 focus-visible:outline-2 focus-visible:outline-red-500 sm:py-2 sm:text-sm"
+          className="rounded-xl bg-surface px-3 py-2.5 text-base text-ink ring-1 ring-line placeholder:text-ink-subtle focus-visible:-outline-offset-1 focus-visible:outline-2 focus-visible:outline-red-500 sm:py-2 sm:text-sm"
           id="reject-reason"
           name="reason"
           placeholder="Ví dụ: chọn sai người"

@@ -14,21 +14,21 @@ export function SecretNotice({
   const [revealed, setRevealed] = useState(!concealable)
 
   return (
-    <div className="rounded-lg bg-red-950/30 p-5 ring-1 ring-red-400/20">
-      <p className="font-mono text-sm tracking-wide text-red-300 uppercase">
+    <div className="rounded-2xl bg-danger/10 p-5 ring-1 ring-danger/20">
+      <p className="font-mono text-sm tracking-wide text-accent uppercase">
         {revealed ? label : hiddenLabel}
       </p>
       {revealed ? (
-        <p className="pt-3 text-xl font-medium text-stone-50">{value}</p>
+        <p className="pt-3 text-xl font-medium text-ink">{value}</p>
       ) : (
-        <p className="pt-3 text-sm/6 text-stone-400">
+        <p className="pt-3 text-sm/6 text-ink-muted">
           Chỉ mở khi không có người khác nhìn màn hình.
         </p>
       )}
       {concealable ? (
         <button
           aria-expanded={revealed}
-          className="mt-4 rounded-md bg-white/5 px-3 py-2 text-sm font-medium text-stone-200 ring-1 ring-white/10 transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500"
+          className="mt-4 min-h-11 rounded-xl bg-surface px-3 py-2 text-sm font-medium text-ink ring-1 ring-line-strong transition-colors hover:bg-surface-raised focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500"
           type="button"
           onClick={() => setRevealed((current) => !current)}
         >

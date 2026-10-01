@@ -1,7 +1,7 @@
+import { PlayerToken } from '#/components/ui/PlayerToken'
 import { useState } from 'react'
 
 import { CommandButton } from './CommandButton'
-import { SelectField } from './SelectField'
 
 export function VoteForm({
   players,
@@ -24,21 +24,31 @@ export function VoteForm({
         onSubmit(tied, tied ? null : targetId)
       }}
     >
-      <p className="font-mono text-sm tracking-wide text-stone-500 uppercase">
-        Lượt biểu quyết {attempt}/2
-      </p>
-      <SelectField
-        id="vote-target"
-        label="Người bị chọn"
-        name="voteTarget"
-        value={targetId}
-        options={players}
-        emptyLabel="Chọn kết quả"
-        required={!tied}
-        disabled={tied}
-        onChange={setTargetId}
-      />
-      <label className="flex items-center gap-3 text-base/7 text-stone-300 sm:text-sm/6">
+      <div className="border-t border-line pt-5">
+        <p className="font-mono text-sm tracking-wide text-accent uppercase">
+          Lượt biểu quyết {attempt}/2
+        </p>
+        <p className="pt-1 text-sm text-ink-muted">
+          Chọn người bị loại theo kết quả cả bàn đã thống nhất.
+        </p>
+      </div>
+      <div
+        aria-label="Người bị chọn"
+        className={`grid grid-cols-2 gap-2.5 sm:grid-cols-3 ${tied ? 'pointer-events-none opacity-40' : ''}`}
+        role="group"
+      >
+        {players.map((player, index) => (
+          <PlayerToken
+            key={player.id}
+            displayName={player.displayName}
+            index={index}
+            selectable
+            selected={player.id === targetId}
+            onSelect={() => setTargetId(player.id)}
+          />
+        ))}
+      </div>
+      <label className="flex items-center gap-3 text-base/7 text-ink-muted sm:text-sm/6">
         <input
           className="size-5 accent-red-600 sm:size-4"
           name="tied"
@@ -48,14 +58,16 @@ export function VoteForm({
         />
         Kết quả hòa
       </label>
-      <CommandButton
-        primary
-        pending={pending}
-        type="submit"
-        disabled={!tied && !targetId}
-      >
-        Ghi nhận kết quả biểu quyết
-      </CommandButton>
+      <div className="sticky bottom-0 -mx-1 bg-linear-to-t from-stone-950 via-stone-950/90 px-1 pt-5 pb-safe">
+        <CommandButton
+          primary
+          pending={pending}
+          type="submit"
+          disabled={!tied && !targetId}
+        >
+          Ghi nhận kết quả biểu quyết
+        </CommandButton>
+      </div>
     </form>
   )
 }

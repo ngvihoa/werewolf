@@ -98,8 +98,8 @@ test('voted-out hunter selects and kills a player before the next night', async 
       .getByRole('button', { name: 'Bắt đầu biểu quyết' })
       .click()
     await table.moderator.page
-      .getByLabel('Người bị chọn')
-      .selectOption({ label: hunter.name })
+      .getByRole('button', { name: hunter.name, exact: true })
+      .click()
     await table.moderator.page
       .getByRole('button', { name: 'Ghi nhận kết quả biểu quyết' })
       .click()
@@ -111,14 +111,14 @@ test('voted-out hunter selects and kills a player before the next night', async 
       table.moderator.page.getByText('Đang chờ Thợ săn chọn người kéo theo.'),
     ).toBeVisible()
     await shotTarget.page.reload()
-    await expect(shotTarget.page.getByLabel('Chọn người kéo theo')).toHaveCount(
-      0,
-    )
+    await expect(
+      shotTarget.page.getByRole('button', { name: shotTarget.name }),
+    ).toHaveCount(0)
 
     await hunter.page.reload()
     await hunter.page
-      .getByLabel('Chọn người kéo theo')
-      .selectOption({ label: shotTarget.name })
+      .getByRole('button', { name: shotTarget.name, exact: true })
+      .click()
     const submitShot = hunter.page.getByRole('button', {
       name: 'Gửi mục tiêu cho Quản trò',
     })
@@ -172,9 +172,7 @@ async function submitAndConfirmNightAction(
 ) {
   await actor.page.reload()
   if (targetName) {
-    await actor.page
-      .getByLabel('Chọn mục tiêu')
-      .selectOption({ label: targetName })
+    await actor.page.getByRole('button', { name: targetName }).click()
   }
   const submit = actor.page.getByRole('button', {
     name: 'Gửi hành động cho Quản trò',

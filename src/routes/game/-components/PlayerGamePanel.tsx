@@ -2,10 +2,9 @@ import type { PlayerGameView } from '#/game/projections/model'
 import type { CommandHandler } from './types'
 
 import { InlineError } from '#/components/InlineError'
-import { phaseLabel } from '#/game/presentation/labels'
 import { RoleCard } from '#/components/RoleCard'
 
-import { playerName, playerWaitingTitle } from './game-copy'
+import { actionPrompt, playerName, playerWaitingTitle } from './game-copy'
 import { GameResultDialog } from './GameResultDialog'
 import { NightActionForm } from './NightActionForm'
 import { HunterShotForm } from './HunterShotForm'
@@ -39,17 +38,16 @@ export function PlayerGamePanel({
   return (
     <div className="flex flex-col gap-8">
       <div className="flex flex-col gap-3">
-        <p className="font-mono text-sm tracking-wide text-red-300 uppercase">
-          {phaseLabel(view.phase)} · Vòng {String(view.round).padStart(2, '0')}
-        </p>
-        <h2 className="text-balance text-3xl font-medium tracking-tight text-stone-50">
-          {canSubmit
-            ? 'Đến lượt bạn hành động'
-            : !view.me.alive
-              ? 'Bạn đang quan sát'
-              : playerWaitingTitle(view.phase)}
+        <h2 className="text-balance text-3xl font-medium tracking-tight text-ink">
+          {canSubmit && activeStep
+            ? actionPrompt(activeStep)
+            : canSubmit
+              ? 'Đến lượt bạn hành động'
+              : !view.me.alive
+                ? 'Bạn đang quan sát'
+                : playerWaitingTitle(view.phase)}
         </h2>
-        <p className="text-pretty text-base/7 text-stone-400 sm:text-sm/6">
+        <p className="text-pretty text-base/7 text-ink-muted sm:text-sm/6">
           Thông tin trên màn hình này chỉ dành cho bạn. Mở thẻ khi cần xem lại
           vai trò.
         </p>
@@ -60,18 +58,18 @@ export function PlayerGamePanel({
       view.me.abilityState !== null &&
       'converted' in view.me.abilityState &&
       view.me.abilityState.converted ? (
-        <p className="rounded-xl bg-red-500/10 px-4 py-3 text-sm/6 text-red-200 ring-1 ring-red-400/20">
+        <p className="rounded-2xl bg-danger/10 px-4 py-3 text-sm/6 text-ink ring-1 ring-danger/25">
           Bạn đã bị cắn và chuyển sang phe Ma sói. Từ đêm tiếp theo, bạn hành
           động cùng đàn Sói.
         </p>
       ) : null}
       {view.isCharmed ? (
-        <p className="rounded-xl bg-violet-400/10 px-4 py-3 text-sm/6 text-violet-200 ring-1 ring-violet-300/20">
+        <p className="rounded-2xl bg-violet-400/10 px-4 py-3 text-sm/6 text-violet-200 ring-1 ring-violet-300/20">
           Bạn đã bị Người thổi sáo mê hoặc.
         </p>
       ) : null}
       {view.lover ? (
-        <p className="rounded-xl bg-rose-400/10 px-4 py-3 text-sm/6 text-rose-200 ring-1 ring-rose-300/20">
+        <p className="rounded-2xl bg-rose-400/10 px-4 py-3 text-sm/6 text-rose-200 ring-1 ring-rose-300/20">
           Tình nhân của bạn là {view.lover.displayName}. Nếu một trong hai chết,
           người còn lại cũng sẽ chết theo.
         </p>
@@ -101,10 +99,10 @@ export function PlayerGamePanel({
       {seerResults.length > 0 ? (
         <section className="flex flex-col gap-4">
           <div>
-            <p className="font-mono text-sm tracking-wide text-red-300 uppercase">
+            <p className="font-mono text-sm tracking-wide text-accent uppercase">
               Lịch sử soi
             </p>
-            <p className="pt-2 text-sm/6 text-stone-400">
+            <p className="pt-2 text-sm/6 text-ink-muted">
               Kết quả mới nhất hiển thị trước. Mỗi kết quả được giữ kín riêng.
             </p>
           </div>
@@ -127,10 +125,10 @@ export function PlayerGamePanel({
       {witchActions.length > 0 ? (
         <section className="flex flex-col gap-4">
           <div>
-            <p className="font-mono text-sm tracking-wide text-red-300 uppercase">
+            <p className="font-mono text-sm tracking-wide text-accent uppercase">
               Lịch sử dùng bình
             </p>
-            <p className="pt-2 text-sm/6 text-stone-400">
+            <p className="pt-2 text-sm/6 text-ink-muted">
               Chỉ những hành động đã được Quản trò xác nhận mới xuất hiện tại
               đây.
             </p>
@@ -172,11 +170,17 @@ export function PlayerGamePanel({
           view={view}
           step={activeStep}
           pending={pending}
+          error={error}
           onCommand={onCommand}
         />
       ) : null}
       {canSubmit && view.phase === 'HUNTER_SHOT' ? (
-        <HunterShotForm view={view} pending={pending} onCommand={onCommand} />
+        <HunterShotForm
+          view={view}
+          pending={pending}
+          error={error}
+          onCommand={onCommand}
+        />
       ) : null}
       {view.phase === 'GAME_OVER' ? <GameOver winner={view.winner} /> : null}
       {view.phase === 'GAME_OVER' && view.winner && view.me.role ? (

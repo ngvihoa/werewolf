@@ -6,12 +6,15 @@ import { createFileRoute, Navigate } from '@tanstack/react-router'
 import { createIdempotencyKey } from '#/lib/create-idempotency-key'
 import { mutationErrorMessage } from '#/game/presentation/mutation-error-message'
 import { useLocalSession } from '#/hooks/useLocalSession'
+import { PhaseIndicator } from '#/components/ui/PhaseIndicator'
 import { SessionError } from '#/components/SessionError'
-import { RoomSummary } from '#/components/RoomSummary'
+import { PlayerToken } from '#/components/ui/PlayerToken'
 import { AppLoading } from '#/components/AppLoading'
-import { PlayerList } from '#/components/PlayerList'
 import { RoomHeader } from '#/components/RoomHeader'
+import { PlayerGrid } from '#/components/ui/PlayerGrid'
 import { orpcClient } from '#/orpc/client'
+import { GameShell } from '#/components/ui/GameShell'
+import { roleLabel } from '#/game/presentation/labels'
 import { STEP_ROLE } from '#/game/rules/transitions'
 
 import { GameHistorySheet } from './-components/GameHistorySheet'
@@ -96,7 +99,6 @@ function GamePage() {
   const view = viewQuery.data
   const isModerator = view.viewer === 'MODERATOR'
   const roomCode = isModerator ? view.game.roomCode : view.roomCode
-  const version = isModerator ? view.game.version : view.version
   const players = isModerator
     ? view.game.lobbyPlayers.map((player) => ({
         ...player,
@@ -106,15 +108,11 @@ function GamePage() {
           )?.alive ?? true,
       }))
     : view.players.map((player) => ({ ...player, role: null }))
-  const rolesAssigned = isModerator
-    ? players.length > 0 && players.every((player) => player.role !== null)
-    : view.me.role !== null
   const gameStarted = isModerator
     ? view.game.state !== null
     : view.phase !== 'LOBBY'
-  const playerNames = new Map(
-    players.map((player) => [player.id, player.displayName]),
-  )
+  const phase = isModerator ? (view.game.state?.phase ?? 'SETUP') : view.phase
+  const round = isModerator ? (view.game.state?.round ?? 1) : view.round
   const activeQueueItem = isModerator
     ? view.game.state?.queue.find(
         (item) =>
@@ -150,53 +148,76 @@ function GamePage() {
             : null
 
   return (
-    <main className="isolate min-h-dvh px-5 py-6 sm:px-8 sm:py-8 lg:px-12">
-      <div className="mx-auto flex max-w-6xl flex-col gap-10">
+    <GameShell
+      phase={phase}
+      header={
         <RoomHeader
+          isModerator={isModerator}
+          roomCode={roomCode}
           actions={
             isModerator ? (
               <GameHistorySheet
                 history={view.game.history}
-                names={playerNames}
+                names={
+                  new Map(
+                    view.game.lobbyPlayers.map((player) => [
+                      player.id,
+                      player.displayName,
+                    ]),
+                  )
+                }
               />
             ) : undefined
           }
-          isModerator={isModerator}
           onLeave={leaveSession}
         />
-        <section className="grid gap-10 lg:grid-cols-[3fr_2fr] lg:gap-16">
-          <div className="flex min-w-0 flex-col gap-8">
-            <RoomSummary gameStarted roomCode={roomCode} version={version} />
-            <PlayerList
-              players={players}
-              isModerator={isModerator}
-              rolesAssigned={rolesAssigned}
-              activePlayerIds={activePlayerIds}
-              currentPlayerId={isModerator ? undefined : view.me.id}
-              showLifeStatus
-            />
-          </div>
-          <aside className="min-w-0 border-t border-white/15 pt-8 lg:sticky lg:top-8 lg:self-start lg:border-t-0 lg:border-l lg:pt-0 lg:pl-10">
-            <GameBoard
-              view={view}
-              pending={commandMutation.isPending || rematchMutation.isPending}
-              error={mutationError}
-              onCommand={(command) =>
-                commandMutation.mutate({
-                  command,
-                  idempotencyKey: createIdempotencyKey(),
-                })
-              }
-              onRematch={() =>
-                rematchMutation.mutate({
-                  idempotencyKey: createIdempotencyKey(),
-                })
-              }
-            />
-          </aside>
-        </section>
-      </div>
-    </main>
+      }
+      stage={
+        <>
+          <PhaseIndicator phase={phase} round={round} />
+          <PlayerGrid
+            items={players}
+            renderItem={(player, index) => (
+              <PlayerToken
+                key={player.id}
+                displayName={player.displayName}
+                index={index}
+                dead={player.alive === false}
+                acting={activePlayerIds.has(player.id)}
+                isYou={!isModerator && player.id === view.me.id}
+                roleImageSrc={
+                  isModerator && player.role
+                    ? `/role/${player.role.toLowerCase()}.png`
+                    : null
+                }
+                roleLabelText={
+                  isModerator && player.role ? roleLabel(player.role) : null
+                }
+                statusText={player.alive === false ? 'Đã chết' : null}
+              />
+            )}
+          />
+        </>
+      }
+      sidebar={
+        <GameBoard
+          view={view}
+          pending={commandMutation.isPending || rematchMutation.isPending}
+          error={mutationError}
+          onCommand={(command) =>
+            commandMutation.mutate({
+              command,
+              idempotencyKey: createIdempotencyKey(),
+            })
+          }
+          onRematch={() =>
+            rematchMutation.mutate({
+              idempotencyKey: createIdempotencyKey(),
+            })
+          }
+        />
+      }
+    />
   )
 }
 

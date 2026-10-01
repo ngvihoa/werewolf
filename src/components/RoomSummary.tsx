@@ -1,22 +1,6 @@
+import { copyToClipboard } from '#/lib/clipboard'
 import { Check, Copy } from 'lucide-react'
 import { useState } from 'react'
-
-async function writeToClipboard(value: string) {
-  if (navigator.clipboard) {
-    await navigator.clipboard.writeText(value)
-    return
-  }
-
-  const textArea = document.createElement('textarea')
-  textArea.value = value
-  textArea.style.position = 'fixed'
-  textArea.style.opacity = '0'
-  document.body.append(textArea)
-  textArea.select()
-  const copied = document.execCommand('copy')
-  textArea.remove()
-  if (!copied) throw new Error('Clipboard is unavailable')
-}
 
 export function RoomSummary({
   gameStarted,
@@ -33,7 +17,7 @@ export function RoomSummary({
 
   async function copyRoomCode() {
     try {
-      await writeToClipboard(roomCode)
+      await copyToClipboard(roomCode)
       setCopyStatus('COPIED')
       window.setTimeout(() => setCopyStatus('IDLE'), 2_000)
     } catch {
