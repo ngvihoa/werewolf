@@ -91,8 +91,11 @@ function HeroCardDeck() {
             />
           </div>
           <span className="pointer-events-none absolute inset-0 overflow-hidden rounded-[4%]">
+            {/* x tính theo chiều rộng của chính thanh (50% thẻ): 300% mới đủ
+                đẩy thanh qua hẳn mép phải — 140% cũ chỉ đưa tới giữa thẻ rồi
+                đỗ lại đó tới hết chu kỳ. */}
             <m.span
-              animate={{ x: ['-140%', '140%'] }}
+              animate={{ x: ['-140%', '300%'] }}
               className="absolute -inset-y-[20%] -left-1/2 w-1/2 rotate-12 bg-linear-to-r from-transparent via-white/45 to-transparent"
               transition={{
                 delay: 1.2,
