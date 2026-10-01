@@ -15,15 +15,21 @@ function HeroCardDeck() {
           className="[transform-style:preserve-3d]"
           transition={{ duration: 7, ease: 'easeInOut', repeat: Infinity }}
         >
-          <img
-            alt="Thẻ vai Phù thủy"
-            className="w-full rounded-[4%] drop-shadow-2xl"
-            decoding="async"
-            height={1500}
-            loading="eager"
-            src="/role/optimized/witch.webp"
-            width={989}
-          />
+          <div className="relative flex aspect-4/5 w-full items-center justify-center rounded-[4%] bg-stone-950 ring-1 ring-white/15 drop-shadow-2xl">
+            <span
+              aria-hidden="true"
+              className="absolute inset-0 rounded-[4%] bg-[radial-gradient(closest-side,rgb(232_162_94/0.14),transparent)]"
+            />
+            <img
+              alt="Thẻ vai Phù thủy"
+              className="relative size-full object-contain p-5"
+              decoding="async"
+              height={512}
+              loading="eager"
+              src="/role/chibi/witch.webp"
+              width={512}
+            />
+          </div>
         </m.div>
       </div>
       <div className="absolute top-[18%] right-[5%] w-[45%] sm:right-[8%] sm:w-[40%]">
@@ -41,15 +47,21 @@ function HeroCardDeck() {
             repeat: Infinity,
           }}
         >
-          <img
-            alt="Thẻ vai Ma sói"
-            className="w-full rounded-[4%] drop-shadow-2xl"
-            decoding="async"
-            height={1500}
-            loading="eager"
-            src="/role/optimized/werewolf.webp"
-            width={989}
-          />
+          <div className="relative flex aspect-4/5 w-full items-center justify-center rounded-[4%] bg-stone-950 ring-1 ring-white/15 drop-shadow-2xl">
+            <span
+              aria-hidden="true"
+              className="absolute inset-0 rounded-[4%] bg-[radial-gradient(closest-side,rgb(232_162_94/0.14),transparent)]"
+            />
+            <img
+              alt="Thẻ vai Ma sói"
+              className="relative size-full object-contain p-5"
+              decoding="async"
+              height={512}
+              loading="eager"
+              src="/role/chibi/werewolf.webp"
+              width={512}
+            />
+          </div>
         </m.div>
       </div>
       <div className="absolute top-[7%] left-1/2 z-10 w-[49%] -translate-x-1/2 sm:w-[43%]">
@@ -63,15 +75,21 @@ function HeroCardDeck() {
             repeat: Infinity,
           }}
         >
-          <img
-            alt="Thẻ vai Tiên tri"
-            className="w-full rounded-[4%] drop-shadow-2xl"
-            decoding="async"
-            fetchPriority="high"
-            height={1500}
-            src="/role/optimized/seer.webp"
-            width={989}
-          />
+          <div className="relative flex aspect-4/5 w-full items-center justify-center rounded-[4%] bg-stone-950 ring-1 ring-white/15 drop-shadow-2xl">
+            <span
+              aria-hidden="true"
+              className="absolute inset-0 rounded-[4%] bg-[radial-gradient(closest-side,rgb(232_162_94/0.14),transparent)]"
+            />
+            <img
+              alt="Thẻ vai Tiên tri"
+              className="relative size-full object-contain p-5"
+              decoding="async"
+              fetchPriority="high"
+              height={512}
+              src="/role/chibi/seer.webp"
+              width={512}
+            />
+          </div>
           <span className="pointer-events-none absolute inset-0 overflow-hidden rounded-[4%]">
             <m.span
               animate={{ x: ['-140%', '140%'] }}

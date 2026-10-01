@@ -2,6 +2,7 @@ import type { Role } from '#/game/domain'
 
 import { roleDescription, roleLabel } from '#/game/presentation/labels'
 import { useRef, useState } from 'react'
+import { roleArtUrl } from '#/game/presentation/role-art'
 
 const HOLD_REVEAL_MS = 250
 
@@ -12,8 +13,6 @@ export function RoleCard({ role }: { role: Role }) {
   // và phải nuốt sự kiện click phát sinh ngay sau đó.
   const holdRevealed = useRef(false)
   const holding = useRef(false)
-  const imageName = role.toLowerCase()
-  const imagePath = `/role/${imageName}.png`
 
   function startHold() {
     holdRevealed.current = false
@@ -67,41 +66,48 @@ export function RoleCard({ role }: { role: Role }) {
         onClick={handleClick}
       >
         <span
-          className={`relative block aspect-989/1500 w-full rounded-2xl shadow-2xl transition-transform duration-700 transform-3d motion-reduce:transition-none ${revealed ? 'transform-[rotateY(180deg)]' : ''
-            }`}
+          className={`relative block aspect-square w-full rounded-2xl shadow-2xl transition-transform duration-700 transform-3d motion-reduce:transition-none ${
+            revealed ? 'transform-[rotateY(180deg)]' : ''
+          }`}
         >
           <span
             aria-hidden={revealed}
-            className="absolute inset-0 flex flex-col items-center justify-center rounded-2xl bg-stone-900 px-6 text-center ring-1 ring-line group-hover:bg-stone-800"
+            className="absolute inset-0 flex flex-col items-center justify-center gap-3 rounded-2xl bg-stone-900 px-6 text-center ring-1 ring-line group-hover:bg-stone-800"
           >
             <span className="font-mono text-xs tracking-[0.16em] text-accent uppercase">
               Thân phận được giữ kín
             </span>
-            <span className="pt-3 text-sm/6 text-ink-muted">
+            <span className="text-sm/6 text-ink-muted">
               Giữ tay trên thẻ để xem, nhả tay để ẩn. Chạm cũng được khi không
               có người khác nhìn màn hình.
             </span>
           </span>
           <span
             aria-hidden={!revealed}
-            className="absolute inset-0 block overflow-hidden rounded-2xl bg-stone-900 ring-1 ring-line [backface-visibility:hidden] [transform:rotateY(180deg)]"
+            className="absolute inset-0 flex flex-col overflow-hidden rounded-2xl bg-midnight ring-1 ring-line [backface-visibility:hidden] [transform:rotateY(180deg)]"
           >
-            <img
-              alt=""
-              className="size-full object-cover"
-              decoding="async"
-              height={1500}
-              src={imagePath}
-              width={989}
-            />
-            <span className="absolute inset-x-0 bottom-0 block bg-linear-to-t from-stone-950 via-stone-950/95 to-transparent px-5 pt-16 pb-5 text-left">
+            <span
+              aria-hidden="true"
+              className="relative flex flex-1 items-center justify-center"
+            >
+              <span className="absolute inset-0 bg-[radial-gradient(closest-side,rgb(232_162_94/0.16),transparent)]" />
+              <img
+                alt=""
+                className="relative size-full object-contain p-5"
+                decoding="async"
+                height={512}
+                src={roleArtUrl(role)}
+                width={512}
+              />
+            </span>
+            <span className="relative border-t border-line px-4 pt-2.5 pb-4 text-left">
               <span className="block font-mono text-xs tracking-[0.16em] text-accent uppercase">
                 Thân phận của bạn
               </span>
-              <span className="block pt-1 text-2xl font-semibold text-ink">
+              <span className="block pt-0.5 text-xl font-semibold text-ink">
                 {roleLabel(role)}
               </span>
-              <span className="block pt-2 text-sm/6 text-ink">
+              <span className="mt-1 line-clamp-2 block text-xs/5 text-ink-muted">
                 {roleDescription(role)}
               </span>
             </span>

@@ -2,6 +2,7 @@ import type { RoleGuide } from './role-guide-data'
 
 import { roleDescription, roleLabel } from '#/game/presentation/labels'
 import { RotateCcw, Sparkles } from 'lucide-react'
+import { roleArtUrl } from '#/game/presentation/role-art'
 import { useState } from 'react'
 import { m } from 'framer-motion'
 
@@ -9,7 +10,7 @@ import { ROLE_FACTIONS } from './role-guide-data'
 
 export function RoleGuideCard({ guide }: { guide: RoleGuide }) {
   const [flipped, setFlipped] = useState(false)
-  const imagePath = `/role/optimized/${guide.role.toLowerCase()}.webp`
+  const imagePath = roleArtUrl(guide.role)
   const faction = ROLE_FACTIONS[guide.faction]
 
   return (
@@ -24,7 +25,7 @@ export function RoleGuideCard({ guide }: { guide: RoleGuide }) {
       >
         <m.span
           animate={{ rotateY: flipped ? 180 : 0 }}
-          className="relative block aspect-[989/1500] w-full [transform-style:preserve-3d]"
+          className="relative block aspect-4/5 w-full [transform-style:preserve-3d]"
           initial={false}
           transition={{
             type: 'spring',
@@ -34,16 +35,19 @@ export function RoleGuideCard({ guide }: { guide: RoleGuide }) {
           }}
         >
           <span className="absolute inset-0 block rounded-[1.4rem] bg-stone-950 shadow-2xl ring-1 ring-white/15 [backface-visibility:hidden]">
+            <span
+              aria-hidden="true"
+              className="absolute inset-0 bg-[radial-gradient(closest-side,rgb(232_162_94/0.14),transparent)]"
+            />
             <img
               alt=""
-              className="size-full rounded-[1.4rem] object-cover"
+              className="relative size-full object-contain p-6"
               decoding="async"
-              height={1500}
+              height={512}
               loading="lazy"
               src={imagePath}
-              width={989}
+              width={512}
             />
-            <span className="absolute inset-0 block rounded-[1.4rem] bg-linear-to-b from-black/5 via-transparent to-black/25" />
             <span className="absolute top-4 right-4 flex items-center gap-1.5 rounded-full bg-stone-950/80 px-3 py-1.5 font-mono text-[0.65rem] tracking-[0.12em] text-stone-200 uppercase shadow-lg ring-1 ring-white/15 backdrop-blur-md">
               <Sparkles aria-hidden="true" className="size-3 text-red-300" />
               Chạm để lật
