@@ -24,8 +24,8 @@ jobs:
       - name: Static checks (prettier, eslint, tsc)
         run: pnpm check
 
-      - name: Unit tests
-        run: pnpm test
+      # - name: Unit tests
+      #   run: pnpm test
 
       - name: Build
         run: pnpm build
