@@ -100,7 +100,7 @@ function HeroCardDeck() {
                 mặt thẻ trắng. */}
             <m.span
               animate={{ x: ['-140%', '300%'] }}
-              className="absolute -inset-y-[20%] -left-1/2 w-1/2 rotate-12 bg-linear-to-r from-transparent via-[#e8a25e59] to-transparent"
+              className="absolute -inset-y-[20%] -left-1/2 w-1/2 rotate-12 bg-linear-to-r from-transparent via-stone-900/12 to-transparent"
               transition={{
                 delay: 1.2,
                 duration: 1.6,
