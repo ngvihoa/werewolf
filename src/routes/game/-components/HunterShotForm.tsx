@@ -50,7 +50,7 @@ export function HunterShotForm({
     <form className="flex flex-col gap-5" onSubmit={submit}>
       <div
         aria-label="Chọn người kéo theo"
-        className="grid grid-cols-2 gap-2.5 sm:grid-cols-3"
+        className="grid auto-rows-fr grid-cols-2 gap-2.5 sm:grid-cols-3"
         role="group"
       >
         {targets.map((player, index) => (

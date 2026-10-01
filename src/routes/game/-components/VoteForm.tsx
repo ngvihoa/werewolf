@@ -34,7 +34,7 @@ export function VoteForm({
       </div>
       <div
         aria-label="Người bị chọn"
-        className={`grid grid-cols-2 gap-2.5 sm:grid-cols-3 ${tied ? 'pointer-events-none opacity-40' : ''}`}
+        className={`grid auto-rows-fr grid-cols-2 gap-2.5 sm:grid-cols-3 ${tied ? 'pointer-events-none opacity-40' : ''}`}
         role="group"
       >
         {players.map((player, index) => (

@@ -10,7 +10,6 @@ export type PlayerTokenProps = {
   dead?: boolean
   disabled?: boolean
   acting?: boolean
-  isYou?: boolean
   winner?: boolean
   roleImageSrc?: string | null
   roleLabelText?: string | null
@@ -27,7 +26,7 @@ function TokenSurface({
 }) {
   return (
     <div
-      className={`relative flex min-h-28 w-full flex-col items-center justify-center gap-2 rounded-2xl px-3 py-4 text-center ring-1 transition-colors group-hover:bg-surface-raised ${className}`}
+      className={`relative flex h-full min-h-28 w-full flex-col items-center justify-center gap-2 rounded-2xl px-3 py-4 text-center ring-1 transition-colors group-hover:bg-surface-raised ${className}`}
     >
       {children}
     </div>
@@ -42,7 +41,6 @@ export function PlayerToken({
   dead = false,
   disabled = false,
   acting = false,
-  isYou = false,
   winner = false,
   roleImageSrc = null,
   roleLabelText = null,
@@ -113,7 +111,7 @@ export function PlayerToken({
           String(index + 1).padStart(2, '0')
         )}
       </span>
-      <span className="max-w-full text-sm font-medium text-ink">
+      <span className="max-w-full truncate text-sm font-medium text-ink">
         <span
           className={
             dead && !winner ? 'line-through decoration-ink-subtle' : ''
@@ -121,11 +119,6 @@ export function PlayerToken({
         >
           {displayName}
         </span>
-        {isYou ? (
-          <span className="ml-1.5 rounded-full bg-amber-300/10 px-1.5 py-0.5 align-middle text-xs font-medium text-amber-200 ring-1 ring-amber-300/20">
-            Bạn
-          </span>
-        ) : null}
       </span>
       {roleLabelText ? (
         <span className="max-w-full truncate text-xs text-ink-muted">
@@ -143,12 +136,12 @@ export function PlayerToken({
   )
 
   return (
-    <li aria-current={acting ? 'step' : undefined} className="min-w-0">
+    <li aria-current={acting ? 'step' : undefined} className="h-full min-w-0">
       {interactive ? (
         <button
           aria-label={displayName}
           aria-pressed={selected}
-          className="group w-full cursor-pointer rounded-2xl focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-red-500"
+          className="group h-full w-full cursor-pointer rounded-2xl focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-red-500"
           type="button"
           disabled={disabled}
           onClick={onSelect}

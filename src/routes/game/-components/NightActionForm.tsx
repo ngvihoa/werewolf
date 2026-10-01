@@ -165,7 +165,7 @@ export function NightActionForm({
             </p>
             <div
               aria-label="Chọn người đầu độc"
-              className="grid grid-cols-2 gap-2.5 sm:grid-cols-3"
+              className="grid auto-rows-fr grid-cols-2 gap-2.5 sm:grid-cols-3"
               role="group"
             >
               {targets.map((player, index) => (
@@ -186,7 +186,7 @@ export function NightActionForm({
         <>
           <div
             aria-label="Chọn mục tiêu"
-            className="grid grid-cols-2 gap-2.5 sm:grid-cols-3"
+            className="grid auto-rows-fr grid-cols-2 gap-2.5 sm:grid-cols-3"
             role="group"
           >
             {targets.map((player, index) => (

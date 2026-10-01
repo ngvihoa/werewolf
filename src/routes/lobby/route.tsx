@@ -209,7 +209,6 @@ function LobbyPage() {
               key={player.id}
               displayName={player.displayName}
               index={index}
-              isYou={!isModerator && player.id === view.me.id}
               roleImageSrc={
                 isModerator && player.role
                   ? `/role/${player.role.toLowerCase()}.png`

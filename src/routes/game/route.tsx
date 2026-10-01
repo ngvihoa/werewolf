@@ -205,7 +205,6 @@ function GamePage() {
                 index={index}
                 dead={player.alive === false}
                 acting={activePlayerIds.has(player.id)}
-                isYou={!isModerator && player.id === view.me.id}
                 roleImageSrc={
                   isModerator && player.role
                     ? `/role/${player.role.toLowerCase()}.png`

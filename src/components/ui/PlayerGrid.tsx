@@ -23,7 +23,7 @@ export function PlayerGrid<T>({
       </div>
       {items.length ? (
         <ul
-          className="grid grid-cols-2 gap-2.5 pt-1 sm:grid-cols-3 xl:grid-cols-4"
+          className="grid auto-rows-fr grid-cols-2 gap-2.5 pt-1 sm:grid-cols-3 xl:grid-cols-4"
           role="list"
         >
           {items.map((item, index) => renderItem(item, index))}

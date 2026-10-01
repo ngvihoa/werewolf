@@ -96,7 +96,6 @@ export function GameOverResult({ view }: { view: PlayerGameView }) {
               index={index}
               // Màn kết quả không phân biệt sống chết — mọi lá bài rõ như nhau.
               winner={playerWon}
-              isYou={player.id === view.me.id}
               roleImageSrc={
                 player.role ? `/role/${player.role.toLowerCase()}.png` : null
               }
