@@ -67,9 +67,8 @@ export function RoleCard({ role }: { role: Role }) {
         onClick={handleClick}
       >
         <span
-          className={`relative block aspect-[989/1500] w-full rounded-2xl shadow-2xl transition-transform duration-700 [transform-style:preserve-3d] motion-reduce:transition-none ${
-            revealed ? '[transform:rotateY(180deg)]' : ''
-          }`}
+          className={`relative block aspect-989/1500 w-full rounded-2xl shadow-2xl transition-transform duration-700 transform-3d motion-reduce:transition-none ${revealed ? 'transform-[rotateY(180deg)]' : ''
+            }`}
         >
           <span
             aria-hidden={revealed}
