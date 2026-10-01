@@ -89,22 +89,28 @@ export function RoleCard({ role }: { role: Role }) {
             <span
               aria-hidden="true"
               className="relative flex min-h-0 flex-1 items-center justify-center"
-              style={{
-                background: `radial-gradient(closest-side at 50% 45%, ${roleAccentColor(role)}99 0%, ${roleAccentColor(role)}52 55%, transparent 100%)`,
-              }}
             >
+              {/* Sân khấu tròn màu vai + bóng đổ chân */}
+              <span
+                aria-hidden="true"
+                className="absolute left-1/2 top-1/2 size-[82%] -translate-x-1/2 -translate-y-[58%] rounded-full"
+                style={{ background: `${roleAccentColor(role)}33` }}
+              />
+              <span
+                aria-hidden="true"
+                className="absolute bottom-[6%] left-1/2 h-2.5 w-[46%] -translate-x-1/2 rounded-full"
+                style={{
+                  background: `${roleAccentColor(role)}59`,
+                  filter: 'blur(3px)',
+                }}
+              />
               <img
                 alt=""
-                className="relative size-full object-contain p-4"
+                className="relative z-10 h-[86%] w-auto object-contain"
                 decoding="async"
                 height={512}
                 src={roleArtUrl(role)}
                 width={512}
-              />
-              {/* Khung giấy in bao vùng hình */}
-              <span
-                aria-hidden="true"
-                className="pointer-events-none absolute inset-[6px] rounded-xl ring-1 ring-stone-950/8"
               />
             </span>
             <span className="relative border-t border-stone-950/10 px-4 pt-2.5 pb-4 text-left">

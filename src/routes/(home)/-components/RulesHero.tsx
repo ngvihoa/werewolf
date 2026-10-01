@@ -2,7 +2,7 @@ import { ArrowDown, BookOpen, Sparkles } from 'lucide-react'
 import { roleAccentColor } from '#/game/presentation/role-art'
 import { m } from 'framer-motion'
 
-// Mini-card hero dùng cùng diện mạo lá bài: nền trắng + quầng màu vai.
+// Mini-card hero dùng cùng diện mạo lá bài: nền trắng + đĩa màu vai.
 function HeroCardFace({
   alt,
   accent,
@@ -16,24 +16,22 @@ function HeroCardFace({
     <div className="relative flex aspect-4/5 w-full items-center justify-center rounded-[4%] bg-white ring-1 ring-stone-950/10 drop-shadow-2xl">
       <span
         aria-hidden="true"
-        className="absolute inset-0 rounded-[4%]"
-        style={{
-          background: `radial-gradient(closest-side, ${accent}66, transparent)`,
-        }}
+        className="absolute left-1/2 top-1/2 size-[82%] -translate-x-1/2 -translate-y-[58%] rounded-full"
+        style={{ background: `${accent}33` }}
+      />
+      <span
+        aria-hidden="true"
+        className="absolute bottom-[8%] left-1/2 h-2.5 w-[46%] -translate-x-1/2 rounded-full"
+        style={{ background: `${accent}59`, filter: 'blur(3px)' }}
       />
       <img
         alt={alt}
-        className="relative size-full object-contain p-5"
+        className="relative z-10 h-[86%] w-auto object-contain"
         decoding="async"
         height={512}
         loading="eager"
         src={src}
         width={512}
-      />
-      {/* Khung giấy in bao vùng hình */}
-      <span
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-[6px] rounded-lg ring-1 ring-stone-950/8"
       />
     </div>
   )

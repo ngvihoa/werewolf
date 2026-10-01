@@ -36,26 +36,26 @@ export function RoleGuideCard({ guide }: { guide: RoleGuide }) {
           }}
         >
           <span className="absolute inset-0 block rounded-[1.4rem] bg-white shadow-2xl ring-1 ring-stone-950/10 [backface-visibility:hidden]">
+            {/* Sân khấu tròn màu vai + bóng đổ chân — nhân vật đứng trên đĩa
+                thay vì lơ lửng trong khoảng trắng. */}
             <span
               aria-hidden="true"
-              className="absolute inset-0"
-              style={{
-                background: `radial-gradient(closest-side at 50% 44%, ${accent}99 0%, ${accent}52 55%, transparent 100%)`,
-              }}
+              className="absolute left-1/2 top-[45%] size-[74%] -translate-x-1/2 -translate-y-1/2 rounded-full"
+              style={{ background: `${accent}33` }}
+            />
+            <span
+              aria-hidden="true"
+              className="absolute left-1/2 top-[73%] h-[3.5%] w-[42%] -translate-x-1/2 rounded-full"
+              style={{ background: `${accent}59`, filter: 'blur(3px)' }}
             />
             <img
               alt=""
-              className="relative size-full object-contain p-6"
+              className="absolute left-1/2 top-[47%] h-[76%] w-auto -translate-x-1/2 -translate-y-1/2"
               decoding="async"
               height={512}
               loading="lazy"
               src={imagePath}
               width={512}
-            />
-            {/* Khung giấy in: kẻ mảnh bao vùng hình, cách mép thẻ 6px */}
-            <span
-              aria-hidden="true"
-              className="pointer-events-none absolute inset-[6px] rounded-2xl ring-1 ring-stone-950/8"
             />
             <span className="absolute top-4 right-4 flex items-center gap-1.5 rounded-full bg-stone-950/80 px-3 py-1.5 font-mono text-[0.65rem] tracking-[0.12em] text-stone-200 uppercase shadow-lg ring-1 ring-white/15 backdrop-blur-md">
               <Sparkles aria-hidden="true" className="size-3 text-red-300" />
