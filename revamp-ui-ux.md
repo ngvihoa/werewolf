@@ -145,6 +145,8 @@ User bổ sung 14 ảnh chibi (public/role/chibi, PNG nguồn ~18MB giữ ở m�
 - trang luật: RoleGuideCard aspect 4/5 + RulesHero bộ thẻ trôi bọc chibi mini-card — hết tham chiếu role/optimized
 - repo nhẹ đi ~40MB art nguồn (bỏ track role/*.png + role/optimized)
 
+Mặt ngửa lá bài (cả RoleGuideCard lẫn RoleCard trong game): nền trắng + radial-gradient màu nhận diện từng vai (bảng ROLE_ACCENTS trong role-art.ts, tông theo art chibi, nhóm chùng theo phe); mặt sau giữ tối. Người dùng chốt 'theo recommend' sau khi đề xuất nền trắng + màu vai blur.
+
 ## 8. Vòng phản hồi sau "sân khấu giữa" (2026-10-01) ✅
 
 | #   | Phản hồi                                | Đã xử lý                                                                                                                                                                                                                                                                                                                                                                                                                     |
