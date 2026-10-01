@@ -101,6 +101,11 @@ export function RoleCard({ role }: { role: Role }) {
                 src={roleArtUrl(role)}
                 width={512}
               />
+              {/* Khung giấy in bao vùng hình */}
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-[6px] rounded-xl ring-1 ring-stone-950/8"
+              />
             </span>
             <span className="relative border-t border-stone-950/10 px-4 pt-2.5 pb-4 text-left">
               <span className="block font-mono text-xs tracking-[0.16em] text-stone-500 uppercase">

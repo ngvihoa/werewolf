@@ -52,6 +52,11 @@ export function RoleGuideCard({ guide }: { guide: RoleGuide }) {
               src={imagePath}
               width={512}
             />
+            {/* Khung giấy in: kẻ mảnh bao vùng hình, cách mép thẻ 6px */}
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-[6px] rounded-2xl ring-1 ring-stone-950/8"
+            />
             <span className="absolute top-4 right-4 flex items-center gap-1.5 rounded-full bg-stone-950/80 px-3 py-1.5 font-mono text-[0.65rem] tracking-[0.12em] text-stone-200 uppercase shadow-lg ring-1 ring-white/15 backdrop-blur-md">
               <Sparkles aria-hidden="true" className="size-3 text-red-300" />
               Chạm để lật

@@ -30,6 +30,11 @@ function HeroCardFace({
         src={src}
         width={512}
       />
+      {/* Khung giấy in bao vùng hình */}
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-[6px] rounded-lg ring-1 ring-stone-950/8"
+      />
     </div>
   )
 }
