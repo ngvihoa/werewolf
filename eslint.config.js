@@ -49,4 +49,17 @@ export default [
       '@typescript-eslint/consistent-type-definitions': 'off',
     },
   },
+  {
+    // Script node thuần (không qua bundler) dùng biến môi trường và console thoải mái.
+    files: ['scripts/**/*.mjs'],
+    languageOptions: {
+      globals: {
+        process: 'readonly',
+        console: 'readonly',
+      },
+    },
+    rules: {
+      'no-console': 'off',
+    },
+  },
 ]

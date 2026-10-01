@@ -18,6 +18,7 @@ import {
 } from '../auth/session-token'
 
 import { getGameView as getGameViewCommand } from './postgres/game-view'
+import { scheduleStaleGamePurge } from './postgres/maintenance'
 import { executeGameCommand } from './postgres/execute-command'
 import { createRoomCode } from './utils.room-code'
 import {
@@ -60,7 +61,12 @@ export class PostgresGameStore implements GameStore {
   }
 
   createGame(moderatorName: string): Promise<StoreResult<CreatedGame>> {
-    return createGameCommand(this.#deps, moderatorName)
+    return createGameCommand(this.#deps, moderatorName).then((result) => {
+      // Dọn các ván đã quá vòng đời dịp có ghi mới; không chặn và không làm
+      // hỏng lượt tạo phòng.
+      if (result.ok) scheduleStaleGamePurge(this.#deps)
+      return result
+    })
   }
 
   joinGame(

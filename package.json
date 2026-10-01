@@ -7,7 +7,7 @@
     "#/*": "./src/*"
   },
   "scripts": {
-    "dev": "vite dev --port 3000 --host",
+    "dev": "vite dev --port 3001 --host",
     "generate-routes": "tsr generate",
     "build": "vite build",
     "start": "node .output/server/index.mjs",
@@ -24,6 +24,7 @@
     "test:watch": "vitest",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
+    "db:purge": "node scripts/db-purge.mjs",
     "db:studio": "drizzle-kit studio",
     "env:pull": "mkdir -p .vercel-cli && cd .vercel-cli && ([ -f .vercel/project.json ] || pnpm dlx vercel link) && pnpm dlx vercel env pull ../.env --environment=production",
     "dev:reset": "fuser -k 3000/tcp"
