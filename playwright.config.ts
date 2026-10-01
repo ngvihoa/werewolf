@@ -1,7 +1,8 @@
 import { defineConfig, devices } from '@playwright/test'
 
-// Port 3000 thường bị dev server của project khác chiếm; đặt E2E_PORT để chạy e2e trên port riêng.
-const e2ePort = Number(process.env.E2E_PORT ?? 3000)
+// Dev server và e2e luôn chạy trên port 3100 (port 3000 để lại cho dự án khác);
+// vẫn có thể ghi đè bằng E2E_PORT nếu cần.
+const e2ePort = Number(process.env.E2E_PORT ?? 3100)
 
 export default defineConfig({
   testDir: './e2e',
