@@ -142,7 +142,7 @@ Palette sample trực tiếp từ tranh (UI và tranh cùng một thế giới):
 | 1   | Chữ mỏng, không thấy trên background    | Dải tối cố định đỉnh màn (midnight 85→50%), nhãn header + nút Rời phòng lên text-ink đầy đủ, chip mã phòng đổi sang mực 75% + backdrop-blur, hero landing tăng scrim 80/65/35.                                                                                                                                                                                                                                               |
 | 2   | Màn kết quả nên là trang, không overlay | GameResultDialog xóa. Trang kết quả: banner thắng/thua (tính từ didPlayerWin, gồm Sói Lai chuyển phe + Tình nhân) → lưới "Sự thật được lộ ra" (ảnh vai toàn bộ người chơi, vương miện đèn lồng trên thẻ phe thắng, người đã chết mà thắng vẫn giữ vương miện). Projection mở role cho player khi GAME_OVER (schema optional chống lệch phiên client/server). Tranh kết thúc theo phe: Ma sói = trăng máu, còn lại = đêm hội. |
 
-Đã chốt thêm: lưới kết quả không phân biệt sống chết — mọi lá bài rõ như nhau (bỏ fade/† chỉ ở màn này; trong ván vẫn giữ ngôn ngữ mờ = đã chết).
+Đã chốt thêm: thẻ người chơi cao rộng bằng nhau tuyệt đối (tên 1 dòng, auto-rows-fr), bỏ badge Bạn. Lưới kết quả không phân biệt sống chết — mọi lá bài rõ như nhau (bỏ fade/† chỉ ở màn này; trong ván vẫn giữ ngôn ngữ mờ = đã chết).
 
 Giới hạn đã biết: winner LOVERS chưa đánh dấu được vương miện (projection chưa lộ cặp tình nhân cho người khác); Sói Lai đã chuyển phe trong danh sách người khác vẫn tính theo vai gốc.
 
