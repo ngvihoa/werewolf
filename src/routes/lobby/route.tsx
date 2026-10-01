@@ -14,6 +14,7 @@ import { AppLoading } from '#/components/AppLoading'
 import { RoomHeader } from '#/components/RoomHeader'
 import { PlayerGrid } from '#/components/ui/PlayerGrid'
 import { orpcClient } from '#/orpc/client'
+import { roleArtUrl } from '#/game/presentation/role-art'
 import { GameShell } from '#/components/ui/GameShell'
 import { roleLabel } from '#/game/presentation/labels'
 
@@ -210,9 +211,7 @@ function LobbyPage() {
               displayName={player.displayName}
               index={index}
               roleImageSrc={
-                isModerator && player.role
-                  ? `/role/${player.role.toLowerCase()}.png`
-                  : null
+                isModerator && player.role ? roleArtUrl(player.role) : null
               }
               roleLabelText={
                 isModerator && player.role ? roleLabel(player.role) : null

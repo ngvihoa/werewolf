@@ -4,6 +4,7 @@ import { ShieldCheck, Skull, Trophy } from 'lucide-react'
 import { PlayerToken } from '#/components/ui/PlayerToken'
 import { getRoleTeam } from '#/game/domain'
 import { PlayerGrid } from '#/components/ui/PlayerGrid'
+import { roleArtUrl } from '#/game/presentation/role-art'
 import { roleLabel } from '#/game/presentation/labels'
 import {
   winnerDisplayName,
@@ -96,9 +97,7 @@ export function GameOverResult({ view }: { view: PlayerGameView }) {
               index={index}
               // Màn kết quả không phân biệt sống chết — mọi lá bài rõ như nhau.
               winner={playerWon}
-              roleImageSrc={
-                player.role ? `/role/${player.role.toLowerCase()}.png` : null
-              }
+              roleImageSrc={player.role ? roleArtUrl(player.role) : null}
               roleLabelText={
                 player.role ? roleLabel(player.role) : 'Vai được giữ kín'
               }
