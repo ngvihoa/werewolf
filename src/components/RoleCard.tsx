@@ -1,21 +1,70 @@
 import type { Role } from '#/game/domain'
 
 import { roleDescription, roleLabel } from '#/game/presentation/labels'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
+
+const HOLD_REVEAL_MS = 250
 
 export function RoleCard({ role }: { role: Role }) {
   const [revealed, setRevealed] = useState(false)
+  const holdTimer = useRef<number | null>(null)
+  // Phân biệt "giữ để xem rồi nhả" với "chạm": nhả sau khi giữ sẽ ẩn thẻ
+  // và phải nuốt sự kiện click phát sinh ngay sau đó.
+  const holdRevealed = useRef(false)
+  const holding = useRef(false)
   const imageName = role.toLowerCase()
   const imagePath = `/role/${imageName}.png`
+
+  function startHold() {
+    holdRevealed.current = false
+    holding.current = true
+    holdTimer.current = window.setTimeout(() => {
+      holdRevealed.current = true
+      setRevealed(true)
+    }, HOLD_REVEAL_MS)
+  }
+
+  function endHold() {
+    holding.current = false
+    if (holdTimer.current !== null) {
+      window.clearTimeout(holdTimer.current)
+      holdTimer.current = null
+    }
+    if (holdRevealed.current) setRevealed(false)
+  }
+
+  function cancelHold() {
+    holding.current = false
+    if (holdTimer.current !== null) {
+      window.clearTimeout(holdTimer.current)
+      holdTimer.current = null
+    }
+    holdRevealed.current = false
+  }
+
+  function handleClick() {
+    if (holdRevealed.current) {
+      holdRevealed.current = false
+      return
+    }
+    setRevealed((current) => !current)
+  }
 
   return (
     <div className="mx-auto flex w-full max-w-64 flex-col items-center gap-4">
       <button
         aria-label={revealed ? 'Ẩn thẻ vai' : 'Xem thẻ vai'}
         aria-pressed={revealed}
-        className="group w-full rounded-2xl [perspective:1000px] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-red-500"
+        className="group w-full touch-manipulation select-none rounded-2xl [perspective:1000px] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-red-500"
         type="button"
-        onClick={() => setRevealed((current) => !current)}
+        onPointerDown={startHold}
+        onPointerUp={endHold}
+        onPointerCancel={cancelHold}
+        onPointerLeave={() => {
+          // Touch: pointerleave bắn ra sau pointerup, chỉ hủy khi còn giữ.
+          if (holding.current) cancelHold()
+        }}
+        onClick={handleClick}
       >
         <span
           className={`relative block aspect-[989/1500] w-full rounded-2xl shadow-2xl transition-transform duration-700 [transform-style:preserve-3d] motion-reduce:transition-none ${
@@ -24,18 +73,19 @@ export function RoleCard({ role }: { role: Role }) {
         >
           <span
             aria-hidden={revealed}
-            className="absolute inset-0 flex flex-col items-center justify-center rounded-2xl bg-stone-900 px-6 text-center ring-1 ring-white/15 [backface-visibility:hidden] group-hover:bg-stone-800"
+            className="absolute inset-0 flex flex-col items-center justify-center rounded-2xl bg-stone-900 px-6 text-center ring-1 ring-line group-hover:bg-stone-800"
           >
-            <span className="font-mono text-xs tracking-[0.16em] text-red-300 uppercase">
+            <span className="font-mono text-xs tracking-[0.16em] text-accent uppercase">
               Thân phận được giữ kín
             </span>
-            <span className="pt-3 text-sm/6 text-stone-400">
-              Chạm vào thẻ khi không có người khác nhìn màn hình.
+            <span className="pt-3 text-sm/6 text-ink-muted">
+              Giữ tay trên thẻ để xem, nhả tay để ẩn. Chạm cũng được khi không
+              có người khác nhìn màn hình.
             </span>
           </span>
           <span
             aria-hidden={!revealed}
-            className="absolute inset-0 block overflow-hidden rounded-2xl bg-stone-900 ring-1 ring-white/15 [backface-visibility:hidden] [transform:rotateY(180deg)]"
+            className="absolute inset-0 block overflow-hidden rounded-2xl bg-stone-900 ring-1 ring-line [backface-visibility:hidden] [transform:rotateY(180deg)]"
           >
             <img
               alt=""
@@ -46,21 +96,21 @@ export function RoleCard({ role }: { role: Role }) {
               width={989}
             />
             <span className="absolute inset-x-0 bottom-0 block bg-linear-to-t from-stone-950 via-stone-950/95 to-transparent px-5 pt-16 pb-5 text-left">
-              <span className="block font-mono text-xs tracking-[0.16em] text-red-300 uppercase">
+              <span className="block font-mono text-xs tracking-[0.16em] text-accent uppercase">
                 Thân phận của bạn
               </span>
-              <span className="block pt-1 text-2xl font-semibold text-stone-50">
+              <span className="block pt-1 text-2xl font-semibold text-ink">
                 {roleLabel(role)}
               </span>
-              <span className="block pt-2 text-sm/6 text-stone-300">
+              <span className="block pt-2 text-sm/6 text-ink">
                 {roleDescription(role)}
               </span>
             </span>
           </span>
         </span>
       </button>
-      <p className="text-sm text-stone-400">
-        {revealed ? 'Chạm vào thẻ để ẩn vai' : 'Chạm vào thẻ để xem vai'}
+      <p className="text-sm text-ink-muted" aria-live="polite">
+        {revealed ? 'Nhả tay hoặc chạm để ẩn vai' : 'Giữ hoặc chạm để xem vai'}
       </p>
     </div>
   )
