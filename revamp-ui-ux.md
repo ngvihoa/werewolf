@@ -135,7 +135,17 @@ Palette sample trực tiếp từ tranh (UI và tranh cùng một thế giới):
 6. (Tuỳ chọn) schedule `purge_stale_games` bằng pg_cron trong Supabase.
 7. 🔜 Dự thảo: drawer cho queue/lịch sử Quản trò nếu cần; nút "bố cục rộng".
 
-## 7. Vòng phản hồi sau "sân khấu giữa" (2026-10-01) ✅
+## 7. Tích hợp bộ chibi role (2026-10-01) ✅
+
+User bổ sung 14 ảnh chibi (public/role/chibi, PNG nguồn ~18MB giữ ở máy + gitignore). Đã all-in bộ chibi theo chốt A:
+
+- chuẩn hóa WebP 512² pad contain (672KB), path tập trung ở `roleArtUrl(role)` (src/game/presentation/role-art.ts) — đổi art lần sau chỉ sửa 1 hàm
+- RoleCard đổi thành thẻ vuông: chibi contain trên nền mực + hào quang đèn lồng, tên/mô tả tách xuống dải dưới ảnh (bài học: flex-1 chứa img cần min-h-0 nếu không dải dưới bị đẩy ra khỏi overflow-hidden)
+- avatar token 40px: mặt chibi đọc rõ (lợi thế so với art dọc bị crop)
+- trang luật: RoleGuideCard aspect 4/5 + RulesHero bộ thẻ trôi bọc chibi mini-card — hết tham chiếu role/optimized
+- repo nhẹ đi ~40MB art nguồn (bỏ track role/*.png + role/optimized)
+
+## 8. Vòng phản hồi sau "sân khấu giữa" (2026-10-01) ✅
 
 | #   | Phản hồi                                | Đã xử lý                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | --- | --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
