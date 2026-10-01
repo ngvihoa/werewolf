@@ -152,6 +152,7 @@ function GamePage() {
   return (
     <GameShell
       phase={phase}
+      winner={isModerator ? (view.game.state?.winner ?? null) : view.winner}
       header={
         <RoomHeader
           isModerator={isModerator}
@@ -192,30 +193,33 @@ function GamePage() {
           })
         }
       />
-      <div className="mt-1 border-t border-line pt-5 opacity-70">
-        <PlayerGrid
-          items={players}
-          renderItem={(player, index) => (
-            <PlayerToken
-              key={player.id}
-              displayName={player.displayName}
-              index={index}
-              dead={player.alive === false}
-              acting={activePlayerIds.has(player.id)}
-              isYou={!isModerator && player.id === view.me.id}
-              roleImageSrc={
-                isModerator && player.role
-                  ? `/role/${player.role.toLowerCase()}.png`
-                  : null
-              }
-              roleLabelText={
-                isModerator && player.role ? roleLabel(player.role) : null
-              }
-              statusText={player.alive === false ? 'Đã chết' : null}
-            />
-          )}
-        />
-      </div>
+      {/* Trang kết quả phía player đã có lưới mở lộ vai riêng — bỏ roster phụ. */}
+      {!isModerator && view.phase === 'GAME_OVER' ? null : (
+        <div className="mt-1 border-t border-line pt-5 opacity-70">
+          <PlayerGrid
+            items={players}
+            renderItem={(player, index) => (
+              <PlayerToken
+                key={player.id}
+                displayName={player.displayName}
+                index={index}
+                dead={player.alive === false}
+                acting={activePlayerIds.has(player.id)}
+                isYou={!isModerator && player.id === view.me.id}
+                roleImageSrc={
+                  isModerator && player.role
+                    ? `/role/${player.role.toLowerCase()}.png`
+                    : null
+                }
+                roleLabelText={
+                  isModerator && player.role ? roleLabel(player.role) : null
+                }
+                statusText={player.alive === false ? 'Đã chết' : null}
+              />
+            )}
+          />
+        </div>
+      )}
     </GameShell>
   )
 }

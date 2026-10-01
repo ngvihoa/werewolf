@@ -312,7 +312,8 @@ describe('InMemoryGameStore commands', () => {
     expect(playerView.ok).toBe(true)
     if (playerView.ok && playerView.value.viewer === 'PLAYER') {
       expect(playerView.value.me.id).toBe(players[0].playerId)
-      expect(playerView.value.players[0]).not.toHaveProperty('role')
+      // Chưa kết thúc ván thì role trong danh sách phải được giữ kín (null).
+      expect(playerView.value.players[0].role).toBeNull()
     }
     expect(moderatorView.ok).toBe(true)
     if (moderatorView.ok && moderatorView.value.viewer === 'MODERATOR') {

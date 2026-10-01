@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 
-import { Check } from 'lucide-react'
+import { Check, Crown } from 'lucide-react'
 
 export type PlayerTokenProps = {
   displayName: string
@@ -11,6 +11,7 @@ export type PlayerTokenProps = {
   disabled?: boolean
   acting?: boolean
   isYou?: boolean
+  winner?: boolean
   roleImageSrc?: string | null
   roleLabelText?: string | null
   statusText?: string | null
@@ -42,6 +43,7 @@ export function PlayerToken({
   disabled = false,
   acting = false,
   isYou = false,
+  winner = false,
   roleImageSrc = null,
   roleLabelText = null,
   statusText = null,
@@ -51,7 +53,7 @@ export function PlayerToken({
   const interactive = selectable && !unavailable
   const surfaceClassName = selected
     ? 'bg-danger/15 ring-2 ring-danger'
-    : dead
+    : dead && !winner
       ? 'bg-transparent opacity-55 ring-line saturate-50'
       : acting
         ? 'bg-danger/10 ring-danger/40'
@@ -59,6 +61,17 @@ export function PlayerToken({
 
   const content = (
     <>
+      {winner ? (
+        <>
+          <span
+            aria-hidden="true"
+            className="absolute top-2 right-2 grid size-6 place-items-center rounded-full bg-lantern/20 text-lantern ring-1 ring-lantern/50"
+          >
+            <Crown className="size-3.5" />
+          </span>
+          <span className="sr-only">Thuộc phe thắng</span>
+        </>
+      ) : null}
       {selected ? (
         <span
           aria-hidden="true"
@@ -67,7 +80,7 @@ export function PlayerToken({
           <Check className="size-3.5" />
         </span>
       ) : null}
-      {dead ? (
+      {dead && !winner ? (
         <span
           aria-hidden="true"
           className="absolute top-1.5 right-3 font-mono text-xl text-ink-subtle"
@@ -101,7 +114,11 @@ export function PlayerToken({
         )}
       </span>
       <span className="max-w-full text-sm font-medium text-ink">
-        <span className={dead ? 'line-through decoration-ink-subtle' : ''}>
+        <span
+          className={
+            dead && !winner ? 'line-through decoration-ink-subtle' : ''
+          }
+        >
           {displayName}
         </span>
         {isYou ? (

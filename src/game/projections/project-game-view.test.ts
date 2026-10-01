@@ -280,6 +280,7 @@ describe('player projections', () => {
       displayName: 'Witch',
       alive: true,
       ready: true,
+      role: null,
     })
     expect(JSON.stringify(view)).not.toContain('poisonPotionAvailable')
     expect(JSON.stringify(view)).not.toContain('secret rejected target')
@@ -448,7 +449,7 @@ describe('moderator projection', () => {
 })
 
 describe('getGameView runtime output', () => {
-  it('strips injected role and action data from a player response', () => {
+  it('strips unknown injected fields from a player response', () => {
     const view = projectGameView(createGame(), {
       kind: 'PLAYER',
       playerId: 'seer',
@@ -472,8 +473,25 @@ describe('getGameView runtime output', () => {
     expect(output.ok).toBe(true)
     expect(JSON.stringify(output)).not.toContain('pendingNightAction')
     if (output.ok && output.value.viewer === 'PLAYER') {
-      expect(output.value.players[0]).not.toHaveProperty('role')
+      // 'action' không nằm trong schema nên bị bỏ. 'role' là trường chính
+      // thức của danh sách người chơi; việc null hay lộ ra do projection
+      // quyết định ở server — xem test 'reveals every role only after'.
       expect(output.value.players[0]).not.toHaveProperty('action')
     }
+  })
+
+  it('reveals every role only after the game is over', () => {
+    const game = createGame()
+    const before = projectGameView(game, { kind: 'PLAYER', playerId: 'seer' })
+    if (before?.viewer !== 'PLAYER') return
+    expect(before.players.every((player) => player.role === null)).toBe(true)
+
+    game.state!.phase = 'GAME_OVER'
+    game.state!.winner = 'WEREWOLF'
+    const after = projectGameView(game, { kind: 'PLAYER', playerId: 'seer' })
+    if (after?.viewer !== 'PLAYER') return
+    expect(after.players.every((player) => player.role !== null)).toBe(true)
+    const wolfEntry = after.players.find((player) => player.id === 'wolf')
+    expect(wolfEntry?.role).toBe('WEREWOLF')
   })
 })

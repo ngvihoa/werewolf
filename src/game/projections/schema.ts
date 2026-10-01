@@ -39,6 +39,15 @@ export const publicPlayerViewSchema = z.object({
   ready: z.boolean(),
 })
 
+/**
+ * Dùng riêng cho danh sách người chơi trong góc nhìn player: khi ván kết
+ * thúc (GAME_OVER) projection mở lộ vai trò của mọi người. Optional để client
+ * mới đọc được server cũ (trường có thể vắng) và ngược lại.
+ */
+export const revealedPlayerViewSchema = publicPlayerViewSchema.extend({
+  role: roleSchema.nullable().optional(),
+})
+
 export const playerPrivateViewSchema = z.object({
   id: z.string(),
   displayName: z.string(),
@@ -122,7 +131,7 @@ export const playerGameViewSchema = z.object({
   phase: z.union([gamePhaseSchema, z.literal('LOBBY')]),
   round: z.number(),
   winner: winnerSchema.nullable(),
-  players: z.array(publicPlayerViewSchema),
+  players: z.array(revealedPlayerViewSchema),
   me: playerPrivateViewSchema,
   queue: z.array(
     z.object({

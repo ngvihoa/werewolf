@@ -261,6 +261,10 @@ body {
   background-image: url('/bg/game-over-bg.webp');
 }
 
+.phase-backdrop .bg-result {
+  background-image: url('/bg/result-bg.webp');
+}
+
 [data-bg='night'] .phase-backdrop .bg-night {
   opacity: 1;
 }
@@ -274,6 +278,10 @@ body {
 }
 
 [data-bg='game-over'] .phase-backdrop .bg-game-over {
+  opacity: 1;
+}
+
+[data-bg='result'] .phase-backdrop .bg-result {
   opacity: 1;
 }
 

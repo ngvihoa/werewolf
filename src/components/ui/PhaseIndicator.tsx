@@ -1,17 +1,22 @@
 import type { PlayerGameView } from '#/game/projections/model'
+import type { Winner } from '#/game/domain'
 
 import { Moon, Sun } from 'lucide-react'
 
 type GamePhase = PlayerGameView['phase']
 
-export type PhaseBackdrop = 'night' | 'day' | 'voting' | 'game-over'
+export type PhaseBackdrop = 'night' | 'day' | 'voting' | 'game-over' | 'result'
 
 /**
  * Tranh nền theo pha — cùng một quảng trường làng đổi mood theo khoảnh khắc
  * của ván (public/bg/*.webp). Sảnh và chuẩn bị dùng tranh ban ngày; null
- * chỉ còn là phương án dự phòng khi không map được pha.
+ * chỉ còn là phương án dự phòng khi không map được pha. Kết thúc ván: Ma sói
+ * thắng dùng trăng máu, mọi kết quả khác dùng đêm hội đèn trời.
  */
-export function phaseBackdrop(phase: GamePhase): PhaseBackdrop | null {
+export function phaseBackdrop(
+  phase: GamePhase,
+  winner?: Winner | null,
+): PhaseBackdrop | null {
   if (phase === 'NIGHT' || phase === 'NIGHT_RESOLUTION') return 'night'
   if (
     phase === 'DAY' ||
@@ -29,7 +34,9 @@ export function phaseBackdrop(phase: GamePhase): PhaseBackdrop | null {
   ) {
     return 'voting'
   }
-  if (phase === 'GAME_OVER') return 'game-over'
+  if (phase === 'GAME_OVER') {
+    return winner === 'WEREWOLF' ? 'game-over' : 'result'
+  }
   return null
 }
 

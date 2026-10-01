@@ -5,11 +5,10 @@ import { InlineError } from '#/components/InlineError'
 import { RoleCard } from '#/components/RoleCard'
 
 import { actionPrompt, playerName, playerWaitingTitle } from './game-copy'
-import { GameResultDialog } from './GameResultDialog'
 import { NightActionForm } from './NightActionForm'
+import { GameOverResult } from './GameOverResult'
 import { HunterShotForm } from './HunterShotForm'
 import { SecretNotice } from './SecretNotice'
-import { GameOver } from './GameOver'
 
 export function PlayerGamePanel({
   view,
@@ -22,6 +21,15 @@ export function PlayerGamePanel({
   error: string | null
   onCommand: CommandHandler
 }) {
+  // Kết thúc ván = một trang riêng: thắng/thua + mở lộ vai cả làng.
+  if (view.phase === 'GAME_OVER') {
+    return (
+      <div className="flex flex-col gap-6">
+        <GameOverResult view={view} />
+        {error ? <InlineError message={error} /> : null}
+      </div>
+    )
+  }
   const activeStep = view.turn.activeStep
   const canSubmit = view.turn.canAct
   const seerResults = [...view.privateHistory]
@@ -183,20 +191,6 @@ export function PlayerGamePanel({
       ) : null}
       {/* Thẻ vai là phần phụ — hành động hiện tại ưu tiên nằm trên. */}
       {view.me.role ? <RoleCard role={view.me.role} /> : null}
-      {view.phase === 'GAME_OVER' ? <GameOver winner={view.winner} /> : null}
-      {view.phase === 'GAME_OVER' && view.winner && view.me.role ? (
-        <GameResultDialog
-          winner={view.winner}
-          role={view.me.role}
-          hybridConverted={
-            view.me.role === 'HYBRID_WOLF' &&
-            view.me.abilityState !== null &&
-            'converted' in view.me.abilityState &&
-            view.me.abilityState.converted
-          }
-          isLover={view.lover !== null}
-        />
-      ) : null}
       {error ? <InlineError message={error} /> : null}
     </div>
   )

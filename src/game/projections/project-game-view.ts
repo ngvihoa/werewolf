@@ -70,6 +70,8 @@ export function projectGameView(
       alive:
         game.state?.players.find((candidate) => candidate.id === player.id)
           ?.alive ?? true,
+      // Hết ván thì mọi vai được lộ ra — dữ liệu công khai của màn kết quả.
+      role: game.state?.phase === 'GAME_OVER' ? player.role : null,
     })),
     me: {
       id: lobbyPlayer.id,
