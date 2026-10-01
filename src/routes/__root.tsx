@@ -1,4 +1,5 @@
 import { createRootRoute } from '@tanstack/react-router'
+import interCss from '@fontsource-variable/inter/index.css?url'
 
 import appCss from '../styles.css?url'
 
@@ -13,13 +14,17 @@ export const Route = createRootRoute({
       },
       {
         name: 'viewport',
-        content: 'width=device-width, initial-scale=1',
+        content: 'width=device-width, initial-scale=1, viewport-fit=cover',
       },
       {
         title: 'Werewolf Moderator',
       },
     ],
     links: [
+      {
+        rel: 'stylesheet',
+        href: interCss,
+      },
       {
         rel: 'stylesheet',
         href: appCss,
