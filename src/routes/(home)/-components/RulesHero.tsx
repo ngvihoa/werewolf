@@ -1,5 +1,38 @@
 import { ArrowDown, BookOpen, Sparkles } from 'lucide-react'
+import { roleAccentColor } from '#/game/presentation/role-art'
 import { m } from 'framer-motion'
+
+// Mini-card hero dùng cùng diện mạo lá bài: nền trắng + quầng màu vai.
+function HeroCardFace({
+  alt,
+  accent,
+  src,
+}: {
+  alt: string
+  accent: string
+  src: string
+}) {
+  return (
+    <div className="relative flex aspect-4/5 w-full items-center justify-center rounded-[4%] bg-white ring-1 ring-stone-950/10 drop-shadow-2xl">
+      <span
+        aria-hidden="true"
+        className="absolute inset-0 rounded-[4%]"
+        style={{
+          background: `radial-gradient(closest-side, ${accent}66, transparent)`,
+        }}
+      />
+      <img
+        alt={alt}
+        className="relative size-full object-contain p-5"
+        decoding="async"
+        height={512}
+        loading="eager"
+        src={src}
+        width={512}
+      />
+    </div>
+  )
+}
 
 function HeroCardDeck() {
   return (
@@ -15,21 +48,11 @@ function HeroCardDeck() {
           className="[transform-style:preserve-3d]"
           transition={{ duration: 7, ease: 'easeInOut', repeat: Infinity }}
         >
-          <div className="relative flex aspect-4/5 w-full items-center justify-center rounded-[4%] bg-stone-950 ring-1 ring-white/15 drop-shadow-2xl">
-            <span
-              aria-hidden="true"
-              className="absolute inset-0 rounded-[4%] bg-[radial-gradient(closest-side,rgb(232_162_94/0.14),transparent)]"
-            />
-            <img
-              alt="Thẻ vai Phù thủy"
-              className="relative size-full object-contain p-5"
-              decoding="async"
-              height={512}
-              loading="eager"
-              src="/role/chibi/witch.webp"
-              width={512}
-            />
-          </div>
+          <HeroCardFace
+            accent={roleAccentColor('WITCH')}
+            alt="Thẻ vai Phù thủy"
+            src="/role/chibi/witch.webp"
+          />
         </m.div>
       </div>
       <div className="absolute top-[18%] right-[5%] w-[45%] sm:right-[8%] sm:w-[40%]">
@@ -47,21 +70,11 @@ function HeroCardDeck() {
             repeat: Infinity,
           }}
         >
-          <div className="relative flex aspect-4/5 w-full items-center justify-center rounded-[4%] bg-stone-950 ring-1 ring-white/15 drop-shadow-2xl">
-            <span
-              aria-hidden="true"
-              className="absolute inset-0 rounded-[4%] bg-[radial-gradient(closest-side,rgb(232_162_94/0.14),transparent)]"
-            />
-            <img
-              alt="Thẻ vai Ma sói"
-              className="relative size-full object-contain p-5"
-              decoding="async"
-              height={512}
-              loading="eager"
-              src="/role/chibi/werewolf.webp"
-              width={512}
-            />
-          </div>
+          <HeroCardFace
+            accent={roleAccentColor('WEREWOLF')}
+            alt="Thẻ vai Ma sói"
+            src="/role/chibi/werewolf.webp"
+          />
         </m.div>
       </div>
       <div className="absolute top-[7%] left-1/2 z-10 w-[49%] -translate-x-1/2 sm:w-[43%]">
@@ -75,28 +88,19 @@ function HeroCardDeck() {
             repeat: Infinity,
           }}
         >
-          <div className="relative flex aspect-4/5 w-full items-center justify-center rounded-[4%] bg-stone-950 ring-1 ring-white/15 drop-shadow-2xl">
-            <span
-              aria-hidden="true"
-              className="absolute inset-0 rounded-[4%] bg-[radial-gradient(closest-side,rgb(232_162_94/0.14),transparent)]"
-            />
-            <img
-              alt="Thẻ vai Tiên tri"
-              className="relative size-full object-contain p-5"
-              decoding="async"
-              fetchPriority="high"
-              height={512}
-              src="/role/chibi/seer.webp"
-              width={512}
-            />
-          </div>
+          <HeroCardFace
+            accent={roleAccentColor('SEER')}
+            alt="Thẻ vai Tiên tri"
+            src="/role/chibi/seer.webp"
+          />
           <span className="pointer-events-none absolute inset-0 overflow-hidden rounded-[4%]">
             {/* x tính theo chiều rộng của chính thanh (50% thẻ): 300% mới đủ
                 đẩy thanh qua hẳn mép phải — 140% cũ chỉ đưa tới giữa thẻ rồi
-                đỗ lại đó tới hết chu kỳ. */}
+                đỗ lại đó tới hết chu kỳ. Vệt sáng màu đèn lồng để nổi trên
+                mặt thẻ trắng. */}
             <m.span
               animate={{ x: ['-140%', '300%'] }}
-              className="absolute -inset-y-[20%] -left-1/2 w-1/2 rotate-12 bg-linear-to-r from-transparent via-white/45 to-transparent"
+              className="absolute -inset-y-[20%] -left-1/2 w-1/2 rotate-12 bg-linear-to-r from-transparent via-[#e8a25e59] to-transparent"
               transition={{
                 delay: 1.2,
                 duration: 1.6,
