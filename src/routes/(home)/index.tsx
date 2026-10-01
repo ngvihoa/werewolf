@@ -95,7 +95,16 @@ function LandingPage() {
         </div>
       </header>
 
-      <section className="relative">
+      <section className="relative isolate">
+        {/* Tranh đêm của làng làm phông hero, mờ dần vào nền trang. */}
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 -z-10 bg-[url('/bg/night-bg.webp')] bg-cover bg-center [mask-image:linear-gradient(to_bottom,black_70%,transparent_100%)]"
+        />
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 -z-10 bg-linear-to-b from-midnight/72 via-midnight/55 to-midnight/25"
+        />
         <div className="pointer-events-none absolute -top-40 left-[8%] size-96 rounded-full bg-red-500/10 blur-3xl" />
         <div className="mx-auto grid min-h-[calc(100dvh-5rem)] max-w-6xl items-center gap-14 px-5 py-16 sm:px-8 sm:py-20 lg:grid-cols-[1.08fr_0.92fr] lg:px-12 lg:py-24">
           <div className="relative flex max-w-3xl flex-col items-start gap-7">
