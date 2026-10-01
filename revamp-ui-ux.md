@@ -147,7 +147,7 @@ User bổ sung 14 ảnh chibi (public/role/chibi, PNG nguồn ~18MB giữ ở m�
 
 Mặt ngửa lá bài (cả RoleGuideCard lẫn RoleCard trong game): nền trắng + radial-gradient màu nhận diện từng vai (bảng ROLE_ACCENTS trong role-art.ts, tông theo art chibi, nhóm chùng theo phe); mặt sau giữ tối. Hero deck trang luật cũng đồng bộ (HeroCardFace nền trắng + accent, shine vàng đèn lồng). Người dùng chốt 'theo recommend'; vòng sau chỉnh: quầng màu đậm hơn (alpha 60%→30%), RoleCard trong game tỉ lệ 2:3 max-w-64 để nhân vật to ra sau khi đề xuất nền trắng + màu vai blur.
 
-Chốt thêm (PA1): khung giấy in trên mặt ngửa — kẻ mảnh stone-950/8 inset 6px bao vùng hình, áp 3 nơi; từ chối khung đậm để né cảm giác thẻ sưu tầm.
+Chốt (thay PA1): nguyên nhân thật là thẻ TRỐNG chứ không phải thiếu viền → sân khấu tròn màu vai (đĩa accent 20% + bóng đổ chân blur) đặt sau chibi ở cả 3 nơi; bỏ khung mảnh PA1. Bài học: chẩn đoán đúng nhu cầu (lấp khoảng trống) trước khi chọn cơ chế (khung).
 
 ## 8. Vòng phản hồi sau "sân khấu giữa" (2026-10-01) ✅
 
