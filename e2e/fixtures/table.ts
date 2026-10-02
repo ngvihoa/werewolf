@@ -35,6 +35,7 @@ export async function createTable(
   )
   await moderator.page.goto('/play')
   await moderator.page.waitForLoadState('networkidle')
+  await moderator.page.getByRole('button', { name: 'Quản trò' }).click()
   await moderator.page.getByLabel('Tên của bạn').fill(moderator.name)
   await moderator.page.getByRole('button', { name: 'Mở phòng mới' }).click()
 
@@ -53,6 +54,7 @@ export async function createTable(
       )
       await player.page.goto('/play')
       await player.page.waitForLoadState('networkidle')
+      await player.page.getByRole('button', { name: 'Người chơi' }).click()
       await player.page.getByLabel('Mã phòng').fill(roomCode)
       await player.page.getByLabel('Tên hiển thị').fill(player.name)
       await player.page.getByRole('button', { name: 'Vào phòng' }).click()

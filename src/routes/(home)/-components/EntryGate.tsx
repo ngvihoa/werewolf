@@ -1,5 +1,6 @@
-import type { FormEvent, InputHTMLAttributes } from 'react'
+import type { FormEvent, InputHTMLAttributes, ReactNode } from 'react'
 
+import { ChevronLeft, ChevronRight, Crown, Users } from 'lucide-react'
 import { Navigate, Link, useNavigate } from '@tanstack/react-router'
 import { useLocalSession } from '#/hooks/useLocalSession'
 import { useMutation } from '@tanstack/react-query'
@@ -10,15 +11,21 @@ import { Button } from '#/components/ui/Button'
 // Mã phòng sinh từ ROOM_CODE_ALPHABET (A-Z không I,O + 2-9 không 0,1).
 const ROOM_CODE_PATTERN = /^[A-Z0-9]{6}$/
 
+type EntryPath = 'MENU' | 'CREATE' | 'JOIN'
+
 /**
- * "Cổng vào đêm": trang entry là một card trung tâm duy nhất trên tranh nền,
- * hai lối CREATE/JOIN hiện cùng lúc — không mode ẩn (nguyên tắc #1). Có
- * `joinCode` (deep-link /join/$code) thì card rút còn một lối, mã prefill sẵn.
+ * "Cổng vào đêm": trang entry là một card trung tâm duy nhất trên tranh nền.
+ * Mặc định chỉ có 2 nút-lối — chọn lối rồi form mới hiện, tránh chất cả hai
+ * form vào một card (nguyên tắc #1). Có `joinCode` (deep-link /join/$code)
+ * thì bỏ qua menu, vào thẳng lối Người chơi với mã prefill sẵn.
  */
 export function EntryGate({ joinCode }: { joinCode?: string }) {
   const navigate = useNavigate()
   const { sessionToken, saveSession } = useLocalSession()
   const [error, setError] = useState<string | null>(null)
+  const [path, setPath] = useState<EntryPath>(
+    joinCode !== undefined ? 'JOIN' : 'MENU',
+  )
   const createMutation = useMutation({
     mutationFn: (moderatorName: string) =>
       orpcClient.lobby.createGame({ moderatorName }),
@@ -44,6 +51,16 @@ export function EntryGate({ joinCode }: { joinCode?: string }) {
   function handleSessionCreated(token: string) {
     saveSession(token)
     void navigate({ to: '/lobby' })
+  }
+
+  function selectPath(next: Exclude<EntryPath, 'MENU'>) {
+    setError(null)
+    setPath(next)
+  }
+
+  function backToMenu() {
+    setError(null)
+    setPath('MENU')
   }
 
   function submitCreate(event: FormEvent<HTMLFormElement>) {
@@ -96,7 +113,7 @@ export function EntryGate({ joinCode }: { joinCode?: string }) {
               src="/logo.webp"
             />
             <span className="truncate font-mono text-sm tracking-wide text-ink-muted uppercase">
-              Werewolf / Bàn chơi trực tuyến
+              Moonveil / Bàn chơi trực tuyến
             </span>
           </Link>
           <Link
@@ -106,84 +123,207 @@ export function EntryGate({ joinCode }: { joinCode?: string }) {
             Xem luật
           </Link>
         </header>
-        <div className="flex flex-1 flex-col justify-center gap-4 py-8">
-          <h1 className="text-center text-2xl font-medium tracking-tight text-ink">
-            {joinOnly ? 'Vào phòng chơi' : 'Chọn lối vào bàn'}
-          </h1>
-          <section className="ink-panel flex flex-col gap-6 rounded-3xl px-5 py-7 sm:px-7 sm:py-8">
-            {joinOnly ? null : (
-              <div className="flex flex-col gap-3">
-                <h2 className="text-lg font-medium text-ink">Quản trò</h2>
-                <p className="text-sm/6 text-ink-muted">
-                  Mở phòng và nhận mã mời cho cả bàn.
-                </p>
-                <form className="flex flex-col gap-4" onSubmit={submitCreate}>
-                  <EntryField
-                    autoComplete="name"
-                    id="moderator-name"
-                    label="Tên của bạn"
-                    maxLength={30}
-                    name="moderatorName"
-                    placeholder="Ví dụ: Hoa"
-                  />
-                  <Button
-                    pending={isPending}
-                    pendingLabel="Đang mở phòng..."
-                    type="submit"
-                    variant="primary"
-                  >
-                    Mở phòng mới
-                  </Button>
-                </form>
-                <div aria-hidden="true" className="flex items-center gap-3">
-                  <span className="h-px flex-1 bg-line" />
-                  <span className="font-mono text-xs tracking-widest text-ink-subtle uppercase">
-                    hoặc
-                  </span>
-                  <span className="h-px flex-1 bg-line" />
-                </div>
-              </div>
-            )}
-            <div className="flex flex-col gap-3">
-              <h2 className="text-lg font-medium text-ink">Người chơi</h2>
-              <p className="text-sm/6 text-ink-muted">
-                Dùng mã phòng bạn nhận được từ Quản trò.
+        <div className="relative flex flex-1 flex-col justify-center gap-4 py-8">
+          {path === 'MENU' ? (
+            <section className="relative mt-24 w-full rounded-3xl bg-[#f6ecd2] px-5 pt-19 pb-6 shadow-lg shadow-black/30 sm:px-8 sm:pb-7">
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-2 rounded-2xl border border-[#d9c398]"
+              />
+              {/* Hình tròn cùng màu card tạo "bump" trên mép — logo treo như
+                  được đóng đinh vào vòng tròn, đúng silhouette mockup. */}
+              <div
+                aria-hidden="true"
+                className="absolute -top-16 left-1/2 h-30 w-60 -translate-x-1/2 rounded-t-full bg-[#f6ecd2]"
+              />
+              <img
+                alt="Moonveil"
+                className="absolute -top-26 left-1/2 w-64 -translate-x-1/2"
+                decoding="async"
+                src="/logo-with-name.webp"
+              />
+              <h1 className="text-center text-3xl font-bold leading-tight tracking-tight text-[#1d2a45] sm:text-4xl">
+                Bạn sẽ tham gia với vai trò nào?
+              </h1>
+              <p className="mt-1 text-center text-sm/6 text-[#5a5142]">
+                Chọn cách bạn muốn bước vào Moonveil.
               </p>
-              <form className="flex flex-col gap-4" onSubmit={submitJoin}>
-                <CodeField initialCode={initialCode} />
-                <EntryField
-                  autoComplete="name"
-                  // Deep-link /join/$code: mã đã có sẵn, tập trung ngay vào tên.
-                  // eslint-disable-next-line jsx-a11y/no-autofocus
-                  autoFocus={joinOnly}
-                  id="display-name"
-                  label="Tên hiển thị"
-                  maxLength={30}
-                  name="displayName"
-                  placeholder="Ví dụ: An"
+              <div className="mt-6 flex flex-col gap-3">
+                <PathTile
+                  description="Tạo phòng và dẫn dắt ván chơi."
+                  icon={<Crown aria-hidden="true" className="size-5" />}
+                  onClick={() => selectPath('CREATE')}
+                  title="Quản trò"
+                  variant="host"
                 />
-                <Button
-                  pending={isPending}
-                  pendingLabel="Đang vào phòng..."
-                  type="submit"
-                  variant="primary"
-                >
-                  Vào phòng
-                </Button>
-              </form>
-            </div>
-            {error ? (
-              <p className="border-l-2 border-danger pl-3 text-sm/6 text-danger">
-                {error}
-              </p>
-            ) : null}
-          </section>
-          <p className="text-center font-mono text-xs tracking-wide text-ink-muted">
-            Mỗi người dùng một phiên riêng — vai trò giữ bí mật trên thiết bị.
-          </p>
+                <PathTile
+                  description="Vào phòng bằng mã mời."
+                  icon={<Users aria-hidden="true" className="size-5" />}
+                  onClick={() => selectPath('JOIN')}
+                  title="Người chơi"
+                  variant="player"
+                />
+              </div>
+              <div aria-hidden="true" className="mt-5 flex justify-center">
+                <span className="text-lg text-[#c9a55c]">✦</span>
+              </div>
+            </section>
+          ) : (
+            <>
+              <h1 className="text-center text-2xl font-medium tracking-tight text-ink">
+                {path === 'CREATE' ? 'Mở phòng mới' : 'Vào phòng đang chờ'}
+              </h1>
+              <section className="ink-panel flex flex-col gap-5 rounded-3xl px-5 py-7 sm:px-7 sm:py-8">
+                {path === 'CREATE' ? (
+                  <div className="flex flex-col gap-4">
+                    <BackToMenuButton onClick={backToMenu} />
+                    <div className="flex flex-col gap-1">
+                      <h2 className="text-lg font-medium text-ink">Quản trò</h2>
+                      <p className="text-sm/6 text-ink-muted">
+                        Mở phòng và nhận mã mời cho cả bàn.
+                      </p>
+                    </div>
+                    <form
+                      className="flex flex-col gap-4"
+                      onSubmit={submitCreate}
+                    >
+                      <EntryField
+                        autoComplete="name"
+                        id="moderator-name"
+                        label="Tên của bạn"
+                        maxLength={30}
+                        name="moderatorName"
+                        placeholder="Ví dụ: Hoa"
+                      />
+                      <Button
+                        pending={isPending}
+                        pendingLabel="Đang mở phòng..."
+                        type="submit"
+                        variant="primary"
+                      >
+                        Mở phòng mới
+                      </Button>
+                    </form>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-4">
+                    {joinOnly ? null : (
+                      <BackToMenuButton onClick={backToMenu} />
+                    )}
+                    <div className="flex flex-col gap-1">
+                      <h2 className="text-lg font-medium text-ink">
+                        Người chơi
+                      </h2>
+                      <p className="text-sm/6 text-ink-muted">
+                        Dùng mã phòng bạn nhận được từ Quản trò.
+                      </p>
+                    </div>
+                    <form className="flex flex-col gap-4" onSubmit={submitJoin}>
+                      <CodeField initialCode={initialCode} />
+                      <EntryField
+                        autoComplete="name"
+                        // Deep-link /join/$code: mã đã có sẵn, tập trung ngay vào tên.
+                        // eslint-disable-next-line jsx-a11y/no-autofocus
+                        autoFocus={joinOnly}
+                        id="display-name"
+                        label="Tên hiển thị"
+                        maxLength={30}
+                        name="displayName"
+                        placeholder="Ví dụ: An"
+                      />
+                      <Button
+                        pending={isPending}
+                        pendingLabel="Đang vào phòng..."
+                        type="submit"
+                        variant="primary"
+                      >
+                        Vào phòng
+                      </Button>
+                    </form>
+                  </div>
+                )}
+                {error ? (
+                  <p className="border-l-2 border-danger pl-3 text-sm/6 text-danger">
+                    {error}
+                  </p>
+                ) : null}
+              </section>
+            </>
+          )}
         </div>
       </div>
     </main>
+  )
+}
+
+const TILE_VARIANTS = {
+  // Navy mực + vương miện vàng đèn lồng — lối Quản trò.
+  host: {
+    tile: 'bg-[#1d2a45] hover:bg-[#243352] ring-black/25',
+    badge: 'bg-[#e8a25e]/15 ring-[#e8a25e]/45 text-[#e8a25e]',
+    text: 'text-[#f6ecd2]',
+    desc: 'text-[#f6ecd2]/65',
+    chevron: 'text-[#e8a25e]/80',
+  },
+  // Đỏ máu tối + huy hiệu hồng đá — lối Người chơi.
+  player: {
+    tile: 'bg-[#4b1d26] hover:bg-[#5a242f] ring-black/25',
+    badge: 'bg-[#d98a94]/15 ring-[#d98a94]/40 text-[#e0a3ab]',
+    text: 'text-[#f6ecd2]',
+    desc: 'text-[#f6ecd2]/65',
+    chevron: 'text-[#d98a94]/80',
+  },
+} as const
+
+function PathTile({
+  icon,
+  title,
+  description,
+  onClick,
+  variant,
+}: {
+  icon: ReactNode
+  title: string
+  description: string
+  onClick: () => void
+  variant: keyof typeof TILE_VARIANTS
+}) {
+  const styles = TILE_VARIANTS[variant]
+  return (
+    <button
+      className={`flex items-center gap-4 rounded-2xl px-4 py-4 text-left ring-1 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500 ${styles.tile}`}
+      type="button"
+      onClick={onClick}
+    >
+      <span
+        className={`grid size-12 shrink-0 place-items-center rounded-full ring-1 ${styles.badge}`}
+      >
+        {icon}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className={`block text-base font-medium ${styles.text}`}>
+          {title}
+        </span>
+        <span className={`block text-sm/6 ${styles.desc}`}>{description}</span>
+      </span>
+      <ChevronRight
+        aria-hidden="true"
+        className={`size-4 shrink-0 ${styles.chevron}`}
+      />
+    </button>
+  )
+}
+
+function BackToMenuButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      className="-mb-1 flex min-h-9 items-center gap-1 self-start rounded-lg px-1.5 text-sm text-ink-muted transition-colors hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500"
+      type="button"
+      onClick={onClick}
+    >
+      <ChevronLeft aria-hidden="true" className="size-4" />
+      Chọn lại lối
+    </button>
   )
 }
 
