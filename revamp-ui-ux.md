@@ -149,6 +149,8 @@ Mặt ngửa lá bài (cả RoleGuideCard lẫn RoleCard trong game): nền tr�
 
 Chốt (thay PA1): nguyên nhân thật là thẻ TRỐNG chứ không phải thiếu viền → sân khấu tròn màu vai (đĩa accent 20% + bóng đổ chân blur) đặt sau chibi ở cả 3 nơi; bỏ khung mảnh PA1. Bài học: chẩn đoán đúng nhu cầu (lấp khoảng trống) trước khi chọn cơ chế (khung).
 
+Logo (2026-10-02) ✅: user generate đúng hướng đề xuất — đầu sói chibi trên cờ đuôi én, đủ 4 màu theme. Đã tích hợp: favicon.ico đa-size + apple-touch + logo.webp 256 (master logo.png 956² track trong repo), theme-color #101a2e, logo thay chấm đỏ ở 3 header (landing/play/rules); RoomHeader giữ chấm đỏ vì đó là dot trạng thái. Favicon test pass ở 32px.
+
 ## 8. Vòng phản hồi sau "sân khấu giữa" (2026-10-01) ✅
 
 | #   | Phản hồi                                | Đã xử lý                                                                                                                                                                                                                                                                                                                                                                                                                     |
