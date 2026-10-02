@@ -136,7 +136,13 @@ export function PlayerToken({
   )
 
   return (
-    <li aria-current={acting ? 'step' : undefined} className="h-full min-w-0">
+    // list-none: PlayerToken có lúc được render trong div-group (picker màn
+    // game) thay vì <ul> — khi đó <li> rơi về marker disc mặc định của trình
+    // duyệt (chấm trắng outside trái card).
+    <li
+      aria-current={acting ? 'step' : undefined}
+      className="h-full min-w-0 list-none"
+    >
       {interactive ? (
         <button
           aria-label={displayName}

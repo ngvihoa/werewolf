@@ -43,11 +43,11 @@ export function GameShell({
       <div aria-hidden="true" className="phase-scrim" />
       <div
         aria-hidden="true"
-        className="fixed inset-x-0 top-0 -z-[8] h-24 bg-linear-to-b from-midnight/85 via-midnight/50 to-transparent"
+        className="fixed inset-x-0 top-0 -z-8 h-24 bg-linear-to-b from-midnight/85 via-midnight/50 to-transparent"
       />
       <div className="relative mx-auto flex w-full max-w-2xl flex-col gap-5">
         {header}
-        <section className="ink-panel rounded-3xl px-5 pt-6 pb-8 sm:px-7">
+        <section className="ink-panel space-y-4 rounded-3xl px-5 pt-6 pb-8 sm:px-7">
           {children}
         </section>
       </div>
