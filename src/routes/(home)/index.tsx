@@ -70,7 +70,7 @@ function LandingPage() {
               src="/logo.webp"
             />
             <span className="truncate font-mono text-sm tracking-wide text-stone-300 uppercase">
-              Werewolf / Trợ lý quản trò
+              Moonveil / Trợ lý quản trò
             </span>
           </Link>
           <nav
@@ -113,6 +113,12 @@ function LandingPage() {
         <div className="pointer-events-none absolute -top-40 left-[8%] size-96 rounded-full bg-red-500/10 blur-3xl" />
         <div className="mx-auto grid min-h-[calc(100dvh-5rem)] max-w-6xl items-center gap-14 px-5 py-16 sm:px-8 sm:py-20 lg:grid-cols-[1.08fr_0.92fr] lg:px-12 lg:py-24">
           <div className="relative flex max-w-3xl flex-col items-start gap-7">
+            <img
+              alt="Moonveil"
+              className="w-48 rounded-2xl bg-[#f5eeda] px-4 py-3 shadow-lg shadow-black/30 sm:w-56 sm:px-5 sm:py-3.5"
+              decoding="async"
+              src="/logo-with-name.webp"
+            />
             <p className="flex items-center gap-2 font-mono text-sm tracking-wide text-red-300 uppercase">
               <Moon aria-hidden="true" className="size-4" />
               Đêm bí mật. Bàn chơi thật.
@@ -224,7 +230,7 @@ function LandingPage() {
 
       <footer className="border-t border-white/15 px-5 py-8 sm:px-8 lg:px-12">
         <div className="mx-auto flex max-w-6xl flex-col gap-3 text-sm text-stone-500 sm:flex-row sm:items-center sm:justify-between">
-          <p>Werewolf Moderator Assistant</p>
+          <p>Moonveil — Trợ lý quản trò</p>
           <p className="font-mono">System điều phối · Quản trò quyết định</p>
         </div>
       </footer>

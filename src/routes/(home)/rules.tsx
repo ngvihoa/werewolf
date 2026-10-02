@@ -11,12 +11,12 @@ export const Route = createFileRoute('/(home)/rules')({
   head: () => ({
     meta: [
       {
-        title: 'Luật chơi & Vai trò | Werewolf Moderator',
+        title: 'Luật chơi & Vai trò | Moonveil',
       },
       {
         name: 'description',
         content:
-          'Luật chơi Ma Sói, nhịp một ván đấu và chức năng của 14 vai trò trong Werewolf Moderator.',
+          'Luật chơi Ma Sói, nhịp một ván đấu và chức năng của 14 vai trò trong Moonveil.',
       },
     ],
   }),
@@ -40,7 +40,7 @@ function RulesPage() {
                   src="/logo.webp"
                 />
                 <span className="truncate font-mono text-sm tracking-wide text-stone-300 uppercase">
-                  Werewolf
+                  Moonveil
                   <span className="hidden sm:inline"> / Luật chơi</span>
                 </span>
               </Link>
@@ -95,7 +95,7 @@ function RulesPage() {
           <footer className="border-t border-white/15 px-5 py-8 sm:px-8 lg:px-12">
             <div className="mx-auto flex max-w-7xl flex-col gap-3 text-sm text-stone-500 sm:flex-row sm:items-center sm:justify-between">
               <Link className="transition-colors hover:text-stone-200" to="/">
-                Werewolf Moderator Assistant
+                Moonveil — Trợ lý quản trò
               </Link>
               <p className="font-mono">
                 14 vai trò · Một ngôi làng · Rất nhiều bí mật
