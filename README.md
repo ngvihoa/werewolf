@@ -37,6 +37,11 @@ pnpm db:studio
 
 ## Documentation
 
-- Product rules: [`rules/README.md`](./rules/README.md)
-- Technical assessment: [`TECHNICAL_ASSESSMENT.md`](./TECHNICAL_ASSESSMENT.md)
-- Delivery roadmap: [`ROADMAP.md`](./ROADMAP.md)
+All project documents live in [`docs/`](./docs):
+
+- Product rules: [`docs/rules/README.md`](./docs/rules/README.md)
+- UI/UX design log (source of truth for the interface): [`docs/revamp-ui-ux.md`](./docs/revamp-ui-ux.md)
+- Technical assessment: [`docs/TECHNICAL_ASSESSMENT.md`](./docs/TECHNICAL_ASSESSMENT.md)
+- Delivery roadmap: [`docs/ROADMAP.md`](./docs/ROADMAP.md)
+
+Agent instructions: [`AGENTS.md`](./AGENTS.md)
