@@ -21,6 +21,44 @@ test('starts an isolated eight-player game', async ({ browser }) => {
   }
 })
 
+test('invite deep link joins with prefilled room code', async ({ browser }) => {
+  const table = await createTable(browser, 5)
+
+  try {
+    const context = await browser.newContext()
+    const page = await context.newPage()
+    await page.goto(`/join/${table.roomCode}`)
+    // Chờ hydration xong trước khi fill — fill sớm bị client re-render xóa giá trị.
+    await page.waitForLoadState('networkidle')
+    await page.getByLabel('Tên hiển thị').fill('Khách mời')
+    await page.getByRole('button', { name: 'Vào phòng' }).click()
+    await expect(page.getByText('Đang chờ Quản trò')).toBeVisible()
+    await expect(table.moderator.page.getByText('6 / 15')).toBeVisible()
+    await context.close()
+  } finally {
+    await table.close()
+  }
+})
+
+test('moderator can open the invite QR dialog', async ({ browser }) => {
+  const table = await createTable(browser, 5)
+
+  try {
+    await table.moderator.page
+      .getByRole('button', { name: /Mở mã QR mời vào phòng/ })
+      .click()
+    const dialog = table.moderator.page.locator('dialog[open]')
+    await expect(dialog).toBeVisible()
+    await expect(
+      dialog.getByRole('img', {
+        name: `Mã QR dẫn đến phòng ${table.roomCode}`,
+      }),
+    ).toBeVisible()
+  } finally {
+    await table.close()
+  }
+})
+
 test('hunter mark kills the selected player when the hunter dies at night', async ({
   browser,
 }) => {

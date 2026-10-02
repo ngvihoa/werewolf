@@ -35,12 +35,8 @@ export async function createTable(
   )
   await moderator.page.goto('/play')
   await moderator.page.waitForLoadState('networkidle')
-  await moderator.page.getByLabel('Tên Quản trò').fill(moderator.name)
-  // Nút submit trùng chữ với tab "Tạo phòng" nên phải tìm trong form.
-  await moderator.page
-    .locator('form')
-    .getByRole('button', { name: 'Tạo phòng' })
-    .click()
+  await moderator.page.getByLabel('Tên của bạn').fill(moderator.name)
+  await moderator.page.getByRole('button', { name: 'Mở phòng mới' }).click()
 
   const roomHeading = moderator.page.getByRole('heading', { name: /Phòng/ })
   await expect(roomHeading).toBeVisible()
@@ -57,8 +53,7 @@ export async function createTable(
       )
       await player.page.goto('/play')
       await player.page.waitForLoadState('networkidle')
-      await player.page.getByRole('button', { name: 'Tham gia' }).click()
-      await player.page.getByLabel('Room code').fill(roomCode)
+      await player.page.getByLabel('Mã phòng').fill(roomCode)
       await player.page.getByLabel('Tên hiển thị').fill(player.name)
       await player.page.getByRole('button', { name: 'Vào phòng' }).click()
       await expect(player.page.getByText('Đang chờ Quản trò')).toBeVisible()

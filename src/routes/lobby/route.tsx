@@ -166,7 +166,12 @@ function LobbyPage() {
       }
     >
       <PhaseIndicator phase="LOBBY" round={1} />
-      <RoomSummary gameStarted={false} roomCode={roomCode} version={version} />
+      <RoomSummary
+        gameStarted={false}
+        isModerator={isModerator}
+        roomCode={roomCode}
+        version={version}
+      />
       {view.viewer === 'MODERATOR' ? (
         <ModeratorControls
           playerCount={players.length}

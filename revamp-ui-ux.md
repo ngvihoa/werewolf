@@ -134,6 +134,7 @@ Palette sample trực tiếp từ tranh (UI và tranh cùng một thế giới):
 5. ✅ Thẻ role: max-w-56, dời xuống dưới form hành động.
 6. (Tuỳ chọn) schedule `purge_stale_games` bằng pg_cron trong Supabase.
 7. 🔜 Dự thảo: drawer cho queue/lịch sử Quản trò nếu cần; nút "bố cục rộng".
+8. ✅ Trang /play "Cổng vào đêm" + QR mời vào phòng (mục 9).
 
 ## 7. Tích hợp bộ chibi role (2026-10-01) ✅
 
@@ -170,3 +171,53 @@ Giới hạn đã biết: winner LOVERS chưa đánh dấu được vương mi�
   `src/components/ui/PhaseIndicator.tsx`.
 - Bug đã fix đáng nhớ: gate `sessionToken` phải chờ hydration
   (`useIsHydrated`) nếu không reload `/game` sẽ đáy về `/`.
+
+## 9. Trang /play — "Cổng vào đêm" (2026-10-02) ✅
+
+Grill-me 2 vòng với user, chốt 7 quyết định. Bệnh chẩn đoán: /play là trang duy
+nhất còn vi phạm nguyên tắc #1 — 2 cột 2 trọng tâm, hero + stats cạnh tranh chú
+ý với hành động, toggle tab ẩn một nửa form, form max-w-xs nhạt nhòa lệch thế
+giới thị giác với màn game đã revamp. **Đã thực thi cùng ngày** (user cung cấp
+tranh entry `public/bg/start-bg.png` 1672×941 → WebP 255KB).
+
+| #   | Quyết định              | Nội dung                                                                                                                                                                                                                                                      |
+| --- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Cấu trúc                | Xoá split-screen. Một card trung tâm (ngôn ngữ "Sân khấu giữa", ~max-w-lg) trên tranh nền + scrim; header mỏng chỉ còn logo + "Xem luật". Hero rút còn 1 dòng eyebrow trên card; stats bỏ hẳn (đã có ở landing).                                              |
+| 2   | Hai lối hiện cùng lúc   | Bỏ toggle CREATE/JOIN (ModeButton + state mode + h2 đổi theo mode xoá sạch). Card có 2 khối: "Quản trò" (tên → Mở phòng mới) và "Người chơi" (mã 6 ô + tên → Vào phòng), ngăn bởi divider "hoặc". Hai luồng ngang bằng, không mode ẩn — mọi thứ thấy một lần. |
+| 3   | Nền                     | Tranh pha + scrim mực như màn game (placeholder day-bg). User đang generate tranh entry riêng, cung cấp sau — thiết kế vô kiến với tranh (nguyên tắc #4), chỉ thêm mapping `entry-bg` khi có asset.                                                           |
+| 4   | Deep-link `/join/$code` | Route mới: cùng card nhưng chỉ khối Người chơi, mã prefill từ URL, focus vào tên. Code sai/không tồn tại → lỗi hiện tại chỗ, mã vẫn sửa được. Đường QR bám vào URL này.                                                                                       |
+| 5   | QR mời vào phòng        | RoomSummary phía Quản trò thêm QR ~80px luôn hiện, encode `${origin}/join/${roomCode}`; bấm phóng to full-screen (chiếu máy/để bàn xa); nút copy link cạnh nút copy mã. Thư viện: `qrcode` (SVG, deps nhẹ).                                                   |
+| 6   | Ô mã phòng              | 1 input mono uppercase tracking rộng hiển thị dạng 6 ngăn (không auto-advance phức tạp); paste cả mã vào được. Deep-link prefill là chính, gõ tay là phụ.                                                                                                     |
+| 7   | Copy                    | 100% tiếng Việt, nhãn ngắn "Quản trò" / "Người chơi" (nguyên tắc #5); footnote phiên riêng giữ 1 dòng mono dưới card.                                                                                                                                         |
+
+Ảnh hưởng phải xử lý khi thực thi:
+
+- `play.tsx`: gộp 2 mutation song song không phụ thuộc mode; layout chuyển
+  `lg:grid-cols-[5fr_4fr]` → 1 cột giữa; màu chữ toàn trang theo theme mực
+  (bỏ hệ stone sáng của cột form cũ).
+- e2e đang bấm toggle mode → chuyển sang điền trực tiếp 2 form; thêm case
+  deep-link `/join/$code` (prefill, chỉ điền tên). Chạy port 3100.
+- Gate session cho `/join/$code` dùng cùng rule `/play` (có session → /lobby,
+  chờ hydration trước khi gate — bài học commit `4c6b1bb`).
+- Landing giữ CTA → /play (2 lối ngang bằng nên không cần tách CTA riêng).
+
+Thực thi và bài học (2026-10-02):
+
+- `EntryGate` component dùng chung (`src/routes/(home)/-components/EntryGate.tsx`):
+  play.tsx và join.$code.tsx đều render nó — có `joinCode` thì card rút còn
+  một lối. ModeButton + EntryStat đã xoá.
+- Ô mã 6 ngăn: thử CSS-only (repeating-gradient 6 ngăn + 1 input tracking
+  rộng) FAIL — chữ mono centered thành khối, không thẳng từng ô với ngăn.
+  Thay bằng pattern input-otp lite: 6 ô hiển thị mirror giá trị + 1 input
+  thật trong suốt đè trên (`text-transparent caret-ink`); paste/xóa là hành
+  vi input gốc, FormData vẫn đọc được value, không auto-advance.
+- `RoomInviteQR` (`src/components/RoomInviteQR.tsx`): QR 80px nền kem
+  (#f5eeda) module mực (#101a2e) luôn hiện ở RoomSummary phía Quản trò +
+  nút copy link; native dialog phóng to (pattern RoleCardDialog). Lib
+  `qrcode` 1.5.4 (import default — types dùng `export =`).
+- e2e: fixture bỏ click "Tham gia"; thêm 2 test (deep-link join, mở dialog
+  QR). Bài học e2e: fill trước khi hydration xong bị client re-render xóa
+  giá trị → `required` chặn submit im lặng; luôn chờ networkidle sau goto
+  như fixture cũ.
+- Verified: 189 unit pass; e2e chromium 5/5; screenshot 4 case desktop
+  (/play, /join, lobby QR, dialog QR) — tranh entry ăn khớp thế giới chibi.

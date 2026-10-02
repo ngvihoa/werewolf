@@ -265,6 +265,11 @@ body {
   background-image: url('/bg/result-bg.webp');
 }
 
+/* Trang entry (/play, /join/$code) dùng tranh riêng — "Cổng vào đêm". */
+.phase-backdrop .bg-entry {
+  background-image: url('/bg/start-bg.webp');
+}
+
 [data-bg='night'] .phase-backdrop .bg-night {
   opacity: 1;
 }
@@ -282,6 +287,10 @@ body {
 }
 
 [data-bg='result'] .phase-backdrop .bg-result {
+  opacity: 1;
+}
+
+[data-bg='entry'] .phase-backdrop .bg-entry {
   opacity: 1;
 }
 

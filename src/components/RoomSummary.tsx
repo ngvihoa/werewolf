@@ -1,28 +1,50 @@
 import { copyToClipboard } from '#/lib/clipboard'
-import { Check, Copy } from 'lucide-react'
+import { Check, Copy, Link2 } from 'lucide-react'
 import { useState } from 'react'
+
+import { RoomInviteQR } from './RoomInviteQR'
 
 export function RoomSummary({
   gameStarted,
   roomCode,
   version,
+  isModerator = false,
 }: {
   gameStarted: boolean
   roomCode: string
   version: number
+  /** Quản trò thấy thêm QR mời vào phòng + nút sao chép link mời. */
+  isModerator?: boolean
 }) {
   const [copyStatus, setCopyStatus] = useState<'IDLE' | 'COPIED' | 'ERROR'>(
     'IDLE',
   )
+  const [linkStatus, setLinkStatus] = useState<'IDLE' | 'COPIED' | 'ERROR'>(
+    'IDLE',
+  )
 
-  async function copyRoomCode() {
+  async function copyWithStatus(
+    value: string,
+    setStatus: (status: 'IDLE' | 'COPIED' | 'ERROR') => void,
+  ) {
     try {
-      await copyToClipboard(roomCode)
-      setCopyStatus('COPIED')
-      window.setTimeout(() => setCopyStatus('IDLE'), 2_000)
+      await copyToClipboard(value)
+      setStatus('COPIED')
+      window.setTimeout(() => setStatus('IDLE'), 2_000)
     } catch {
-      setCopyStatus('ERROR')
+      setStatus('ERROR')
     }
+  }
+
+  function copyRoomCode() {
+    return copyWithStatus(roomCode, setCopyStatus)
+  }
+
+  function copyInviteLink() {
+    return copyWithStatus(
+      `${window.location.origin}/join/${roomCode}`,
+      setLinkStatus,
+    )
   }
 
   return (
@@ -60,6 +82,34 @@ export function RoomSummary({
                 <Copy aria-hidden="true" className="size-4" />
               )}
             </button>
+            {isModerator ? (
+              <button
+                aria-label={
+                  linkStatus === 'COPIED'
+                    ? 'Đã sao chép link mời'
+                    : 'Sao chép link mời vào phòng'
+                }
+                className="grid size-10 shrink-0 place-items-center rounded-full text-stone-300 ring-1 ring-white/15 transition-colors hover:bg-white/10 hover:text-stone-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500"
+                title={
+                  linkStatus === 'COPIED'
+                    ? 'Đã sao chép link mời'
+                    : linkStatus === 'ERROR'
+                      ? 'Không thể sao chép'
+                      : 'Sao chép link mời vào phòng'
+                }
+                type="button"
+                onClick={() => void copyInviteLink()}
+              >
+                {linkStatus === 'COPIED' ? (
+                  <Check
+                    aria-hidden="true"
+                    className="size-4 text-emerald-300"
+                  />
+                ) : (
+                  <Link2 aria-hidden="true" className="size-4" />
+                )}
+              </button>
+            ) : null}
             <span aria-live="polite" className="sr-only">
               {copyStatus === 'COPIED'
                 ? 'Đã sao chép mã phòng'
@@ -72,9 +122,12 @@ export function RoomSummary({
             Chia sẻ mã này cho người chơi mở trong tab hoặc thiết bị khác.
           </p>
         </div>
-        <div className="flex items-center gap-2 font-mono text-sm text-stone-500">
-          <span className="size-1.5 rounded-full bg-emerald-400" />
-          Đã đồng bộ · v<span className="tabular-nums">{version}</span>
+        <div className="flex items-center gap-5">
+          {isModerator ? <RoomInviteQR roomCode={roomCode} /> : null}
+          <div className="flex items-center gap-2 font-mono text-sm text-stone-500">
+            <span className="size-1.5 rounded-full bg-emerald-400" />
+            Đã đồng bộ · v<span className="tabular-nums">{version}</span>
+          </div>
         </div>
       </div>
     </div>

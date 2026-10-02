@@ -15,6 +15,7 @@ import { Route as LobbyRouteRouteImport } from './routes/lobby/route'
 import { Route as homeIndexRouteImport } from './routes/(home)/index'
 import { Route as homePlayRouteImport } from './routes/(home)/play'
 import { Route as homeRulesRouteImport } from './routes/(home)/rules'
+import { Route as homeJoinCodeRouteImport } from './routes/(home)/join.$code'
 import { Route as ApiRpcSplatRouteImport } from './routes/api.rpc.$'
 
 const homeRouteRoute = homeRouteRouteImport.update({
@@ -46,6 +47,11 @@ const homeRulesRoute = homeRulesRouteImport.update({
   path: '/rules',
   getParentRoute: () => homeRouteRoute,
 } as any)
+const homeJoinCodeRoute = homeJoinCodeRouteImport.update({
+  id: '/join/$code',
+  path: '/join/$code',
+  getParentRoute: () => homeRouteRoute,
+} as any)
 const ApiRpcSplatRoute = ApiRpcSplatRouteImport.update({
   id: '/api/rpc/$',
   path: '/api/rpc/$',
@@ -58,6 +64,7 @@ export interface FileRoutesByFullPath {
   '/play': typeof homePlayRoute
   '/rules': typeof homeRulesRoute
   '/': typeof homeIndexRoute
+  '/join/$code': typeof homeJoinCodeRoute
   '/api/rpc/$': typeof ApiRpcSplatRoute
 }
 export interface FileRoutesByTo {
@@ -66,6 +73,7 @@ export interface FileRoutesByTo {
   '/play': typeof homePlayRoute
   '/rules': typeof homeRulesRoute
   '/': typeof homeIndexRoute
+  '/join/$code': typeof homeJoinCodeRoute
   '/api/rpc/$': typeof ApiRpcSplatRoute
 }
 export interface FileRoutesById {
@@ -76,13 +84,16 @@ export interface FileRoutesById {
   '/(home)/play': typeof homePlayRoute
   '/(home)/rules': typeof homeRulesRoute
   '/(home)/': typeof homeIndexRoute
+  '/(home)/join/$code': typeof homeJoinCodeRoute
   '/api/rpc/$': typeof ApiRpcSplatRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/game' | '/lobby' | '/play' | '/rules' | '/' | '/api/rpc/$'
+  fullPaths:
+    '/game' | '/lobby' | '/play' | '/rules' | '/' | '/join/$code' | '/api/rpc/$'
   fileRoutesByTo: FileRoutesByTo
-  to: '/game' | '/lobby' | '/play' | '/rules' | '/' | '/api/rpc/$'
+  to:
+    '/game' | '/lobby' | '/play' | '/rules' | '/' | '/join/$code' | '/api/rpc/$'
   id:
     | '__root__'
     | '/(home)'
@@ -91,6 +102,7 @@ export interface FileRouteTypes {
     | '/(home)/play'
     | '/(home)/rules'
     | '/(home)/'
+    | '/(home)/join/$code'
     | '/api/rpc/$'
   fileRoutesById: FileRoutesById
 }
@@ -145,6 +157,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof homeRulesRouteImport
       parentRoute: typeof homeRouteRoute
     }
+    '/(home)/join/$code': {
+      id: '/(home)/join/$code'
+      path: '/join/$code'
+      fullPath: '/join/$code'
+      preLoaderRoute: typeof homeJoinCodeRouteImport
+      parentRoute: typeof homeRouteRoute
+    }
     '/api/rpc/$': {
       id: '/api/rpc/$'
       path: '/api/rpc/$'
@@ -159,12 +178,14 @@ interface homeRouteRouteChildren {
   homePlayRoute: typeof homePlayRoute
   homeRulesRoute: typeof homeRulesRoute
   homeIndexRoute: typeof homeIndexRoute
+  homeJoinCodeRoute: typeof homeJoinCodeRoute
 }
 
 const homeRouteRouteChildren: homeRouteRouteChildren = {
   homePlayRoute: homePlayRoute,
   homeRulesRoute: homeRulesRoute,
   homeIndexRoute: homeIndexRoute,
+  homeJoinCodeRoute: homeJoinCodeRoute,
 }
 
 const homeRouteRouteWithChildren = homeRouteRoute._addFileChildren(
