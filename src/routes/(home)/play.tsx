@@ -82,7 +82,7 @@ function EntryPage() {
             >
               <img
                 alt=""
-                className="size-7 shrink-0"
+                className="size-9 shrink-0"
                 decoding="async"
                 src="/logo.webp"
               />
