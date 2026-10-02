@@ -328,11 +328,6 @@ body {
   color: var(--theme-switcher-text);
 }
 
-.theme-switcher option {
-  background: var(--theme-canvas-middle);
-  color: var(--theme-text);
-}
-
 .theme-room-code {
   color: var(--theme-room-code);
 }

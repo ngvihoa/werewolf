@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 
 import { Loader2 } from 'lucide-react'
+import { cn } from '#/lib/cn'
 
 type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger'
 type ButtonSize = 'md' | 'lg'
@@ -45,9 +46,13 @@ export function Button({
 }) {
   return (
     <button
-      className={`inline-flex items-center justify-center gap-2 rounded-xl font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500 disabled:cursor-not-allowed disabled:opacity-40 ${
-        VARIANT_CLASSES[variant]
-      } ${SIZE_CLASSES[size]} ${fullWidth ? 'w-full' : ''} ${className}`}
+      className={cn(
+        'inline-flex items-center justify-center gap-2 rounded-xl font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500 disabled:cursor-not-allowed disabled:opacity-40',
+        VARIANT_CLASSES[variant],
+        SIZE_CLASSES[size],
+        fullWidth && 'w-full',
+        className,
+      )}
       type={type}
       disabled={pending || disabled}
       onClick={onClick}

@@ -7,6 +7,7 @@ import { useMutation } from '@tanstack/react-query'
 import { orpcClient } from '#/orpc/client'
 import { useState } from 'react'
 import { Button } from '#/components/ui/Button'
+import { cn } from '#/lib/cn'
 
 // Mã phòng sinh từ ROOM_CODE_ALPHABET (A-Z không I,O + 2-9 không 0,1).
 const ROOM_CODE_PATTERN = /^[A-Z0-9]{6}$/
@@ -151,14 +152,26 @@ export function EntryGate({ joinCode }: { joinCode?: string }) {
               <div className="mt-6 flex flex-col gap-3">
                 <PathTile
                   description="Tạo phòng và dẫn dắt ván chơi."
-                  icon={<Crown aria-hidden="true" className="size-5" />}
+                  icon={
+                    <Crown
+                      aria-hidden="true"
+                      className="size-5"
+                      fill="currentColor"
+                    />
+                  }
                   onClick={() => selectPath('CREATE')}
                   title="Quản trò"
                   variant="host"
                 />
                 <PathTile
                   description="Vào phòng bằng mã mời."
-                  icon={<Users aria-hidden="true" className="size-5" />}
+                  icon={
+                    <Users
+                      aria-hidden="true"
+                      className="size-5"
+                      fill="currentColor"
+                    />
+                  }
                   onClick={() => selectPath('JOIN')}
                   title="Người chơi"
                   variant="player"
@@ -259,16 +272,18 @@ export function EntryGate({ joinCode }: { joinCode?: string }) {
 const TILE_VARIANTS = {
   // Navy mực + vương miện vàng đèn lồng — lối Quản trò.
   host: {
+    mainColor: 'bg-[#e8a25e]',
     tile: 'bg-[#1d2a45] hover:bg-[#243352] ring-black/25',
-    badge: 'bg-[#e8a25e]/15 ring-[#e8a25e]/45 text-[#e8a25e]',
+    badge: 'bg-[#e8a25e]/15 ring-[#e8a25e]/45 text-[#1d2a45]',
     text: 'text-[#f6ecd2]',
     desc: 'text-[#f6ecd2]/65',
     chevron: 'text-[#e8a25e]/80',
   },
   // Đỏ máu tối + huy hiệu hồng đá — lối Người chơi.
   player: {
+    mainColor: 'bg-[#e0a3ab]',
     tile: 'bg-[#4b1d26] hover:bg-[#5a242f] ring-black/25',
-    badge: 'bg-[#d98a94]/15 ring-[#d98a94]/40 text-[#e0a3ab]',
+    badge: 'bg-[#d98a94]/15 ring-[#d98a94]/40 text-[#4b1d26]',
     text: 'text-[#f6ecd2]',
     desc: 'text-[#f6ecd2]/65',
     chevron: 'text-[#d98a94]/80',
@@ -291,24 +306,50 @@ function PathTile({
   const styles = TILE_VARIANTS[variant]
   return (
     <button
-      className={`flex items-center gap-4 rounded-2xl px-4 py-4 text-left ring-1 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500 ${styles.tile}`}
+      className={cn(
+        'flex items-center gap-4 rounded-2xl px-4 py-4 text-left ring-1 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500',
+        styles.tile,
+      )}
       type="button"
       onClick={onClick}
     >
-      <span
-        className={`grid size-12 shrink-0 place-items-center rounded-full ring-1 ${styles.badge}`}
+      <div
+        className={cn(
+          'relative isolate grid size-12 shrink-0 place-items-center rounded-full ring-1',
+          styles.badge,
+        )}
       >
-        {icon}
-      </span>
+        <div
+          aria-hidden="true"
+          className={cn('absolute inset-1 rounded-full', styles.mainColor)}
+        />
+        {(
+          ['rotate-0', 'rotate-90', 'rotate-180', 'rotate-[270deg]'] as const
+        ).map((rotation, index) => (
+          <div
+            aria-hidden="true"
+            className={cn('absolute h-2 w-1 [clip-path:polygon(50%_0%,100%_50%,50%_100%,0%_50%)]', rotation, styles.mainColor, {
+              '-top-1 left-1/2 -translate-x-1/2': index === 0,
+              'top-1/2 -right-1 -translate-y-1/2': index === 1,
+              '-bottom-1 left-1/2 -translate-x-1/2': index === 2,
+              'top-1/2 -left-1 -translate-y-1/2': index === 3,
+            })}
+            key={rotation}
+          />
+        ))}
+        <span className="relative z-10">{icon}</span>
+      </div>
       <span className="min-w-0 flex-1">
-        <span className={`block text-base font-medium ${styles.text}`}>
+        <span className={cn('block text-base font-medium', styles.text)}>
           {title}
         </span>
-        <span className={`block text-sm/6 ${styles.desc}`}>{description}</span>
+        <span className={cn('block text-sm/6', styles.desc)}>
+          {description}
+        </span>
       </span>
       <ChevronRight
         aria-hidden="true"
-        className={`size-4 shrink-0 ${styles.chevron}`}
+        className={cn('size-6 shrink-0', styles.chevron)}
       />
     </button>
   )
@@ -390,7 +431,10 @@ function EntryField({
       </label>
       <input
         {...inputProps}
-        className={`rounded-xl bg-surface px-3 py-2.5 text-base text-ink ring-1 ring-line placeholder:text-ink-subtle focus-visible:-outline-offset-1 focus-visible:outline-2 focus-visible:outline-red-500 sm:text-sm ${className}`}
+        className={cn(
+          'rounded-xl bg-surface px-3 py-2.5 text-base text-ink ring-1 ring-line placeholder:text-ink-subtle focus-visible:-outline-offset-1 focus-visible:outline-2 focus-visible:outline-red-500 sm:text-sm',
+          className,
+        )}
         id={id}
         required
       />

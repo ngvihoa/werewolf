@@ -290,3 +290,31 @@ Inter — principle #3 hồi hiệu lực trọn vẹn). (2) Thêm HÌNH TRÒN k
 mép card — logo "đóng đinh" vào vòng tròn đúng silhouette mockup, giải
 nốt cảm giác overlap "trơ". (3) Bỏ helper text "Mỗi người dùng một phiên
 riêng" dưới card. e2e entry pass.
+
+## 11. Thiết kế lại floating button đổi theme (2026-10-02 đêm) ✅
+
+Grill 4 quyết định (đều theo phương án đề xuất): popover swatch / icon-only
+thu gọn / ẨN trong ván /game / swatch 3 chấm + tên. Thực thi:
+
+- `ThemeSwitcher` mới: nút tròn icon-only (Palette, size-12, biến
+  --theme-switcher-* theo theme), bấm mở panel `role="menu"` với 4 hàng
+  `menuitemradio` — mỗi hàng 3 chấm (nền panel/chữ/accent từ
+  `THEME_SWATCHES` map cứng trong theme.ts, đồng bộ block data-theme) +
+  tên + Check ở theme active; đóng khi chọn/outside-click/Escape. Vị trí
+  bottom có env(safe-area-inset-bottom).
+- Mount theo route thay vì global: `(home)` layout (landing/play/rules/
+  join) + /lobby; /game không mount — trong ván không đổi theme giữa chừng.
+- Gỡ rule `.theme-switcher option` (hết select); giữ class `.theme-switcher`
+  cho capture spec ẩn được (portfolio capture).
+- Lưu ý: /play + /join dùng card kem màu brand cố định + tranh entry riêng
+  nên đổi theme gần như không thấy ở đó — theme ăn ở landing/rules/lobby/
+  game. e2e entry pair pass.
+
+**Rev 6 — icon badge PathTile fill mode (2026-10-02 đêm)**: huy hiệu tròn
+đổi thành 2 tầng (vòng ngoài màu đậm + đĩa mainColor nhạt inset 1px — cấu
+trúc user chỉnh tay trong file), icon Crown/Users thành FILL silhouette
+(fill="currentColor" size-6) màu = NỀN của tile (navy #1d2a45 trên vàng
+#e8a25e / đỏ máu #4b1d26 trên hồng #d98a94) — đúng emblem mockup. Bài học
+debug: đĩa `absolute z-0` vẽ ĐÈ lên icon tĩnh (positioned element luôn
+trên static content) → icon phải bọc `relative z-10`; screenshot trống +
+DOM fill đúng = sign của layering, không phải của fill prop.

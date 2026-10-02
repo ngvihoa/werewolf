@@ -7,6 +7,7 @@ import { createFileRoute, Navigate } from '@tanstack/react-router'
 import { createIdempotencyKey } from '#/lib/create-idempotency-key'
 import { mutationErrorMessage } from '#/game/presentation/mutation-error-message'
 import { PhaseIndicator } from '#/components/ui/PhaseIndicator'
+import { ThemeSwitcher } from '#/components/ThemeSwitcher'
 import { SessionError } from '#/components/SessionError'
 import { RoomSummary } from '#/components/RoomSummary'
 import { PlayerToken } from '#/components/ui/PlayerToken'
@@ -21,7 +22,14 @@ import { roleLabel } from '#/game/presentation/labels'
 import { ModeratorControls } from './-components/ModeratorControls'
 import { PlayerControls } from './-components/PlayerControls'
 
-export const Route = createFileRoute('/lobby')({ component: LobbyPage })
+export const Route = createFileRoute('/lobby')({
+  component: () => (
+    <>
+      <ThemeSwitcher />
+      <LobbyPage />
+    </>
+  ),
+})
 
 function LobbyPage() {
   const { sessionToken, leaveSession } = useLocalSession()

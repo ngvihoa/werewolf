@@ -42,7 +42,7 @@ const CAMERA_CONTEXT = {
 const HIDE_CSS = `
   html { scrollbar-width: none; }
   ::-webkit-scrollbar { display: none; }
-  .theme-switcher { display: none !important; }
+  .theme-switcher, .theme-switcher-root { display: none !important; }
 `
 
 async function dress(page: Page) {
