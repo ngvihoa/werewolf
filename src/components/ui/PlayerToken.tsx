@@ -102,7 +102,7 @@ export function PlayerToken({
         {roleImageSrc ? (
           <img
             alt=""
-            className="size-full object-cover"
+            className="size-full origin-top scale-[1.6] object-cover object-top"
             height={40}
             src={roleImageSrc}
             width={40}

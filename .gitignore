@@ -29,3 +29,6 @@ public/bg/*.png
 public/role/chibi/*.png
 public/role/*.png
 public/role/optimized/
+
+# Ảnh/video portfolio do kịch bản test:capture tạo ra
+portfolio-assets/

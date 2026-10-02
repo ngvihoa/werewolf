@@ -6,8 +6,17 @@ import { useRef, useState } from 'react'
 
 const HOLD_REVEAL_MS = 250
 
-export function RoleCard({ role }: { role: Role }) {
-  const [revealed, setRevealed] = useState(false)
+export function RoleCard({
+  role,
+  defaultRevealed = false,
+  className = 'max-w-64',
+}: {
+  role: Role
+  // Dialog "Xem vai trò" mở là để xem — thẻ hiện mặt sẵn, vẫn lật được.
+  defaultRevealed?: boolean
+  className?: string
+}) {
+  const [revealed, setRevealed] = useState(defaultRevealed)
   const holdTimer = useRef<number | null>(null)
   // Phân biệt "giữ để xem rồi nhả" với "chạm": nhả sau khi giữ sẽ ẩn thẻ
   // và phải nuốt sự kiện click phát sinh ngay sau đó.
@@ -50,7 +59,9 @@ export function RoleCard({ role }: { role: Role }) {
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-64 flex-col items-center gap-4">
+    <div
+      className={`mx-auto flex w-full flex-col items-center gap-4 ${className}`}
+    >
       <button
         aria-label={revealed ? 'Ẩn thẻ vai' : 'Xem thẻ vai'}
         aria-pressed={revealed}

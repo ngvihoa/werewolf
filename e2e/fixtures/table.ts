@@ -18,12 +18,21 @@ export type TestTable = {
 export async function createTable(
   browser: Browser,
   playerCount = 8,
+  names: {
+    moderatorName?: string
+    playerNames?: string[]
+    contextOptions?: Parameters<Browser['newContext']>[0]
+  } = {},
 ): Promise<TestTable> {
   if (playerCount < 5 || playerCount > 15) {
     throw new Error('A table requires 5-15 players')
   }
 
-  const moderator = await openParticipant(browser, 'Moderator')
+  const moderator = await openParticipant(
+    browser,
+    names.moderatorName ?? 'Moderator',
+    names.contextOptions,
+  )
   await moderator.page.goto('/play')
   await moderator.page.waitForLoadState('networkidle')
   await moderator.page.getByLabel('Tên Quản trò').fill(moderator.name)
@@ -41,7 +50,11 @@ export async function createTable(
 
   const players = await Promise.all(
     Array.from({ length: playerCount }, async (_, index) => {
-      const player = await openParticipant(browser, `Player ${index + 1}`)
+      const player = await openParticipant(
+        browser,
+        names.playerNames?.[index] ?? `Player ${index + 1}`,
+        names.contextOptions,
+      )
       await player.page.goto('/play')
       await player.page.waitForLoadState('networkidle')
       await player.page.getByRole('button', { name: 'Tham gia' }).click()
@@ -103,11 +116,25 @@ export async function findPlayerByRole(
   roleName: string,
 ): Promise<TablePlayer> {
   for (const player of players) {
-    await player.page.getByRole('button', { name: 'Xem thẻ vai' }).click()
-    const matches = await player.page
-      .getByText(roleName, { exact: true })
-      .count()
-    await player.page.getByRole('button', { name: 'Ẩn thẻ vai' }).click()
+    // Sảnh chờ: thẻ lật tại chỗ. Trong ván: vai nằm sau dialog "Xem vai trò".
+    const flip = player.page.getByRole('button', { name: 'Xem thẻ vai' })
+    if ((await flip.count()) > 0) {
+      await flip.click()
+      const matches = await player.page
+        .getByText(roleName, { exact: true })
+        .count()
+      await player.page.getByRole('button', { name: 'Ẩn thẻ vai' }).click()
+      if (matches > 0) return player
+      continue
+    }
+
+    const open = player.page.getByRole('button', { name: /Xem vai trò/ })
+    await expect(open).toBeVisible()
+    await open.click()
+    const dialog = player.page.locator('dialog[open]')
+    await expect(dialog).toBeVisible()
+    const matches = await dialog.getByText(roleName, { exact: true }).count()
+    await player.page.getByRole('button', { name: 'Đóng thẻ vai' }).click()
     if (matches > 0) return player
   }
   throw new Error(`No player was assigned role "${roleName}"`)
@@ -116,7 +143,8 @@ export async function findPlayerByRole(
 async function openParticipant(
   browser: Browser,
   name: string,
+  contextOptions: Parameters<Browser['newContext']>[0] = {},
 ): Promise<TablePlayer> {
-  const context = await browser.newContext()
+  const context = await browser.newContext(contextOptions)
   return { context, name, page: await context.newPage() }
 }

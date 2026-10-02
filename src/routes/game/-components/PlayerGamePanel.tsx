@@ -2,12 +2,12 @@ import type { PlayerGameView } from '#/game/projections/model'
 import type { CommandHandler } from './types'
 
 import { InlineError } from '#/components/InlineError'
-import { RoleCard } from '#/components/RoleCard'
 
 import { actionPrompt, playerName, playerWaitingTitle } from './game-copy'
 import { NightActionForm } from './NightActionForm'
 import { GameOverResult } from './GameOverResult'
 import { HunterShotForm } from './HunterShotForm'
+import { RoleCardDialog } from './RoleCardDialog'
 import { SecretNotice } from './SecretNotice'
 
 export function PlayerGamePanel({
@@ -189,8 +189,8 @@ export function PlayerGamePanel({
           onCommand={onCommand}
         />
       ) : null}
-      {/* Thẻ vai là phần phụ — hành động hiện tại ưu tiên nằm trên. */}
-      {view.me.role ? <RoleCard role={view.me.role} /> : null}
+      {/* Vai đã xem ở sảnh chờ — trong ván chỉ để nút mở lại cho gọn màn hình. */}
+      {view.me.role ? <RoleCardDialog role={view.me.role} /> : null}
       {error ? <InlineError message={error} /> : null}
     </div>
   )
