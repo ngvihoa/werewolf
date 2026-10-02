@@ -80,7 +80,12 @@ function EntryPage() {
               className="flex min-w-0 items-center gap-3 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-red-500"
               to="/"
             >
-              <span className="size-2 shrink-0 rounded-full bg-red-500 shadow-[0_0_24px_var(--color-red-500)]" />
+              <img
+                alt=""
+                className="size-7 shrink-0"
+                decoding="async"
+                src="/logo.webp"
+              />
               <span className="truncate font-mono text-sm tracking-wide text-stone-400 uppercase">
                 Werewolf / Bàn chơi trực tuyến
               </span>
