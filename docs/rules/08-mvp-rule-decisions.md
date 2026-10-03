@@ -10,27 +10,32 @@ Quy ước trạng thái:
 
 ## Tóm tắt phương án khuyến nghị
 
-| ID  | Luật                            | Mặc định đề xuất                                  |
-| --- | ------------------------------- | ------------------------------------------------- |
-| R01 | Composition 5 người             | 1 Werewolf, 1 Seer, 3 Villagers                   |
-| R02 | Composition 6 người             | 1 Werewolf, 1 Seer, 1 Witch, 3 Villagers          |
-| R03 | Điều kiện Werewolf thắng        | Werewolf sống >= Village sống                     |
-| R04 | Witch tự cứu                    | Cho phép                                          |
-| R05 | Witch dùng hai bình cùng đêm    | Không cho phép                                    |
-| R06 | Target của Poison               | Player khác đang sống                             |
-| R07 | Thông tin Witch nhận            | Biết chính xác người bị Werewolf chọn             |
-| R08 | Witch bị tấn công               | Vẫn được hành động trong đêm đó                   |
-| R09 | Seer tự soi                     | Không cho phép                                    |
-| R10 | Werewolf tự chọn                | Không cho phép                                    |
-| R11 | Kết quả soi                     | Exact role                                        |
-| R12 | Công khai role khi chết         | Có                                                |
-| R13 | Quyền xem của người chết        | Chỉ thông tin công khai và private state của mình |
-| R14 | Vote hòa                        | Không ai bị loại                                  |
-| R15 | Player rời game                 | Tạm dừng để Moderator quyết định                  |
-| R16 | Action bị reject                | Lưu metadata và lý do, không công khai target     |
-| R17 | Sửa role sau khi bắt đầu        | Không; chỉ qua manual override đặc biệt           |
-| R18 | Override ảnh hưởng state        | Tự động tính lại win condition                    |
-| R19 | Nhiều nguyên nhân chết cùng đêm | Resolve đồng thời, một kết quả chết/player        |
+| ID  | Luật                               | Mặc định đề xuất                                     |
+| --- | ---------------------------------- | ---------------------------------------------------- |
+| R01 | Composition 5 người                | 1 Werewolf, 1 Seer, 3 Villagers                      |
+| R02 | Composition 6 người                | 1 Werewolf, 1 Seer, 1 Witch, 3 Villagers             |
+| R03 | Điều kiện Werewolf thắng           | Werewolf sống >= Village sống                        |
+| R04 | Witch tự cứu                       | Cho phép                                             |
+| R05 | Witch dùng hai bình cùng đêm       | Không cho phép                                       |
+| R06 | Target của Poison                  | Player khác đang sống                                |
+| R07 | Thông tin Witch nhận               | Biết chính xác người bị Werewolf chọn                |
+| R08 | Witch bị tấn công                  | Vẫn được hành động trong đêm đó                      |
+| R09 | Seer tự soi                        | Không cho phép                                       |
+| R10 | Werewolf tự chọn                   | Không cho phép                                       |
+| R11 | Kết quả soi                        | Exact role                                           |
+| R12 | Công khai role khi chết            | Có                                                   |
+| R13 | Quyền xem của người chết           | Chỉ thông tin công khai và private state của mình    |
+| R14 | Vote hòa                           | Không ai bị loại                                     |
+| R15 | Player rời game                    | Tạm dừng để Moderator quyết định                     |
+| R16 | Action bị reject                   | Lưu metadata và lý do, không công khai target        |
+| R17 | Sửa role sau khi bắt đầu           | Không; chỉ qua manual override đặc biệt              |
+| R18 | Override ảnh hưởng state           | Tự động tính lại win condition                       |
+| R19 | Nhiều nguyên nhân chết cùng đêm    | Resolve đồng thời, một kết quả chết/player           |
+| R20 | Vote ở chế độ không quản trò       | Bỏ phiếu trên thiết bị, bot tính phiếu               |
+| R21 | Kết thúc thảo luận ban ngày (SELF) | Majority "Sẵn sàng bỏ phiếu" + timer tối thiểu       |
+| R22 | Timeout action đêm và vote (SELF)  | Step đêm 45s, vote 60s; hết giờ skip/abstain         |
+| R23 | Player rời game giữa ván (SELF)    | Không tự mark dead; auto skip/abstain, được quay lại |
+| R24 | Cấu hình composition (SELF)        | Creator cấu hình như moderator trong lobby           |
 
 ## Các quyết định
 
@@ -182,6 +187,70 @@ Kết luận: Đã chốt.
 Ví dụ: Werewolf attack A, Witch không cứu A và poison A vẫn chỉ tạo một kết quả `PLAYER_DIED` cho A, kèm hai nguyên nhân trong private resolution detail.
 
 Kết luận: Đã chốt.
+
+## Quyết định cho chế độ không quản trò (R20–R24)
+
+Các quyết định dưới đây chỉ áp dụng cho chế độ không quản trò (game mode `SELF`,
+kế hoạch thực hiện ở `docs/bot-moderator-mode.md`). Chế độ có quản trò
+(`MODERATED`) giữ nguyên mọi luật hiện có.
+
+### R20. Vote diễn ra như thế nào ở chế độ không quản trò?
+
+- [x] **Bỏ phiếu trên thiết bị, bot tính phiếu (Khuyến nghị).** Thêm command
+      `SUBMIT_VOTE` có auth theo actor; chỉ người sống được bỏ; bot tally và resolve
+      theo R14. Không còn ai nhập kết quả thủ công nên không có đường gian lận.
+- [ ] Vote ngoài đời, một player tự nhập kết quả. Không ai xác thực người nhập;
+      người nhập biết trước kết quả có thể thao túng.
+- [ ] Vote ngoài đời, cả nhóm đồng ý rồi một player nhập. Vẫn không xác thực
+      được và thêm một bước đồng thuận dễ chết vì chờ nhau.
+
+Chế độ `MODERATED` giữ nguyên vote ngoài đời + moderator nhập kết quả.
+
+Kết luận: Đã chốt — vote trên thiết bị, bot tính phiếu theo R14.
+
+### R21. Thảo luận ban ngày kết thúc khi nào ở SELF?
+
+- [x] **Majority người sống bấm "Sẵn sàng bỏ phiếu" + timer tối thiểu
+      (Khuyến nghị).** Bot mở vote khi đủ majority và đã qua thời gian tối thiểu
+      (hằng số MVP). Nhịp do nhóm kiểm soát, một người không đồng ý không kẹt ván.
+- [ ] Tất cả người sống phải đồng ý. An toàn nhưng một người AFK kẹt cả ván.
+- [ ] Chỉ timer cố định. Không cần bấm nhưng ván bị kéo dài vô ích và người
+      chơi mất quyền kiểm soát nhịp thảo luận.
+
+Kết luận: Đã chốt — majority consent + timer tối thiểu.
+
+### R22. Hết giờ cho action đêm và vote ở SELF thì sao?
+
+- [x] **Tự skip/abstain theo deadline (Khuyến nghị).** Step đêm có deadline
+      (đề xuất 45s), vote có deadline (đề xuất 60s); hết giờ step bị skip với reason
+      `TIMEOUT` (ability không tiêu thụ vì chưa confirm) và phiếu thiếu tính là
+      trắng. Hunter không bắn đúng hạn thì mất phát bắn. Mọi deadline ghi history.
+- [ ] Không có timeout. Một người tắt màn hình là ván kẹt vĩnh viễn.
+- [ ] Hết giờ tự hủy game. Phạt cả nhóm vì một người, quá nặng cho MVP.
+
+Kết luận: Đã chốt — skip/abstain theo deadline.
+
+### R23. Player rời game giữa ván ở SELF thì sao?
+
+- [x] **Không tự mark dead; action/vote tự skip/abstain, được quay lại
+      (Khuyến nghị).** Nhất quán với tinh thần R15 (không để disconnect tạm thời
+      thay đổi gameplay state); timer R22 bảo đảm ván không kẹt. Host giữ nút kết
+      thúc game sớm như lối thoát cuối.
+- [ ] Tự mark dead sau một khoảng thời gian dài. Disconnect tạm thời (mất sóng,
+      chuyển app) sẽ làm sai lệch kết quả ván — trái nguyên tắc R15.
+- [ ] Dùng nguyên văn R15 (tạm dừng chờ quyết định). Trong SELF không có ai
+      ra quyết định nên ván kẹt.
+
+Kết luận: Đã chốt — không mark dead, auto skip/abstain.
+
+### R24. Ai cấu hình role composition ở SELF?
+
+- [x] **Creator cấu hình như moderator trong lobby (Khuyến nghị).** Tận dụng
+      nguyên luồng `assignRoles` hiện có, chỉ mở authorization cho creator-player.
+- [ ] Cả lobby vote chọn composition. Công bằng hơn nhưng thêm một pha đồng
+      thuận nữa cho MVP.
+
+Kết luận: Đã chốt — creator cấu hình.
 
 ## Cách chốt
 
