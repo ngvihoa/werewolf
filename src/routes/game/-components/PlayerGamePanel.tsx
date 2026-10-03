@@ -3,6 +3,7 @@ import type { CommandHandler } from './types'
 import type { ReactNode } from 'react'
 
 import { ChevronRight } from 'lucide-react'
+import { WaitingState } from '#/components/ui/WaitingState'
 import { InlineError } from '#/components/InlineError'
 import { useState } from 'react'
 import { cn } from '#/lib/cn'
@@ -14,6 +15,7 @@ import { SelfVoteConsent } from './SelfVoteConsent'
 import { GameOverResult } from './GameOverResult'
 import { HunterShotForm } from './HunterShotForm'
 import { RoleCardDialog } from './RoleCardDialog'
+import { CommandButton } from './CommandButton'
 import { SecretNotice } from './SecretNotice'
 import { SelfVoteForm } from './SelfVoteForm'
 import { SecretRow } from './SecretRow'
@@ -67,17 +69,31 @@ export function PlayerGamePanel({
   pending,
   error,
   onCommand,
+  onRematch,
 }: {
   view: PlayerGameView
   pending: boolean
   error: string | null
   onCommand: CommandHandler
+  // T7 (SELF): chủ phòng mở ván mới từ màn kết quả — MODERATED không truyền
+  // (rematch là việc của Quản trò).
+  onRematch?: () => void
 }) {
   // Kết thúc ván = một trang riêng: thắng/thua + mở lộ vai cả làng.
   if (view.phase === 'GAME_OVER') {
     return (
       <div className="flex flex-col gap-6">
         <GameOverResult view={view} />
+        {view.gameMode === 'SELF' && onRematch ? (
+          view.isHost ? (
+            <SelfRematchControl pending={pending} onRematch={onRematch} />
+          ) : (
+            <WaitingState
+              title="Chủ phòng sẽ mở ván mới"
+              description="Giữ lại phòng này — khi chủ phòng bấm chơi lại, sảnh chờ sẽ mở cho mọi người."
+            />
+          )
+        ) : null}
         {error ? <InlineError message={error} /> : null}
       </div>
     )
@@ -288,6 +304,45 @@ export function PlayerGamePanel({
         </p>
       </div>
       {error ? <InlineError message={error} /> : null}
+    </div>
+  )
+}
+
+// T7 (SELF): chủ phòng mở ván mới từ màn kết quả — cùng pattern xác nhận hai
+// bước với khối rematch của Quản trò để tránh bấm nhầm reset cả bàn.
+function SelfRematchControl({
+  pending,
+  onRematch,
+}: {
+  pending: boolean
+  onRematch: () => void
+}) {
+  const [confirming, setConfirming] = useState(false)
+  if (!confirming) {
+    return (
+      <CommandButton
+        primary
+        pending={pending}
+        onClick={() => setConfirming(true)}
+      >
+        Chơi ván mới cùng phòng
+      </CommandButton>
+    )
+  }
+  return (
+    <div className="flex flex-col gap-3 rounded-2xl bg-danger/10 p-4 ring-1 ring-danger/30">
+      <p className="text-sm/6 text-ink">
+        Giữ nguyên phòng và người chơi, đồng thời xóa vai trò và trạng thái của
+        ván vừa kết thúc?
+      </p>
+      <div className="flex flex-wrap gap-3">
+        <CommandButton primary pending={pending} onClick={onRematch}>
+          Xác nhận chơi ván mới
+        </CommandButton>
+        <CommandButton pending={pending} onClick={() => setConfirming(false)}>
+          Hủy
+        </CommandButton>
+      </div>
     </div>
   )
 }

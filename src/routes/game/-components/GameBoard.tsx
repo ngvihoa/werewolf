@@ -45,6 +45,9 @@ export function GameBoard({
       pending={pending}
       error={error}
       onCommand={onCommand}
+      // T7 (SELF): host mở ván mới từ màn kết quả; MODERATED không truyền —
+      // rematch là việc của Quản trò.
+      onRematch={view.gameMode === 'SELF' ? onRematch : undefined}
     />
   )
 }

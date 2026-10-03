@@ -1081,3 +1081,163 @@ describe('InMemoryGameStore rời game (R23)', () => {
     expect(store.getGame(created.gameId).ok).toBe(true)
   })
 })
+
+describe('InMemoryGameStore game over + rematch SELF (T7)', () => {
+  function createSelfGame() {
+    const store = createStore()
+    const created = store.createGame({ mode: 'SELF', creatorName: 'Hoa' })
+    if (!created.ok) throw new Error(created.error.message)
+    return { store, created: selfGame(created.value) }
+  }
+
+  function currentVersion(store: InMemoryGameStore, gameId: string): number {
+    const snapshot = store.getGame(gameId)
+    if (!snapshot.ok) throw new Error(snapshot.error.message)
+    return snapshot.value.version
+  }
+
+  function startSelfGame() {
+    const { store, created } = createSelfGame()
+    const players = [
+      { playerId: created.playerId, token: created.playerSessionToken },
+    ]
+    for (const name of ['An', 'Binh', 'Cuong', 'Dung']) {
+      const joined = store.joinGame(created.roomCode, name)
+      if (!joined.ok) throw new Error(joined.error.message)
+      players.push({
+        playerId: joined.value.playerId,
+        token: joined.value.playerSessionToken,
+      })
+    }
+
+    const assigned = store.assignRoles(
+      created.playerSessionToken,
+      currentVersion(store, created.gameId),
+      'self-assign',
+    )
+    if (!assigned.ok) throw new Error(assigned.error.message)
+
+    for (const player of players) {
+      const ready = store.setReady(
+        player.token,
+        currentVersion(store, created.gameId),
+        true,
+        `self-ready-${player.token}`,
+      )
+      if (!ready.ok) throw new Error(ready.error.message)
+    }
+
+    const started = store.startGame(
+      created.playerSessionToken,
+      currentVersion(store, created.gameId),
+      'self-start',
+    )
+    if (!started.ok) throw new Error(started.error.message)
+    return { store, created, players }
+  }
+
+  function endByHost(
+    store: InMemoryGameStore,
+    created: { gameId: string; playerSessionToken: string },
+  ) {
+    const ended = store.execute({
+      gameId: created.gameId,
+      sessionToken: created.playerSessionToken,
+      idempotencyKey: 't7-end',
+      expectedVersion: currentVersion(store, created.gameId),
+      command: { type: 'END_GAME', reason: 'Kết thúc để chơi ván mới' },
+    })
+    if (!ended.ok) throw new Error(ended.error.message)
+  }
+
+  it('chủ phòng rematch: giữ nguyên lobby + mode SELF, xóa vai/ready/leftAt', () => {
+    const { store, created, players } = startSelfGame()
+    const seerSnapshot = store.getGame(created.gameId)
+    if (!seerSnapshot.ok) throw new Error(seerSnapshot.error.message)
+    expect(seerSnapshot.value.mode).toBe('SELF')
+
+    // Người rời + ván kết thúc — rematch phải đưa cả người rời về sảnh.
+    const seer = seerSnapshot.value.lobbyPlayers.find(
+      (player) => player.role === 'SEER',
+    )
+    if (!seer) throw new Error('Composition is missing a seer')
+    const seerSession = players.find((player) => player.playerId === seer.id)
+    if (!seerSession) throw new Error('Seer session is missing')
+    const left = store.leaveGame(
+      seerSession.token,
+      currentVersion(store, created.gameId),
+      't7-leave',
+    )
+    if (!left.ok) throw new Error(left.error.message)
+    endByHost(store, created)
+
+    const rematch = store.rematch(
+      created.playerSessionToken,
+      currentVersion(store, created.gameId),
+      't7-rematch',
+    )
+    expect(rematch.ok).toBe(true)
+
+    const after = store.getGame(created.gameId)
+    if (!after.ok) throw new Error(after.error.message)
+    // Cùng phòng, cùng mode, lobby nguyên vẹn — chỉ state và trạng thái bị xóa.
+    expect(after.value.id).toBe(created.gameId)
+    expect(after.value.roomCode).toBe(created.roomCode)
+    expect(after.value.mode).toBe('SELF')
+    expect(after.value.hostPlayerId).toBe(created.playerId)
+    expect(after.value.state).toBeNull()
+    expect(after.value.lobbyPlayers).toHaveLength(5)
+    expect(
+      after.value.lobbyPlayers.every(
+        (player) => player.role === null && !player.ready && !player.leftAt,
+      ),
+    ).toBe(true)
+    expect(after.value.history.map((entry) => entry.event.type)).toContain(
+      'MATCH_RESET',
+    )
+
+    // Ván mới chạy được ngay với cùng lobby.
+    const assigned = store.assignRoles(
+      created.playerSessionToken,
+      currentVersion(store, created.gameId),
+      't7-assign-2',
+    )
+    expect(assigned.ok).toBe(true)
+    for (const player of players) {
+      const ready = store.setReady(
+        player.token,
+        currentVersion(store, created.gameId),
+        true,
+        `t7-ready-2-${player.playerId}`,
+      )
+      if (!ready.ok) throw new Error(ready.error.message)
+    }
+    const started = store.startGame(
+      created.playerSessionToken,
+      currentVersion(store, created.gameId),
+      't7-start-2',
+    )
+    expect(started.ok).toBe(true)
+    const secondMatch = store.getGame(created.gameId)
+    if (!secondMatch.ok) throw new Error(secondMatch.error.message)
+    expect(secondMatch.value.state?.phase).toBe('NIGHT')
+    expect(secondMatch.value.state?.round).toBe(1)
+  })
+
+  it('player thường (không phải chủ phòng) không rematch được', () => {
+    const { store, created, players } = startSelfGame()
+    endByHost(store, created)
+
+    const other = players.find((player) => player.playerId !== created.playerId)
+    if (!other) throw new Error('Other player is missing')
+    const rejected = store.rematch(
+      other.token,
+      currentVersion(store, created.gameId),
+      't7-rematch-not-host',
+    )
+    expect(rejected).toMatchObject({
+      ok: false,
+      error: { code: 'NOT_AUTHORIZED' },
+    })
+  })
+})

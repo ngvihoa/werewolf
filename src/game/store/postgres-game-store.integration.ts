@@ -1303,5 +1303,40 @@ describe('PostgresGameStore.leaveGame (R23 SELF)', () => {
     expect(
       view.value.players.find((player) => player.id === seerId)?.left,
     ).toBe(true)
+
+    // T7: host kết thúc ván rồi rematch — giữ lobby + mode, người rời được
+    // đưa trở lại sảnh bình thường (leftAt xóa).
+    const ended = await store.execute({
+      gameId: created.gameId,
+      sessionToken: created.playerSessionToken,
+      idempotencyKey: 't7-end',
+      expectedVersion: await currentVersion(),
+      command: { type: 'END_GAME', reason: 'Kết thúc để chơi ván mới' },
+    })
+    if (!ended.ok) throw new Error(ended.error.message)
+
+    const rematch = await store.rematch(
+      created.playerSessionToken,
+      await currentVersion(),
+      't7-rematch',
+    )
+    expect(rematch.ok).toBe(true)
+
+    const [resetGame] = await db
+      .select({ status: games.status, mode: games.mode, state: games.state })
+      .from(games)
+      .where(eq(games.id, created.gameId))
+      .limit(1)
+    expect(resetGame).toMatchObject({
+      status: 'LOBBY',
+      mode: 'SELF',
+      state: null,
+    })
+    const [leaverRow] = await db
+      .select({ leftAt: gamePlayers.leftAt })
+      .from(gamePlayers)
+      .where(eq(gamePlayers.id, seerId))
+      .limit(1)
+    expect(leaverRow?.leftAt).toBeNull()
   })
 })
