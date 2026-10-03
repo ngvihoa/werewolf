@@ -43,6 +43,11 @@ export type GameState = {
   // R21: mốc thời gian tối thiểu của thảo luận (ISO) — store gắn khi vào DAY,
   // bot chỉ mở vote khi đã qua mốc. Orchestrator giữ NULL, không biết đồng hồ.
   discussionMinEndsAt?: string | null
+  // R22: định danh ngữ cảnh đang chờ người chơi (step/vote/hunter shot) và
+  // mốc hết giờ (ISO). Store gắn khi ngữ cảnh đổi; bot so với đồng hồ server
+  // để skip/abstain. Orchestrator không đọc hai trường này.
+  waitingKey?: string | null
+  waitingDeadlineAt?: string | null
   pendingHunterShot?: {
     hunterId: string
     targetId: string | null

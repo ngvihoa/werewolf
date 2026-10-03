@@ -8,6 +8,7 @@ import { useState } from 'react'
 import { cn } from '#/lib/cn'
 
 import { actionPrompt, playerName, playerWaitingTitle } from './game-copy'
+import { WaitingCountdown } from './WaitingCountdown'
 import { NightActionForm } from './NightActionForm'
 import { SelfVoteConsent } from './SelfVoteConsent'
 import { GameOverResult } from './GameOverResult'
@@ -107,6 +108,10 @@ export function PlayerGamePanel({
                 ? 'Bạn đang quan sát'
                 : playerWaitingTitle(view.phase)}
       </h2>
+
+      {view.waiting ? (
+        <WaitingCountdown gameId={view.gameId} waiting={view.waiting} />
+      ) : null}
 
       {/* Ban ngày chờ biểu quyết = khoảng lặng có chủ ý: mời thảo luận +
           nhịp sống làng, không nhồi helper text. SELF mode kèm nút consent. */}

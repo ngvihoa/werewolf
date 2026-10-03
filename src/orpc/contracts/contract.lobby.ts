@@ -75,4 +75,14 @@ export const lobbyContract = {
       }),
     )
     .output(operationResultSchema),
+  // R22: lazy tick chống AFK — client gọi khi countdown về 0; server dùng
+  // đồng hồ của mình nên input không có expectedVersion/idempotencyKey.
+  tick: oc
+    .input(
+      z.object({
+        gameId: z.string().min(1),
+        sessionToken: sessionTokenSchema,
+      }),
+    )
+    .output(operationResultSchema),
 }
