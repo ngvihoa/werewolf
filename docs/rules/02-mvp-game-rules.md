@@ -129,6 +129,21 @@ Sau khi Night Resolution hoàn tất:
 
 MVP không cần nhập từng lá phiếu. Chỉ cần nhập người bị loại sau khi nhóm đã vote ngoài đời.
 
+### Chế độ không quản trò (SELF)
+
+Từ R20–R24 có thêm game mode `SELF` chạy song song; flow MODERATED ở trên giữ
+nguyên 100%. Ban ngày ở SELF:
+
+1. Hệ thống cập nhật trạng thái.
+2. Hệ thống chuyển sang Day.
+3. Người chơi thảo luận trực tiếp ngoài đời.
+4. Majority người sống bấm "Sẵn sàng bỏ phiếu" VÀ đã qua thời gian thảo luận
+   tối thiểu → hệ thống tự mở vote (R21).
+5. Mỗi người sống bỏ phiếu trên thiết bị của mình (phiếu trắng hợp lệ); bot
+   tính phiếu và resolve theo R14 (R20).
+6. Hệ thống cập nhật state.
+7. Hệ thống kiểm tra điều kiện thắng.
+
 ---
 
 ## 6. Action không đồng nghĩa với Result

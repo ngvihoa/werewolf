@@ -1,41 +1,46 @@
-# Local In-Memory Store
+# Game Store
 
-Thư mục này cung cấp persistence boundary tạm thời cho MVP chạy local. Toàn bộ game, session và history chỉ tồn tại trong memory của server process; không có kết nối Supabase hoặc database.
+Persistence boundary của game: nhận lệnh từ oRPC, authorize theo session,
+thực thi qua orchestration, persist state + events nguyên tử và trả view đúng
+quyền. Có hai implementation cho cùng một interface `GameStore` (`game-store.ts`):
 
-## Các file
+- **`in-memory-game-store.ts`** — dùng cho unit test: snapshot detached,
+  receipt idempotency trong map, đồng bộ contract (optimistic locking, error
+  code) với PostgreSQL 1-1.
+- **`postgres-game-store.ts`** (`postgres/`) — dùng ở runtime qua singleton
+  `local-game-store.ts` (instance giữ trên `globalThis` cho Vite hot reload).
+  Event-sourced: mọi thay đổi đi qua transaction (lock game row → receipt →
+  rule engine → bot loop ở SELF → persist state/queue/players → append events
+  → bump version).
 
-### `model.ts`
+## Bề mặt command
 
-Định nghĩa local game record, lobby player, fake session, setup event, stored event và typed store errors.
+- Lobby: `createGame`, `joinGame`, `setReady`, `assignRoles`, `startGame`,
+  `rematch`, và `leaveGame` (R23 — chỉ SELF).
+- Trong ván: `execute` với `GameCommand` (submit/confirm/skip, vote, hunter
+  shot, `END_GAME`) và `tick` (R22 — lazy tick chống AFK, idempotent).
 
-`StoredEvent` bọc domain event bằng metadata local gồm sequence, ID, game ID, actor và timestamp. Payload event vẫn được giữ nguyên để projection layer lọc theo quyền sau này.
+## Authorization
 
-### `in-memory-game-store.ts`
+`command-authorization.ts` phân command theo actor: PLAYER (submit action,
+vote, consent), MODERATOR (confirm/skip/resolve, END_GAME), dual-actor
+(END_GAME — Quản trò hoặc chủ phòng SELF). Các lệnh điều khiển sảnh
+(assign/start/rematch) kiểm "game controller": MODERATED là session Moderator,
+SELF là chủ phòng (`game_players.is_host`).
 
-`InMemoryGameStore` quản lý:
+## Chế độ không quản trò (SELF, R20–R24)
 
-- Tạo game và room code.
-- Player join bằng display name.
-- Fake Moderator/Player session token.
-- Ready check và role assignment.
-- Chuyển lobby thành orchestration state khi bắt đầu game.
-- Authorize command theo session.
-- Optimistic locking bằng `expectedVersion`.
-- Current state và append-only event history.
-- Detached snapshot để caller không mutate dữ liệu trong store.
-- Permission-aware game view theo fake session.
-- Reset toàn bộ local data.
+- Người tạo phòng là một player thường kiêm host; không có session Moderator.
+- Sau mỗi lệnh người chơi được chấp nhận ở SELF, store chạy bot loop
+  (`src/game/bot/`) tới fixpoint trong cùng transaction; event bot ghi actor
+  `SYSTEM`.
+- `leaveGame`: ghi `left_at` + event `PLAYER_LEFT_GAME`, không mark dead, bot
+  tự skip/abstain phần còn thiếu của người rời; session cũ giữ nguyên để xem
+  tiếp. Người rời bị loại khỏi phân vai/ready-check; rematch xóa `left_at`.
 
-### `local-game-store.ts`
+## Giới hạn đã biết
 
-Export singleton `localGameStore` để server functions và oRPC procedures dùng chung một store. Instance được giữ trên `globalThis` để Vite hot reload không vô tình xóa các game đang test local.
-
-## Local-only behavior
-
-- Restart server sẽ xóa toàn bộ game.
-- Session token được giữ raw trong memory, không hash.
-- Store chỉ an toàn trong một JavaScript process.
-- Không có transaction, cross-process locking hoặc realtime broadcast.
-- `getGame` trả raw server snapshot và không được gọi trực tiếp từ Player API. Client-facing procedures phải dùng `getGameView`.
-
-Các giới hạn trên là chủ ý cho local MVP. Khi chuyển sang Supabase, API của orchestration và projection có thể giữ nguyên; persistence implementation sẽ được thay thế bằng Drizzle transactions.
+- Restart server xóa mọi game in-memory (implementation test-only).
+- Token session ở in-memory giữ raw; phía postgres chỉ lưu hash.
+- `getGame`/`getGameByRoomCode` trả raw snapshot, không gọi trực tiếp từ API
+  người chơi — client-facing procedures phải dùng `getGameView`.

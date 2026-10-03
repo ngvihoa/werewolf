@@ -183,4 +183,35 @@ System có thể đánh dấu:
 SKIPPED
 ```
 
-và lưu lý do vào Game History trước khi tự chuyển bước.
+và lưu lý do vào Game History trước khi tự chuyển bước. Lý do skip là chuỗi
+tường minh:
+
+```text
+ROLE_OWNER_DEAD  — chủ role đã chết khi kích hoạt step
+TIMEOUT          — hết giờ chờ ở SELF (R22)
+PLAYER_LEFT      — chủ role đã rời game ở SELF (R23)
+```
+
+---
+
+## 8. Chế độ không quản trò (SELF)
+
+Self mode (R20–R24) tái dùng nguyên queue và transition ở trên với một khác biệt
+ở bước confirm: không có Moderator — **bot moderator** phát đúng các command
+nhóm "moderator confirmation" (`CONFIRM_STEP`, `CONFIRM_NIGHT_RESOLUTION`,
+`CONFIRM_HUNTER_SHOT`, `CONFIRM_VOTE_RESULT`) sau mỗi lệnh người chơi, chạy tới
+fixpoint trong cùng transaction với lệnh đó. `REJECT_STEP` không tồn tại ở SELF:
+submit sai target đã bị rule engine từ chối ngay lúc submit với typed domain
+error, player tự làm lại.
+
+Mốc hết giờ (R22, hằng số MVP — step đêm 45s, vote 60s, hunter shot 60s) do
+store gắn vào state cho từng ngữ cảnh chờ (step/vote/hunter shot); mọi command
+và view đều kiểm tra hết hạn, client gọi `game.tick` khi countdown về 0. Hết
+giờ: step bị skip với reason `TIMEOUT` (ability không tiêu thụ vì chưa confirm),
+phiếu thiếu tính trắng và tally luôn, hunter không bắn thì mất phát bắn.
+
+Vote mở theo consent (R21): majority người sống bấm "Sẵn sàng bỏ phiếu" và đã
+qua thời gian thảo luận tối thiểu (30s) thì bot phát `START_VOTE`. Người rời
+game giữa ván (R23) không mark dead: step/phát bắn của họ bị skip ngay với
+reason `PLAYER_LEFT`, phiếu còn thiếu tự abstain, majority consent không tính
+người rời.

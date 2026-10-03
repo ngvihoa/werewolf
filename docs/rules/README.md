@@ -4,6 +4,11 @@ Bộ tài liệu này mô tả MVP cho một nền tảng hỗ trợ chơi **Ma 
 
 Hệ thống **không thay thế Quản trò**. Hệ thống chịu trách nhiệm điều phối luồng chơi, random role, hiển thị thông tin đúng quyền, theo dõi trạng thái và lưu lịch sử. Quản trò giám sát, xác nhận các bước quan trọng và xử lý ngoại lệ.
 
+Từ R20–R24 có thêm chế độ **không quản trò** (game mode `SELF`): bot moderator
+tự động mọi bước xác nhận, người chơi bỏ phiếu trên thiết bị, chủ phòng (người
+tạo phòng) cấu hình và điều khiển sảnh. `MODERATED` vẫn là mode mặc định và giữ
+nguyên toàn bộ hành vi mô tả trong bộ tài liệu này.
+
 ## Phạm vi MVP
 
 - 1 Quản trò.

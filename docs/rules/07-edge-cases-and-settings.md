@@ -25,6 +25,10 @@ Moderator có thể chọn:
 - Pause game.
 - Custom decision.
 
+Ở `SELF` (R23): tự động "mark as left" — không mark dead, action/vote còn thiếu
+của người rời tự skip/abstain (step skip với reason `PLAYER_LEFT`), người rời
+dùng session cũ để xem tiếp. Host có nút "Kết thúc ván" như lối thoát cuối.
+
 ### Player submit nhầm target
 
 Trước khi step được confirm:
@@ -94,6 +98,10 @@ Mọi override phải có:
 - Timestamp.
 - Reason.
 
+End game manually đã có command `END_GAME`: Quản trò (MODERATED) hoặc chủ phòng
+(SELF) kết thúc ván sớm, reason bắt buộc để audit; winner giữ NULL — màn kết
+quả hiển thị "Ván đã kết thúc" thay vì công bố phe thắng.
+
 ---
 
 ## 4. Game Settings nên chốt
@@ -140,6 +148,18 @@ Revote once, then no elimination
 ```text
 Werewolf wins when wolves >= villagers
 ```
+
+### Timers ở SELF (R21/R22)
+
+```text
+Min discussion:  30s
+Night step:      45s
+Ballot:          60s
+Hunter shot:     60s
+```
+
+Hằng số MVP, chưa đưa lên setting UI — data model chừa đường nâng cấp thành
+settings như các rule khác.
 
 MVP dùng cấu hình mặc định cố định ở trên, nhưng data model vẫn có thể đưa các rule này thành settings về sau.
 

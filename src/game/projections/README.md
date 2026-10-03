@@ -22,6 +22,19 @@ Player nhận:
 
 Role của player khác, potion state của Witch khác, hidden target, death cause và rejected action của người khác không xuất hiện trong Player view.
 
+## SELF mode (R20–R24)
+
+Player view ở SELF có thêm các block tùy chọn (optional chống lệch phiên
+client/server):
+
+- `vote`: số phiếu đã bỏ (x/y), phiếu của chính mình, attempt — nội dung phiếu
+  người khác không bao giờ có mặt ở view trước resolution; người đã rời không
+  vote được thêm và không đếm vào mẫu số (R23).
+- `discussion`: consent/majority của pha Day; người đã rời không consent được.
+- `waiting`: ngữ cảnh đang chờ hiện tại + mốc hết giờ (đồng hồ server).
+- `left` trên từng player và trên `me`: người đã rời game giữa ván — cờ chỉ
+  xuất hiện khi có người rời, payload giữ hình dạng cũ cho MODERATED.
+
 ## History policy
 
 Public history được xây mới từ allowlist event type. Projection không spread raw event rồi xóa field nhạy cảm. Vì vậy event mới được thêm vào domain sẽ mặc định không xuất hiện cho Player cho đến khi có projection rõ ràng.

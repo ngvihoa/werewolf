@@ -375,3 +375,38 @@ PhaseIndicator là trang trí theo pha, KHÔNG phải status; focus ring giữ
 `outline-red-500` (≡ danger — đổi tên token là churn thuần, không làm).
 Kèm fix: gỡ `recordVideo` chết trong `use:` của playwright.config (tsc fail
 có sẵn trên HEAD; portfolio spec tự set recordVideo trong context riêng).
+
+## 13. Chế độ không quản trò (SELF) — ballot, consent, countdown, "đã rời" (2026-10-03) ✅
+
+UI mới cho mode SELF (R20–R24, T3–T7). Nguyên tắc chung: **tái dùng pattern
+MODERATED đã duyệt** — không thêm card/hệ màu mới, mọi trạng thái mới được diễn
+đạt bằng component sẵn có (PlayerToken, WaitingState, Button, `<dialog>` native
+pattern RoleCardDialog).
+
+- **Ballot trên thiết bị (`SelfVoteForm`, R20)**: picker người sống + chọn
+  phiếu trắng; chỉ hiện số phiếu đã bỏ (x/y) và phiếu của chính mình — nội dung
+  phiếu người khác không bao giờ lên UI trước resolution (chống bandwagon khi
+  cả bàn ngồi cạnh nhau). Người chết/bị loại thấy "đang bỏ phiếu".
+- **Consent banner (`SelfVoteConsent`, R21)**: Day là khoảng lặng có chủ ý
+  (mục 12) — banner "Sẵn sàng bỏ phiếu" + đếm consent/majority dạng mono
+  tabular-nums, không card mới.
+- **Countdown (`WaitingCountdown`, R22)**: hiển thị cho MỌI người ở ngữ cảnh
+  đang chờ (step đêm/vote/hunter shot); khi về 0 client gọi `game.tick`.
+  Đồng hồ server, client chỉ render mốc.
+- **"Đã rời" (R23)**: `PlayerToken` nhận prop `left` — thẻ mờ như người chết
+  (opacity-55 + saturate-50) nhưng KHÔNG có dấu † hay gạch ngang tên vì người
+  rời vẫn "sống" trong luật; statusText "Đã rời". Người rời nhìn màn của mình
+  thấy trạng thái chỉ xem thay mọi form hành động.
+- **`SelfGameControls` (R23)**: khối cuối màn chơi phía player, chỉ SELF và
+  chưa GAME_OVER. "Rời ván" → dialog xác nhận hai nút (không quay lại được
+  trong ván); "Kết thúc ván" chỉ host → dialog input lý do BẮT BUỘC (submit
+  disabled khi rỗng), copy ghi rõ cả bàn chuyển thẳng màn kết quả, không công
+  bố phe thắng.
+- **Rematch (`SelfRematchControl`, T7)**: ở màn kết quả, host thấy nút
+  "Chơi ván mới cùng phòng" với xác nhận hai bước — copy Y HỆT khối rematch
+  Quản trò để hai mode nhất quán; người chơi thường thấy `WaitingState`
+  "Chủ phòng sẽ mở ván mới".
+
+Copy 100% tiếng Việt, giữ voice sẵn có ("Rời ván", "Kết thúc ván", "Chơi ván
+mới cùng phòng"). Màu ngữ nghĩa dùng lại bảng mục 12: danger cho confirm rời
+ván/rematch (hành động không đảo ngược cho cả bàn), accent cho nhãn mono.

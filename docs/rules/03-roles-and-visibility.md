@@ -332,6 +332,14 @@ Chỉ owner và Moderator được thấy:
 - Investigation result.
 - Hidden effects.
 
+### Bỏ phiếu trên thiết bị (SELF, R20)
+
+Nội dung từng lá phiếu (ai bỏ ai, kể cả phiếu trắng) là audit-only: không xuất
+hiện trong history client nào trước khi vote được resolve — kể cả Moderator.
+Trước resolution, mọi người chỉ thấy số phiếu đã bỏ (x/y) và phiếu của chính
+mình, chống bandwagon khi cả bàn ngồi cạnh nhau. Sau resolve, kết quả công khai
+theo R14.
+
 ---
 
 ## 8. Permission Matrix
