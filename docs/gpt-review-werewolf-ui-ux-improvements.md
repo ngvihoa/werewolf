@@ -19,7 +19,7 @@ Mục tiêu của vòng cải thiện tiếp theo không phải redesign toàn b
 giữ visual direction hiện tại và đẩy interaction layer gần hơn với một
 **tabletop/social-deduction game experience**.
 
-------------------------------------------------------------------------
+---
 
 ## 2. Design Principles
 
@@ -27,10 +27,10 @@ giữ visual direction hiện tại và đẩy interaction layer gần hơn vớ
 
 Hai loại người dùng có nhu cầu khác nhau:
 
--   **Player UI:** immersive, ít thông tin vận hành, tập trung vào
-    current objective và game state.
--   **Moderator UI:** operational, rõ trạng thái từng bước, dễ kiểm soát
-    và xác nhận action.
+- **Player UI:** immersive, ít thông tin vận hành, tập trung vào
+  current objective và game state.
+- **Moderator UI:** operational, rõ trạng thái từng bước, dễ kiểm soát
+  và xác nhận action.
 
 Không nên ép cả hai role dùng hoàn toàn cùng một visual grammar.
 
@@ -39,16 +39,18 @@ Không nên ép cả hai role dùng hoàn toàn cùng một visual grammar.
 Background hiện tại đang làm tốt việc này và nên được phát triển thành
 một phase visual system:
 
-  Phase         Visual direction
-  ------------- -------------------------
-  Lobby         Peaceful daylight
-  Role reveal   Dusk / focused backdrop
-  Night         Moonlit village
-  Dawn          Blue sunrise
-  Day           Bright village
-  Voting        Sunset / tense orange
-  Execution     Dark sunset
-  Victory       Festival / celebration
+Phase Visual direction
+
+---
+
+Lobby Peaceful daylight
+Role reveal Dusk / focused backdrop
+Night Moonlit village
+Dawn Blue sunrise
+Day Bright village
+Voting Sunset / tense orange
+Execution Dark sunset
+Victory Festival / celebration
 
 Artwork không chỉ là decoration mà nên trở thành một phần của navigation
 và state communication.
@@ -57,7 +59,7 @@ và state communication.
 
 Player screen nên ưu tiên hierarchy:
 
-``` text
+```text
 GAME STATE
     ↓
 CURRENT OBJECTIVE
@@ -71,7 +73,7 @@ SECONDARY INFORMATION
 
 Tránh cấu trúc giống dashboard:
 
-``` text
+```text
 Page title
 Section
 Helper text
@@ -98,7 +100,7 @@ Không phải mọi nhóm thông tin đều cần card hoặc border.
 
 Interactive elements có thể dùng card mạnh hơn informational elements.
 
-------------------------------------------------------------------------
+---
 
 # 3. Những điểm nên giữ
 
@@ -108,10 +110,10 @@ Day/night transition hiện là một trong những điểm mạnh nhất.
 
 Các state như:
 
--   Lobby/day;
--   Night;
--   Voting/sunset;
--   Victory/festival;
+- Lobby/day;
+- Night;
+- Voting/sunset;
+- Victory/festival;
 
 đều tạo được cảm giác phase khác nhau mà không cần người dùng đọc text.
 
@@ -129,10 +131,10 @@ lớn" bằng hierarchy bên trong tốt hơn.
 
 Các trạng thái như:
 
--   `ĐANG GỌI`
--   `CHỜ`
--   `CHỜ DUYỆT`
--   `XONG`
+- `ĐANG GỌI`
+- `CHỜ`
+- `CHỜ DUYỆT`
+- `XONG`
 
 đang hoạt động khá tốt.
 
@@ -142,16 +144,16 @@ Green cho completed và amber cho pending là direction nên giữ.
 
 Victory screen hiện là một trong những màn hình hoàn thiện nhất về:
 
--   focal point;
--   atmosphere;
--   semantic color;
--   player reveal;
--   whitespace;
--   payoff.
+- focal point;
+- atmosphere;
+- semantic color;
+- player reveal;
+- whitespace;
+- payoff.
 
 Nên dùng màn hình này làm **quality bar** cho các phase quan trọng khác.
 
-------------------------------------------------------------------------
+---
 
 # 4. Các vấn đề chính
 
@@ -159,7 +161,7 @@ Nên dùng màn hình này làm **quality bar** cho các phase quan trọng khá
 
 Ví dụ một night action hiện thường có:
 
-``` text
+```text
 Đêm 01
 Làng chìm vào giấc ngủ.
 
@@ -183,7 +185,7 @@ Có quá nhiều heading/subheading có visual weight gần nhau.
 
 Rút thành:
 
-``` text
+```text
 ĐÊM 01
 ● Ma Sói đang thức
 
@@ -198,13 +200,13 @@ Chọn một nạn nhân
 Các thông tin như teammate, instruction hoặc private-state nên chuyển
 thành compact contextual elements.
 
-------------------------------------------------------------------------
+---
 
 ## 4.2. Quá nhiều container và divider
 
 Pattern hiện tại thường là:
 
-``` text
+```text
 Main Card
  ├── Section
  │   └── Card
@@ -225,7 +227,7 @@ Main Card
 
 Informational block:
 
-``` text
+```text
 MỤC TIÊU CỦA MA SÓI
 
       Bảo Ngọc
@@ -235,14 +237,14 @@ không nhất thiết phải nằm trong một bordered card lớn.
 
 Dùng card mạnh chủ yếu cho:
 
--   selectable player;
--   result;
--   confirmation;
--   warning;
--   role card;
--   interactive controls.
+- selectable player;
+- result;
+- confirmation;
+- warning;
+- role card;
+- interactive controls.
 
-------------------------------------------------------------------------
+---
 
 # 5. PlayerTile --- ưu tiên redesign cao nhất
 
@@ -255,26 +257,26 @@ dashboard.
 
 Đề xuất tạo một component:
 
-``` text
+```text
 <PlayerTile />
 ```
 
 với các state:
 
--   default;
--   selectable;
--   selected;
--   disabled;
--   dead;
--   current actor;
--   role visible;
--   role hidden;
--   winner;
--   targeted.
+- default;
+- selectable;
+- selected;
+- disabled;
+- dead;
+- current actor;
+- role visible;
+- role hidden;
+- winner;
+- targeted.
 
 ### Default / hidden role
 
-``` text
+```text
 ╭────────────────╮
 │       06       │
 │                │
@@ -284,7 +286,7 @@ với các state:
 
 ### Role visible
 
-``` text
+```text
 ╭────────────────╮
 │       ◉        │
 │                │
@@ -295,7 +297,7 @@ với các state:
 
 ### Selected
 
-``` text
+```text
 ╭════════════════╮
 │             ✓  │
 │       06       │
@@ -305,7 +307,7 @@ với các state:
 
 ### Dead
 
-``` text
+```text
 ╭────────────────╮
 │       ☠        │
 │   TUẤN KIỆT    │
@@ -316,36 +318,38 @@ với các state:
 Selection, role visibility và alive/dead phải là state của cùng một
 component thay vì các implementation khác nhau.
 
-------------------------------------------------------------------------
+---
 
 # 6. Semantic Color System
 
 Accent rose/red hiện đang đảm nhiệm quá nhiều ý nghĩa:
 
--   primary CTA;
--   selection;
--   active phase;
--   current action;
--   warning;
--   wolf action;
--   checked control.
+- primary CTA;
+- selection;
+- active phase;
+- current action;
+- warning;
+- wolf action;
+- checked control.
 
 Nên tách semantic rõ hơn:
 
-  Meaning                 Suggested direction
-  ----------------------- ----------------------------
-  Primary action          Rose
-  Dangerous/elimination   Red
-  Selected                Lavender hoặc rose outline
-  Pending                 Amber
-  Success/completed       Mint
-  Information             Blue/Lavender
-  Disabled                Slate
+Meaning Suggested direction
+
+---
+
+Primary action Rose
+Dangerous/elimination Red
+Selected Lavender hoặc rose outline
+Pending Amber
+Success/completed Mint
+Information Blue/Lavender
+Disabled Slate
 
 Không cần tăng số lượng màu mạnh. Mục tiêu là mỗi accent có ý nghĩa ổn
 định xuyên suốt game.
 
-------------------------------------------------------------------------
+---
 
 # 7. Phase Header
 
@@ -354,13 +358,13 @@ khá giống page heading thông thường.
 
 Nên xây một reusable:
 
-``` text
+```text
 <PhaseHeader />
 ```
 
 Ví dụ:
 
-``` text
+```text
         ☾
       ĐÊM 01
 Ma Sói đang thức
@@ -368,7 +372,7 @@ Ma Sói đang thức
 
 hoặc:
 
-``` text
+```text
         ☀
       NGÀY 01
 Làng thức dậy
@@ -376,14 +380,14 @@ Làng thức dậy
 
 Phase header có thể thay đổi:
 
--   icon;
--   label;
--   accent;
--   supporting text;
+- icon;
+- label;
+- accent;
+- supporting text;
 
 nhưng giữ layout nhất quán.
 
-------------------------------------------------------------------------
+---
 
 # 8. Role Reveal
 
@@ -392,7 +396,7 @@ bên trong webpage.
 
 Nên nâng thành một experience riêng:
 
-``` text
+```text
        THÂN PHẬN CỦA BẠN
 
               ✦
@@ -413,35 +417,35 @@ Nên nâng thành một experience riêng:
 
 ## Yêu cầu
 
--   Dim background mạnh hơn.
--   Role card là focal point.
--   Có explicit confirmation.
--   Có thể dùng subtle entrance animation.
--   Không đặt quá nhiều secondary information cạnh role reveal.
--   `Xem vai trò` sau đó có thể sử dụng modal compact như implementation
-    hiện tại.
+- Dim background mạnh hơn.
+- Role card là focal point.
+- Có explicit confirmation.
+- Có thể dùng subtle entrance animation.
+- Không đặt quá nhiều secondary information cạnh role reveal.
+- `Xem vai trò` sau đó có thể sử dụng modal compact như implementation
+  hiện tại.
 
 Role reveal nên cảm giác như **một event**, không chỉ là page state.
 
-------------------------------------------------------------------------
+---
 
 # 9. Lobby
 
 Lobby hiện chứa khá nhiều thông tin đồng thời:
 
--   room status;
--   room code;
--   sync/version;
--   instructions;
--   readiness checklist;
--   role strategy;
--   shuffle;
--   start;
--   player list.
+- room status;
+- room code;
+- sync/version;
+- instructions;
+- readiness checklist;
+- role strategy;
+- shuffle;
+- start;
+- player list.
 
 Flow quan trọng thực tế chỉ là:
 
-``` text
+```text
 Players
    ↓
 Assign roles
@@ -453,7 +457,7 @@ Start
 
 ## Đề xuất layout
 
-``` text
+```text
 PHÒNG V5NKW4                         8/15
 
 ● Người chơi          8/5 minimum
@@ -481,22 +485,22 @@ Người chơi
 
 `Bắt đầu ván` nên:
 
--   nằm sau player list; hoặc
--   sticky ở bottom khi điều kiện start đã thỏa.
+- nằm sau player list; hoặc
+- sticky ở bottom khi điều kiện start đã thỏa.
 
 Không nên đặt Start trước player list vì flow hiện tại thành:
 
-``` text
+```text
 configure → start → inspect players
 ```
 
 thay vì:
 
-``` text
+```text
 configure → inspect players → start
 ```
 
-------------------------------------------------------------------------
+---
 
 # 10. Moderator Experience
 
@@ -504,7 +508,7 @@ Moderator dashboard là nơi dashboard metaphor hợp lý.
 
 Flow hiện tại:
 
-``` text
+```text
 01 Thợ săn chọn mục tiêu       ĐANG GỌI
 02 Bảo vệ chọn người bảo hộ    CHỜ
 03 Tiên tri soi                CHỜ
@@ -518,16 +522,16 @@ nên được giữ và refine.
 
 Moderator nên dễ nhìn thấy:
 
--   current step;
--   completed steps;
--   pending action;
--   action waiting for confirmation;
--   remaining players;
--   history/event log.
+- current step;
+- completed steps;
+- pending action;
+- action waiting for confirmation;
+- remaining players;
+- history/event log.
 
 Current step cần nổi bật rõ nhưng không cần dùng quá nhiều border đỏ.
 
-------------------------------------------------------------------------
+---
 
 # 11. Player Night Action
 
@@ -535,7 +539,7 @@ Player không cần nhìn thấy workflow hệ thống.
 
 Ví dụ Tiên tri nên tập trung vào:
 
-``` text
+```text
 ĐÊM 01
 Tiên tri đang thức
 
@@ -548,7 +552,7 @@ Chọn một người để soi phe
 
 Sau khi moderator confirm:
 
-``` text
+```text
 KẾT QUẢ SOI
 
 Tuấn Kiệt
@@ -560,24 +564,24 @@ Tuấn Kiệt
 
 History nên là secondary content, có thể collapse.
 
-------------------------------------------------------------------------
+---
 
 # 12. Witch Action
 
 Current screen có nhiều information blocks:
 
--   wolf target;
--   potion history;
--   heal control;
--   poison selection;
--   player grid;
--   CTA.
+- wolf target;
+- potion history;
+- heal control;
+- poison selection;
+- player grid;
+- CTA.
 
 Nên ưu tiên current decision.
 
 Ví dụ:
 
-``` text
+```text
 ĐÊM 02
 Phù thủy đang thức
 
@@ -599,13 +603,13 @@ Dùng bình độc
 
 Potion history nên là:
 
-``` text
+```text
 Lịch sử dùng bình ›
 ```
 
 hoặc secondary expandable block.
 
-------------------------------------------------------------------------
+---
 
 # 13. Day Discussion
 
@@ -614,7 +618,7 @@ intentional phase moment.
 
 Nên biến nó thành một calm transition:
 
-``` text
+```text
               ☀
 
            NGÀY 01
@@ -635,14 +639,14 @@ Người chơi
 
 Whitespace lúc này trở thành intentional thay vì cảm giác thiếu content.
 
-------------------------------------------------------------------------
+---
 
 # 14. Voting
 
 Voting screen hiện tương đối rõ, nhưng có thể tăng tension bằng
 hierarchy:
 
-``` text
+```text
 BIỂU QUYẾT
 Lượt 1 / 2
 
@@ -659,7 +663,7 @@ Không cần lặp lại nhiều explanatory text nếu game state đã rõ.
 
 Selected player cần dùng cùng `PlayerTile` state với night actions.
 
-------------------------------------------------------------------------
+---
 
 # 15. Dawn / Night Result
 
@@ -667,7 +671,7 @@ Các result screen nên có presentation khác action screen.
 
 Ví dụ:
 
-``` text
+```text
           BÌNH MINH
 
         Đêm đã kết thúc
@@ -680,7 +684,7 @@ Ví dụ:
 
 hoặc:
 
-``` text
+```text
           BÌNH MINH
 
       Không có ai thiệt mạng.
@@ -689,7 +693,7 @@ hoặc:
 Moderator có thể xem detailed resolution, nhưng player nên nhận result
 theo cách cinematic hơn.
 
-------------------------------------------------------------------------
+---
 
 # 16. Victory Screen
 
@@ -697,7 +701,7 @@ Victory screen hiện là quality bar tốt.
 
 Có thể tăng focal point thành:
 
-``` text
+```text
              🏆
 
           CHIẾN THẮNG
@@ -712,14 +716,14 @@ Sau đó mới reveal toàn bộ role.
 
 Victory nên có animation nhẹ nếu phù hợp:
 
--   lantern movement;
--   subtle particles;
--   trophy entrance;
--   role reveal stagger.
+- lantern movement;
+- subtle particles;
+- trophy entrance;
+- role reveal stagger.
 
 Không cần animation phức tạp hoặc gây distraction.
 
-------------------------------------------------------------------------
+---
 
 # 17. Typography
 
@@ -731,37 +735,37 @@ Có thể tách:
 
 Dùng cho:
 
--   ĐÊM 01;
--   NGÀY 01;
--   BÌNH MINH;
--   BIỂU QUYẾT;
--   CHIẾN THẮNG.
+- ĐÊM 01;
+- NGÀY 01;
+- BÌNH MINH;
+- BIỂU QUYẾT;
+- CHIẾN THẮNG.
 
 Có thể tạo personality chỉ bằng:
 
--   uppercase;
--   tracking;
--   weight;
--   size;
--   subtle serif/display font nếu phù hợp.
+- uppercase;
+- tracking;
+- weight;
+- size;
+- subtle serif/display font nếu phù hợp.
 
 ### UI typography
 
 Giữ clean sans-serif cho:
 
--   player names;
--   instructions;
--   buttons;
--   status;
--   form controls.
+- player names;
+- instructions;
+- buttons;
+- status;
+- form controls.
 
-------------------------------------------------------------------------
+---
 
 # 18. Responsive / Mobile Direction
 
 Mobile không nên chỉ là:
 
-``` css
+```css
 desktop-panel {
   width: 100%;
 }
@@ -776,7 +780,7 @@ một điện thoại, vì vậy mobile cần được coi là first-class exper
 
 Action quan trọng có thể dùng sticky bottom action:
 
-``` text
+```text
 ┌──────────────────────┐
 │                      │
 │      CONTENT         │
@@ -790,19 +794,19 @@ Action quan trọng có thể dùng sticky bottom action:
 
 Desktop:
 
-``` text
+```text
 4 columns
 ```
 
 Tablet:
 
-``` text
+```text
 3 columns
 ```
 
 Mobile:
 
-``` text
+```text
 2 columns
 ```
 
@@ -814,7 +818,7 @@ Room code + leave action cần compact lại.
 
 Ví dụ:
 
-``` text
+```text
 ● ĐÊM 01       V5NKW4   ⋯
 ```
 
@@ -829,7 +833,7 @@ Trên mobile, role card có thể chiếm phần lớn viewport.
 Moderator dashboard mobile có thể chuyển từ table-like layout thành
 vertical queue:
 
-``` text
+```text
 ✓ Thợ săn
 ✓ Bảo vệ
 
@@ -840,13 +844,13 @@ vertical queue:
 ○ Phù thủy
 ```
 
-------------------------------------------------------------------------
+---
 
 # 19. Component Architecture đề xuất
 
 Các component UI quan trọng:
 
-``` text
+```text
 GameShell
 PhaseBackground
 GamePanel
@@ -885,7 +889,7 @@ giống nhau.
 
 Ví dụ:
 
-``` text
+```text
 SeerTargetPicker
 WolfTargetPicker
 HunterTargetPicker
@@ -893,13 +897,13 @@ HunterTargetPicker
 
 nên cân nhắc abstraction:
 
-``` text
+```text
 TargetPicker
 ```
 
 với props/state khác nhau.
 
-------------------------------------------------------------------------
+---
 
 # 20. Priority Roadmap
 
@@ -909,14 +913,14 @@ với props/state khác nhau.
 
 Xây unified state system cho:
 
--   normal;
--   selected;
--   dead;
--   role-visible;
--   role-hidden;
--   targeted;
--   winner;
--   disabled.
+- normal;
+- selected;
+- dead;
+- role-visible;
+- role-hidden;
+- targeted;
+- winner;
+- disabled.
 
 ### 2. Chuẩn hóa semantic colors
 
@@ -926,7 +930,7 @@ Loại bỏ việc rose/red đảm nhiệm quá nhiều nghĩa.
 
 Tạo visual identity rõ cho từng phase.
 
-------------------------------------------------------------------------
+---
 
 ## P1 --- Player Experience
 
@@ -934,10 +938,10 @@ Tạo visual identity rõ cho từng phase.
 
 Giảm:
 
--   divider;
--   helper text;
--   nested card;
--   operational information.
+- divider;
+- helper text;
+- nested card;
+- operational information.
 
 Tăng emphasis vào current objective.
 
@@ -949,7 +953,7 @@ Biến thành major game event.
 
 Result screen cần khác action screen.
 
-------------------------------------------------------------------------
+---
 
 ## P2 --- Game Flow
 
@@ -957,7 +961,7 @@ Result screen cần khác action screen.
 
 Flow:
 
-``` text
+```text
 Players → Roles → Ready → Start
 ```
 
@@ -969,7 +973,7 @@ Biến empty state thành intentional phase experience.
 
 Tăng tension và tái sử dụng unified PlayerTile.
 
-------------------------------------------------------------------------
+---
 
 ## P3 --- Responsive
 
@@ -977,7 +981,7 @@ Tăng tension và tái sử dụng unified PlayerTile.
 
 Review riêng các viewport:
 
-``` text
+```text
 360px
 390px
 430px
@@ -987,36 +991,36 @@ Review riêng các viewport:
 
 Đặc biệt kiểm tra:
 
--   player selection;
--   role reveal;
--   moderator queue;
--   sticky CTA;
--   long player names;
--   15-player room;
--   landscape orientation;
--   browser safe area.
+- player selection;
+- role reveal;
+- moderator queue;
+- sticky CTA;
+- long player names;
+- 15-player room;
+- landscape orientation;
+- browser safe area.
 
-------------------------------------------------------------------------
+---
 
 # 21. Acceptance Criteria
 
 ## Visual
 
--   Background phase thay đổi rõ ràng theo game state.
--   UI vẫn nhận diện được là Werewolf/game interface ngay cả khi blur
-    hoặc bỏ artwork.
--   Không lạm dụng bordered container.
--   Primary objective luôn có visual priority cao nhất.
--   Status colors có semantic nhất quán.
+- Background phase thay đổi rõ ràng theo game state.
+- UI vẫn nhận diện được là Werewolf/game interface ngay cả khi blur
+  hoặc bỏ artwork.
+- Không lạm dụng bordered container.
+- Primary objective luôn có visual priority cao nhất.
+- Status colors có semantic nhất quán.
 
 ## PlayerTile
 
--   Một component hỗ trợ toàn bộ player states.
--   Selected state rõ ràng mà không phụ thuộc chỉ vào màu.
--   Dead state nhận biết ngay.
--   Role visibility không leak information cho player không được phép
-    xem.
--   Touch target phù hợp mobile.
+- Một component hỗ trợ toàn bộ player states.
+- Selected state rõ ràng mà không phụ thuộc chỉ vào màu.
+- Dead state nhận biết ngay.
+- Role visibility không leak information cho player không được phép
+  xem.
+- Touch target phù hợp mobile.
 
 ## Player UX
 
@@ -1039,15 +1043,15 @@ Moderator phải nhanh chóng nhận biết:
 
 ## Responsive
 
--   Không horizontal overflow ở 360px.
--   CTA chính luôn dễ reach.
--   Player grid tối thiểu 2 columns trên mobile nếu kích thước cho phép.
--   Không giảm font size quá mức chỉ để fit layout.
--   Dialog không vượt viewport.
--   Role card có thể xem đầy đủ mà không cần awkward horizontal scroll.
--   Safe-area được xử lý trên mobile.
+- Không horizontal overflow ở 360px.
+- CTA chính luôn dễ reach.
+- Player grid tối thiểu 2 columns trên mobile nếu kích thước cho phép.
+- Không giảm font size quá mức chỉ để fit layout.
+- Dialog không vượt viewport.
+- Role card có thể xem đầy đủ mà không cần awkward horizontal scroll.
+- Safe-area được xử lý trên mobile.
 
-------------------------------------------------------------------------
+---
 
 # 22. North-star Direction
 

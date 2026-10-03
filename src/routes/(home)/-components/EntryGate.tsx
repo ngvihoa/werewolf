@@ -328,12 +328,17 @@ function PathTile({
         ).map((rotation, index) => (
           <div
             aria-hidden="true"
-            className={cn('absolute h-2 w-1 [clip-path:polygon(50%_0%,100%_50%,50%_100%,0%_50%)]', rotation, styles.mainColor, {
-              '-top-1 left-1/2 -translate-x-1/2': index === 0,
-              'top-1/2 -right-1 -translate-y-1/2': index === 1,
-              '-bottom-1 left-1/2 -translate-x-1/2': index === 2,
-              'top-1/2 -left-1 -translate-y-1/2': index === 3,
-            })}
+            className={cn(
+              'absolute h-2 w-1 [clip-path:polygon(50%_0%,100%_50%,50%_100%,0%_50%)]',
+              rotation,
+              styles.mainColor,
+              {
+                '-top-1 left-1/2 -translate-x-1/2': index === 0,
+                'top-1/2 -right-1 -translate-y-1/2': index === 1,
+                '-bottom-1 left-1/2 -translate-x-1/2': index === 2,
+                'top-1/2 -left-1 -translate-y-1/2': index === 3,
+              },
+            )}
             key={rotation}
           />
         ))}

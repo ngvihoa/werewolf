@@ -1,7 +1,7 @@
-import type {ClassValue} from 'clsx'
+import type { ClassValue } from 'clsx'
 
 import { twMerge } from 'tailwind-merge'
-import { clsx  } from 'clsx'
+import { clsx } from 'clsx'
 
 /**
  * Gộp className có điều kiện (clsx) và resolve xung đột Tailwind

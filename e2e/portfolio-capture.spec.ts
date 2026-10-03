@@ -94,9 +94,9 @@ async function submitNightAction(
   })
   await expect(async () => {
     await actor.page.reload()
-    await expect(
-      actor.page.getByText(PLAYER_READY_MARKER).first(),
-    ).toBeVisible({ timeout: 4_000 })
+    await expect(actor.page.getByText(PLAYER_READY_MARKER).first()).toBeVisible(
+      { timeout: 4_000 },
+    )
     if (options.heal) {
       await actor.page.getByLabel('Dùng bình cứu').check()
     }
@@ -114,10 +114,7 @@ async function submitNightAction(
   await expect(submit).toBeHidden()
 }
 
-async function confirmSubmittedAction(
-  moderatorPage: Page,
-  shotName?: string,
-) {
+async function confirmSubmittedAction(moderatorPage: Page, shotName?: string) {
   const confirm = moderatorPage.getByRole('button', {
     name: 'Xác nhận hành động',
   })
@@ -143,9 +140,9 @@ async function moderatorProceed(
   const button = moderatorPage.getByRole('button', { name: buttonName })
   await expect(async () => {
     await moderatorPage.reload()
-    await expect(
-      moderatorPage.getByText(marker).first(),
-    ).toBeVisible({ timeout: 4_000 })
+    await expect(moderatorPage.getByText(marker).first()).toBeVisible({
+      timeout: 4_000,
+    })
   }).toPass({ timeout: 90_000 })
   if (shotName) {
     await shoot(moderatorPage, shotName)
