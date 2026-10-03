@@ -14,15 +14,20 @@ import type {
   CreateGameInput,
   ExecuteGameCommandInput,
   GameStore,
+  TickInput,
 } from './game-store'
 import type { Player, Role, RoleCompositionSelection } from '../domain'
 import type { GameEvent } from '../orchestration/events'
 import type { GameView } from '../projections/model'
 
-import { stampDiscussionDeadline, runBotLoop } from '../bot/bot-moderator'
 import { gameCommandSchema } from '../orchestration/schema'
 import { projectGameView } from '../projections/project-game-view'
 import { assignRoles } from '../rules/role-assignment'
+import {
+  stampDiscussionDeadline,
+  stampWaitingDeadline,
+  runBotLoop,
+} from '../bot/bot-moderator'
 import {
   createFirstNightState,
   executeCommand,
@@ -410,15 +415,17 @@ export class InMemoryGameStore implements GameStore {
     // "transaction" — version chỉ tăng một lần cho cả thay đổi.
     if (game.mode === 'SELF') {
       const now = this.#now()
-      // Mốc thảo luận có thể cần gắn cả TRƯỚC lẫn SAU loop: DAY thường được
-      // tạo bên trong loop khi bot confirm night resolution.
+      // Mốc thời gian có thể cần gắn cả TRƯỚC lẫn SAU loop: DAY và step mới
+      // thường được tạo bên trong loop bởi chính bot.
       stampDiscussionDeadline(finalState, now)
+      stampWaitingDeadline(finalState, now)
       const bot = runBotLoop(finalState, { now })
       if (!bot.ok) {
         return failure('INVALID_GAME_STATE', bot.error.message)
       }
       finalState = bot.state
       stampDiscussionDeadline(finalState, now)
+      stampWaitingDeadline(finalState, now)
       botEvents = bot.events
     }
 
@@ -434,6 +441,47 @@ export class InMemoryGameStore implements GameStore {
     }
     this.#commandReceipts.set(receiptKey, { request, result })
     return success(result)
+  }
+
+  // R22: lazy tick — client gọi khi countdown về 0; đồng hồ là store clock.
+  // Idempotent: không có gì đổi thì chỉ trả version hiện tại.
+  tick(input: TickInput): StoreResult<GameMutationResult> {
+    const game = this.#games.get(input.gameId)
+    if (!game) return failure('GAME_NOT_FOUND', 'Game does not exist')
+    const session = this.#sessions.get(input.sessionToken)
+    if (!session || session.gameId !== game.id) {
+      return failure(
+        'SESSION_NOT_FOUND',
+        'Session does not exist for this game',
+      )
+    }
+    if (!game.state || game.mode !== 'SELF' || game.state.winner) {
+      return success({ gameId: game.id, version: game.version })
+    }
+
+    const before = JSON.stringify(game.state)
+    const state = structuredClone(game.state)
+    const now = this.#now()
+    stampDiscussionDeadline(state, now)
+    stampWaitingDeadline(state, now)
+    const bot = runBotLoop(state, { now })
+    if (!bot.ok) {
+      return failure('INVALID_GAME_STATE', bot.error.message)
+    }
+    const finalState = bot.state
+    stampDiscussionDeadline(finalState, now)
+    stampWaitingDeadline(finalState, now)
+
+    if (JSON.stringify(finalState) === before) {
+      return success({ gameId: game.id, version: game.version })
+    }
+
+    game.state = finalState
+    game.version += 1
+    if (bot.events.length > 0) {
+      this.#appendEvents(game, 'SYSTEM', null, bot.events)
+    }
+    return success({ gameId: game.id, version: game.version })
   }
 
   getGame(gameId: string): StoreResult<LocalGame> {

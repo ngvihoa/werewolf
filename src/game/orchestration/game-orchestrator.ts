@@ -81,6 +81,8 @@ export function executeCommand(
       return submitHunterShot(state, command.actorId, command.targetId, events)
     case 'CONFIRM_HUNTER_SHOT':
       return confirmHunterShot(state, events)
+    case 'SKIP_HUNTER_SHOT':
+      return skipHunterShot(state, events)
   }
 }
 
@@ -532,6 +534,25 @@ function confirmHunterShot(
     events,
   )
   state.pendingHunterShot = null
+  return transitionAfterElimination(state, 'NIGHT', events)
+}
+
+// R22: Thợ săn không bắn đúng hạn thì mất phát bắn — ván tiếp tục sang đêm.
+// Điều kiện: đang HUNTER_SHOT và hunter CHƯA chọn target (đã chọn thì đi
+// qua CONFIRM_HUNTER_SHOT).
+function skipHunterShot(
+  state: GameState,
+  events: GameEvent[],
+): Result<CommandOutcome> {
+  if (state.phase !== 'HUNTER_SHOT') {
+    return invalidPhase('HUNTER_SHOT', state.phase)
+  }
+  if (!state.pendingHunterShot || state.pendingHunterShot.targetId) {
+    return failure('INVALID_ACTION', 'No pending hunter shot to skip')
+  }
+
+  state.pendingHunterShot = null
+  events.push({ type: 'HUNTER_SHOT_SKIPPED' })
   return transitionAfterElimination(state, 'NIGHT', events)
 }
 

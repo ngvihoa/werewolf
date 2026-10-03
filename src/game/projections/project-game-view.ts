@@ -11,6 +11,7 @@ import type {
 import type { LocalGame } from '../store/model'
 
 import { isWerewolfPlayer } from '../domain'
+import { waitingContext } from '../bot/bot-moderator'
 import { STEP_ROLE } from '../rules/transitions'
 
 export function projectGameView(
@@ -155,6 +156,7 @@ export function projectGameView(
     },
     vote: projectSelfVote(game, lobbyPlayer.id),
     discussion: projectSelfDiscussion(game, lobbyPlayer.id),
+    waiting: projectSelfWaiting(game),
     publicHistory: history.flatMap((entry) =>
       entry.publicEntry ? [entry.publicEntry] : [],
     ),
@@ -185,6 +187,19 @@ function projectSelfVote(
     ).length,
     aliveCount: alivePlayers.length,
     voteAttempt: state.voteAttempt,
+  }
+}
+
+// R22: ngữ cảnh chờ hiện tại + mốc hết giờ — mọi người cùng thấy countdown.
+function projectSelfWaiting(game: LocalGame): PlayerGameView['waiting'] {
+  const state = game.state
+  if (game.mode !== 'SELF' || !state) return undefined
+  const context = waitingContext(state)
+  if (!context || !state.waitingDeadlineAt) return undefined
+  return {
+    kind: context.kind,
+    key: context.key,
+    deadlineAt: state.waitingDeadlineAt,
   }
 }
 

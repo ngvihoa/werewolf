@@ -49,6 +49,8 @@ export const gameCommandSchema = z.discriminatedUnion('type', [
     targetId: z.string().min(1),
   }),
   z.object({ type: z.literal('CONFIRM_HUNTER_SHOT') }),
+  // R22: Thợ săn không bắn đúng hạn (SELF) — mất phát bắn, ván đi tiếp.
+  z.object({ type: z.literal('SKIP_HUNTER_SHOT') }),
 ])
 
 // Event cũng là một IO boundary vì được lưu vào PostgreSQL dưới dạng type + JSONB.
@@ -131,4 +133,6 @@ export const gameEventSchema = z.discriminatedUnion('type', [
     hunterId: z.string().min(1),
     targetId: z.string().min(1),
   }),
+  // Audit-only: bot/hệ thống bỏ qua phát bắn (hết giờ R22).
+  z.object({ type: z.literal('HUNTER_SHOT_SKIPPED') }),
 ])

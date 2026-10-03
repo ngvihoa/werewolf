@@ -92,4 +92,10 @@ export const lobbyRouter = baseRouter.lobby.router({
       return toOperationResult(result)
     },
   ),
+
+  tick: baseRouter.lobby.tick.handler(async ({ input }) => {
+    const result = await localGameStore.tick(input)
+    if (result.ok) await publishGameInvalidation(result.value)
+    return toOperationResult(result)
+  }),
 })

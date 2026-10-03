@@ -10,6 +10,11 @@ import type { GameView } from '../projections/model'
 
 export type Awaitable<T> = T | Promise<T>
 
+export type TickInput = {
+  gameId: string
+  sessionToken: string
+}
+
 // MODERATED: người tạo là Quản trò và nhận moderator session.
 // SELF: người tạo là chủ phòng — một player thường được quyền cấu hình.
 export type CreateGameInput =
@@ -111,4 +116,11 @@ export interface GameStore {
   execute(
     input: ExecuteGameCommandInput,
   ): Awaitable<StoreResult<GameMutationResult>>
+
+  /**
+   * R22 — lazy tick: client gọi khi countdown về 0; store dùng đồng hồ server
+   * để chạy bot timeout (skip step / abstain / mất phát bắn hunter). Idempotent:
+   * tick khi không có gì hết giờ chỉ trả về version hiện tại.
+   */
+  tick(input: TickInput): Awaitable<StoreResult<GameMutationResult>>
 }

@@ -180,6 +180,14 @@ export const playerGameViewSchema = z.object({
       consentNeeded: z.number().int(),
     })
     .optional(),
+  // SELF mode (R22): ngữ cảnh đang chờ + mốc hết giờ (ISO, giờ server).
+  waiting: z
+    .object({
+      kind: z.enum(['STEP', 'VOTE', 'HUNTER_SHOT']),
+      key: z.string(),
+      deadlineAt: z.string(),
+    })
+    .optional(),
   publicHistory: z.array(publicHistoryEntrySchema),
   privateHistory: z.array(privateHistoryEntrySchema),
 })
@@ -206,6 +214,8 @@ const gameStateSchema = z.object({
   voteSubmissions: z.record(z.string(), z.string().nullable()).optional(),
   voteConsentIds: z.array(z.string()).optional(),
   discussionMinEndsAt: z.string().nullable().optional(),
+  waitingKey: z.string().nullable().optional(),
+  waitingDeadlineAt: z.string().nullable().optional(),
   pendingVote: z
     .object({
       tied: z.boolean(),

@@ -456,3 +456,107 @@ describe('runBotLoop', () => {
     expect(nextBotCommands(finalBot.state)).toEqual([])
   })
 })
+
+describe('R22 timeout (bot + clock)', () => {
+  function nightWithDeadline(): GameState {
+    const state = createFirstNightState(FIVE_PLAYERS)
+    // Mô phỏng store đã gắn mốc cho step ACTIVE (SEER_INSPECT).
+    state.waitingKey = 'STEP:1:SEER_INSPECT'
+    state.waitingDeadlineAt = '2026-08-08T00:00:45.000Z'
+    return state
+  }
+
+  it('step đêm hết giờ → SKIP_STEP, step kế được gắn mốc mới', () => {
+    let state = nightWithDeadline()
+    const clock = { now: new Date('2026-08-08T00:00:46.000Z') }
+
+    expect(nextBotCommands(state, clock)).toEqual([
+      { type: 'SKIP_STEP', reason: 'TIMEOUT' },
+    ])
+    const bot = runBotLoop(state, clock)
+    expect(bot.ok).toBe(true)
+    if (!bot.ok) return
+    state = bot.state
+    // Seer bị skip, bước kế (Werewolf Attack) ACTIVE với mốc mới chưa hết hạn.
+    const seerStep = state.queue.find((item) => item.step === 'SEER_INSPECT')
+    expect(seerStep?.status).toBe('SKIPPED')
+    expect(seerStep?.skipReason).toBe('TIMEOUT')
+    expect(state.waitingKey).toBe('STEP:1:WEREWOLF_ATTACK')
+    expect(Date.parse(state.waitingDeadlineAt ?? '')).toBeGreaterThan(
+      clock.now.getTime(),
+    )
+    // Loop dừng — không ăn theo skip nốt step Wolf.
+    expect(bot.steps).toHaveLength(1)
+    expect(nextBotCommands(state, clock)).toEqual([])
+  })
+
+  it('chưa hết giờ thì bot không skip', () => {
+    const state = nightWithDeadline()
+    const clock = { now: new Date('2026-08-08T00:00:44.000Z') }
+    expect(nextBotCommands(state, clock)).toEqual([])
+  })
+
+  it('vote hết giờ: phiếu thiếu tính trắng — hòa thì theo R14', () => {
+    let state = createFirstNightState(FIVE_PLAYERS)
+    state.phase = 'VOTE'
+    state.waitingKey = 'VOTE:1:1'
+    state.waitingDeadlineAt = '2026-08-08T00:01:00.000Z'
+    const clock = { now: new Date('2026-08-08T00:01:01.000Z') }
+
+    // 2 phiếu dàn 1-1 (wolf→v1, seer→v2), 3 người AFK trắng → hòa attempt 1.
+    const splitVotes: Array<[string, string | null]> = [
+      ['wolf', 'v1'],
+      ['seer', 'v2'],
+    ]
+    for (const [actorId, targetId] of splitVotes) {
+      const cast = executeCommand(state, {
+        type: 'SUBMIT_VOTE',
+        actorId,
+        targetId,
+      })
+      if (!cast.ok) throw new Error(cast.error.message)
+      state = cast.value.state
+    }
+
+    expect(nextBotCommands(state, clock)).toEqual([
+      { type: 'SUBMIT_VOTE_RESULT', tied: true, selectedPlayerId: null },
+    ])
+    const bot = runBotLoop(state, clock)
+    expect(bot.ok).toBe(true)
+    if (!bot.ok) return
+    // Hòa attempt 1 → revote; attempt 2 có mốc mới.
+    expect(bot.state.phase).toBe('VOTE')
+    expect(bot.state.voteAttempt).toBe(2)
+    expect(bot.state.waitingKey).toBe('VOTE:1:2')
+    expect(Date.parse(bot.state.waitingDeadlineAt ?? '')).toBeGreaterThan(
+      clock.now.getTime(),
+    )
+  })
+
+  it('hunter không bắn đúng hạn → SKIP_HUNTER_SHOT, sang đêm mới', () => {
+    const state = createFirstNightState(FIVE_PLAYERS)
+    state.phase = 'HUNTER_SHOT'
+    state.pendingHunterShot = { hunterId: 'seer', targetId: null }
+    state.waitingKey = 'SHOT:1'
+    state.waitingDeadlineAt = '2026-08-08T00:01:00.000Z'
+    // Ván 4 người: 1 wolf + 3 dân, hunter chết vì vote... dùng state mô phỏng:
+    // wolf + 2 dân sống, hunter đã chết (đang pending shot).
+    state.players = [
+      { id: 'wolf', role: 'WEREWOLF', alive: true, abilityState: null },
+      { id: 'seer', role: 'HUNTER', alive: false, abilityState: null },
+      { id: 'v1', role: 'VILLAGER', alive: true, abilityState: null },
+      { id: 'v2', role: 'VILLAGER', alive: true, abilityState: null },
+    ]
+    const clock = { now: new Date('2026-08-08T00:01:01.000Z') }
+
+    expect(nextBotCommands(state, clock)).toEqual([
+      { type: 'SKIP_HUNTER_SHOT' },
+    ])
+    const bot = runBotLoop(state, clock)
+    expect(bot.ok).toBe(true)
+    if (!bot.ok) return
+    expect(bot.state.phase).toBe('NIGHT')
+    expect(bot.state.pendingHunterShot).toBeNull()
+    expect(bot.state.round).toBe(2)
+  })
+})
