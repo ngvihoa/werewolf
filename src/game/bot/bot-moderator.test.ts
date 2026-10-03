@@ -159,6 +159,137 @@ describe('runBotLoop', () => {
     expect(nextBotCommands(bot.state)).toEqual([])
   })
 
+  it('R20: đủ phiếu thì bot tally — đa số rõ → loại, hòa → revote với phiếu mới', () => {
+    let state = createFirstNightState(FIVE_PLAYERS)
+    state.phase = 'DAY'
+
+    const start = executeCommand(state, { type: 'START_VOTE' })
+    if (!start.ok) throw new Error(start.error.message)
+    state = start.value.state
+    expect(nextBotCommands(state)).toEqual([])
+
+    // 5 phiếu: v1 được 3, wolf được 2 → v1 bị loại.
+    const votes: Array<[string, string | null]> = [
+      ['wolf', 'v1'],
+      ['seer', 'v1'],
+      ['v2', 'wolf'],
+      ['v3', 'wolf'],
+      ['v1', 'v1'],
+    ]
+    for (const [actorId, targetId] of votes) {
+      const cast = executeCommand(state, {
+        type: 'SUBMIT_VOTE',
+        actorId,
+        targetId,
+      })
+      if (!cast.ok) throw new Error(cast.error.message)
+      state = cast.value.state
+    }
+
+    // Chưa đủ phiếu thì bot đứng im; phiếu cuối cùng kích hoạt tally.
+    expect(nextBotCommands(state)).toEqual([
+      { type: 'SUBMIT_VOTE_RESULT', tied: false, selectedPlayerId: 'v1' },
+    ])
+    const bot = runBotLoop(state)
+    expect(bot.ok).toBe(true)
+    if (!bot.ok) return
+    expect(bot.steps.map((step) => step.command.type)).toEqual([
+      'SUBMIT_VOTE_RESULT',
+      'CONFIRM_VOTE_RESULT',
+    ])
+    expect(bot.state.phase).toBe('NIGHT')
+    expect(bot.state.players.find((player) => player.id === 'v1')?.alive).toBe(
+      false,
+    )
+    // Đêm mới: phiếu attempt cũ phải được reset.
+    expect(bot.state.voteSubmissions).toEqual({})
+  })
+
+  it('R20: hòa phiếu qua thiết bị — attempt 2 tiếp tục hòa thì không ai bị loại', () => {
+    let state = createFirstNightState(FIVE_PLAYERS)
+    state.phase = 'DAY'
+    const start = executeCommand(state, { type: 'START_VOTE' })
+    if (!start.ok) throw new Error(start.error.message)
+    state = start.value.state
+
+    // Attempt 1: 2-2-1 hòa.
+    const attempt1: Array<[string, string | null]> = [
+      ['wolf', 'v1'],
+      ['seer', 'v1'],
+      ['v1', 'v2'],
+      ['v2', 'v2'],
+      ['v3', null],
+    ]
+    for (const [actorId, targetId] of attempt1) {
+      const cast = executeCommand(state, {
+        type: 'SUBMIT_VOTE',
+        actorId,
+        targetId,
+      })
+      if (!cast.ok) throw new Error(cast.error.message)
+      state = cast.value.state
+    }
+    const bot1 = runBotLoop(state)
+    if (!bot1.ok) throw new Error(bot1.error.message)
+    state = bot1.state
+    expect(state.phase).toBe('VOTE')
+    expect(state.voteAttempt).toBe(2)
+
+    // Attempt 2: lại hòa 2-2 → không ai bị loại, sang đêm.
+    const attempt2: Array<[string, string | null]> = [
+      ['wolf', 'v1'],
+      ['seer', 'v1'],
+      ['v1', 'v2'],
+      ['v2', 'v2'],
+      ['v3', 'wolf'],
+    ]
+    for (const [actorId, targetId] of attempt2) {
+      const cast = executeCommand(state, {
+        type: 'SUBMIT_VOTE',
+        actorId,
+        targetId,
+      })
+      if (!cast.ok) throw new Error(cast.error.message)
+      state = cast.value.state
+    }
+    const bot2 = runBotLoop(state)
+    if (!bot2.ok) throw new Error(bot2.error.message)
+    expect(bot2.state.phase).toBe('NIGHT')
+    expect(bot2.state.round).toBe(2)
+    expect(bot2.state.players.every((player) => player.alive)).toBe(true)
+  })
+
+  it('R20: phiếu trắng khi cả bàn trắng → hòa; không ai vote hai lần trong một attempt', () => {
+    let state = createFirstNightState(FIVE_PLAYERS)
+    state.phase = 'DAY'
+    const start = executeCommand(state, { type: 'START_VOTE' })
+    if (!start.ok) throw new Error(start.error.message)
+    state = start.value.state
+
+    for (const actorId of ['wolf', 'seer', 'v1', 'v2', 'v3']) {
+      const cast = executeCommand(state, {
+        type: 'SUBMIT_VOTE',
+        actorId,
+        targetId: null,
+      })
+      if (!cast.ok) throw new Error(cast.error.message)
+      state = cast.value.state
+    }
+    expect(nextBotCommands(state)).toEqual([
+      { type: 'SUBMIT_VOTE_RESULT', tied: true, selectedPlayerId: null },
+    ])
+
+    const duplicate = executeCommand(state, {
+      type: 'SUBMIT_VOTE',
+      actorId: 'wolf',
+      targetId: 'v1',
+    })
+    expect(duplicate).toMatchObject({
+      ok: false,
+      error: { code: 'INVALID_ACTION' },
+    })
+  })
+
   it('loại Hunter: bot không làm gì khi hunter chưa bắn, xác nhận ngay sau khi bắn', () => {
     // 6 người: wolf + hunter + 4 villager (orchestrator không validate composition).
     const players: Player[] = [

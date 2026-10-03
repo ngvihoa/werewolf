@@ -3,19 +3,19 @@ import type { GameCommand } from '../orchestration/commands'
 import type { GameState } from '../orchestration/model'
 import type { GameEvent } from '../orchestration/events'
 
-import { executeCommand } from '../orchestration/game-orchestrator'
+import { executeCommand, tallyVotes } from '../orchestration/game-orchestrator'
 
 // Giới hạn fixpoint chống vòng lặp vô hạn: một lệnh của bot không được tự
 // kích hoạt chính nó lại. Flow dài nhất của game vẫn cách xa con số này.
 export const MAX_BOT_ITERATIONS = 50
 
 /**
- * Quản trò bot (mode SELF): phát đúng các command thuộc nhóm "moderator
- * confirmation" mà Quản trò vẫn phát ở mode MODERATED. Rule engine, event log
- * và bề mặt command không đổi — bot chỉ là người bấm confirm tự động.
+ * Quản trò bot (mode SELF): phát đúng các command nhóm "moderator confirmation"
+ * hoặc lệnh hệ thống tất định mà Quản trò vẫn làm ở mode MODERATED. Rule
+ * engine, event log và bề mặt command không đổi — bot chỉ bấm confirm tự động.
  *
  * Không thuộc trách nhiệm bot: START_VOTE (cần consent người chơi — T4),
- * vote tally (T3), timeout/AFK (T5).
+ * timeout/AFK (T5).
  */
 export function nextBotCommands(state: Readonly<GameState>): GameCommand[] {
   if (state.winner) return []
@@ -34,6 +34,12 @@ export function nextBotCommands(state: Readonly<GameState>): GameCommand[] {
       return state.pendingHunterShot?.targetId
         ? [{ type: 'CONFIRM_HUNTER_SHOT' }]
         : []
+    case 'VOTE':
+      // R20: khi mọi người sống đã bỏ phiếu, bot tally và phát kết quả —
+      // hòa theo R14 (attempt 1 → revote, attempt 2 → không ai bị loại).
+      return allAliveVoted(state)
+        ? [{ type: 'SUBMIT_VOTE_RESULT', ...tallyVotes(state) }]
+        : []
     case 'VOTE_RESOLUTION':
       return state.pendingVoteResolution
         ? [{ type: 'CONFIRM_VOTE_RESULT' }]
@@ -41,6 +47,12 @@ export function nextBotCommands(state: Readonly<GameState>): GameCommand[] {
     default:
       return []
   }
+}
+
+function allAliveVoted(state: Readonly<GameState>): boolean {
+  return state.players
+    .filter((player) => player.alive)
+    .every((player) => state.voteSubmissions?.[player.id] !== undefined)
 }
 
 export type BotStep = {

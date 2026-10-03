@@ -158,6 +158,18 @@ export const playerGameViewSchema = z.object({
   }),
   isCharmed: z.boolean(),
   lover: publicPlayerViewSchema.nullable(),
+  // SELF mode (R20): trạng thái bỏ phiếu trên thiết bị. Optional cho client/
+  // server lệch phiên; không có ở mode MODERATED (vote diễn ra ngoài đời).
+  vote: z
+    .object({
+      canVote: z.boolean(),
+      hasVoted: z.boolean(),
+      myTargetId: z.string().nullable(),
+      votedCount: z.number().int(),
+      aliveCount: z.number().int(),
+      voteAttempt: z.union([z.literal(1), z.literal(2)]),
+    })
+    .optional(),
   publicHistory: z.array(publicHistoryEntrySchema),
   privateHistory: z.array(privateHistoryEntrySchema),
 })
@@ -181,6 +193,7 @@ const gameStateSchema = z.object({
   lastProtectedTargetId: z.string().nullable().optional(),
   pendingNightResolution: nightResolutionSchema.nullable(),
   voteAttempt: z.union([z.literal(1), z.literal(2)]),
+  voteSubmissions: z.record(z.string(), z.string().nullable()).optional(),
   pendingVote: z
     .object({
       tied: z.boolean(),

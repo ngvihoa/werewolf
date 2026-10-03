@@ -438,6 +438,63 @@ describe('player projections', () => {
   })
 })
 
+describe('self mode vote projection', () => {
+  it('phase VOTE ở SELF: hiện count + phiếu của mình, không lộ phiếu người khác', () => {
+    const game = createGame()
+    game.mode = 'SELF'
+    game.hostPlayerId = null
+    const state = game.state!
+    state.phase = 'VOTE'
+    state.voteSubmissions = { seer: 'wolf' }
+
+    const seerView = projectGameView(game, { kind: 'PLAYER', playerId: 'seer' })
+    if (seerView?.viewer !== 'PLAYER') return
+    expect(seerView.vote).toEqual({
+      canVote: false,
+      hasVoted: true,
+      myTargetId: 'wolf',
+      votedCount: 1,
+      aliveCount: 5,
+      voteAttempt: 1,
+    })
+
+    const wolfView = projectGameView(game, { kind: 'PLAYER', playerId: 'wolf' })
+    if (wolfView?.viewer !== 'PLAYER') return
+    // Người khác bỏ phiếu cho wolf nhưng wolf không thấy nội dung phiếu nào
+    // ngoài phiếu của chính mình.
+    expect(wolfView.vote).toEqual({
+      canVote: true,
+      hasVoted: false,
+      myTargetId: null,
+      votedCount: 1,
+      aliveCount: 5,
+      voteAttempt: 1,
+    })
+  })
+
+  it('không có block vote ở mode MODERATED và ngoài phase VOTE', () => {
+    const game = createGame()
+    game.mode = 'MODERATED'
+    game.state!.phase = 'VOTE'
+    const moderated = projectGameView(game, {
+      kind: 'PLAYER',
+      playerId: 'seer',
+    })
+    if (moderated?.viewer !== 'PLAYER') return
+    expect(moderated.vote).toBeUndefined()
+
+    const selfDay = createGame()
+    selfDay.mode = 'SELF'
+    selfDay.state!.phase = 'DAY'
+    const dayView = projectGameView(selfDay, {
+      kind: 'PLAYER',
+      playerId: 'seer',
+    })
+    if (dayView?.viewer !== 'PLAYER') return
+    expect(dayView.vote).toBeUndefined()
+  })
+})
+
 describe('moderator projection', () => {
   it('returns a detached full server snapshot', () => {
     const game = createGame()

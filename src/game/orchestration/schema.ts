@@ -26,6 +26,12 @@ export const gameCommandSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('CONFIRM_NIGHT_RESOLUTION') }),
   z.object({ type: z.literal('START_VOTE') }),
   z.object({
+    type: z.literal('SUBMIT_VOTE'),
+    // SELF mode: player bỏ phiếu trên thiết bị. targetId NULL = phiếu trắng.
+    actorId: z.string().min(1),
+    targetId: z.string().min(1).nullable(),
+  }),
+  z.object({
     type: z.literal('SUBMIT_VOTE_RESULT'),
     tied: z.boolean(),
     selectedPlayerId: z.string().min(1).nullable(),
@@ -89,6 +95,13 @@ export const gameEventSchema = z.discriminatedUnion('type', [
     type: z.literal('VOTE_SUBMITTED'),
     tied: z.boolean(),
     selectedPlayerId: z.string().min(1).nullable(),
+  }),
+  z.object({
+    // SELF mode: audit-only — projection KHÔNG đưa vào public/private history
+    // để nội dung phiếu không lộ trước khi bot tally xong (chống bandwagon).
+    type: z.literal('VOTE_CAST'),
+    actorId: z.string().min(1),
+    targetId: z.string().min(1).nullable(),
   }),
   z.object({
     type: z.literal('VOTE_RESOLVED'),

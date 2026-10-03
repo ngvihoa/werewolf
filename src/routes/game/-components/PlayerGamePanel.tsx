@@ -13,6 +13,7 @@ import { GameOverResult } from './GameOverResult'
 import { HunterShotForm } from './HunterShotForm'
 import { RoleCardDialog } from './RoleCardDialog'
 import { SecretNotice } from './SecretNotice'
+import { SelfVoteForm } from './SelfVoteForm'
 import { SecretRow } from './SecretRow'
 
 /**
@@ -97,20 +98,23 @@ export function PlayerGamePanel({
       <h2 className="text-balance text-2xl font-medium tracking-tight text-ink sm:text-3xl">
         {canSubmit && activeStep
           ? actionPrompt(activeStep)
-          : canSubmit
-            ? 'Đến lượt bạn hành động'
-            : !view.me.alive
-              ? 'Bạn đang quan sát'
-              : playerWaitingTitle(view.phase)}
+          : view.vote?.canVote
+            ? 'Đến lượt bạn biểu quyết'
+            : canSubmit
+              ? 'Đến lượt bạn hành động'
+              : !view.me.alive
+                ? 'Bạn đang quan sát'
+                : playerWaitingTitle(view.phase)}
       </h2>
 
-      {/* Ban ngày chờ biểu quyết = khoảng lặng có chủ ý: mời thảo luận + 
+      {/* Ban ngày chờ biểu quyết = khoảng lặng có chủ ý: mời thảo luận +
           nhịp sống làng, không nhồi helper text. */}
       {view.phase === 'DAY' && !canSubmit && view.me.alive ? (
         <div className="flex flex-col items-center gap-2 py-6 text-center">
           <p className="max-w-[36ch] text-pretty text-base/7 text-ink-muted">
-            Hãy bàn bạc với cả làng: ai hành động khả nghi? Quản trò sẽ mở biểu
-            quyết khi bàn chơi sẵn sàng.
+            {view.gameMode === 'SELF'
+              ? 'Hãy bàn bạc với cả làng: ai hành động khả nghi? Khi đủ người sẵn sàng, biểu quyết sẽ mở.'
+              : 'Hãy bàn bạc với cả làng: ai hành động khả nghi? Quản trò sẽ mở biểu quyết khi bàn chơi sẵn sàng.'}
           </p>
           <p className="font-mono text-sm tabular-nums text-ink-subtle">
             {view.players.filter((player) => player.alive).length} người còn
@@ -172,6 +176,14 @@ export function PlayerGamePanel({
       ) : null}
       {canSubmit && view.phase === 'HUNTER_SHOT' ? (
         <HunterShotForm
+          view={view}
+          pending={pending}
+          error={error}
+          onCommand={onCommand}
+        />
+      ) : null}
+      {view.vote && view.me.alive ? (
+        <SelfVoteForm
           view={view}
           pending={pending}
           error={error}

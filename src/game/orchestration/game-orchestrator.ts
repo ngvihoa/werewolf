@@ -59,6 +59,8 @@ export function executeCommand(
       return confirmNightResolution(state, events)
     case 'START_VOTE':
       return startVote(state, events)
+    case 'SUBMIT_VOTE':
+      return submitVote(state, command.actorId, command.targetId, events)
     case 'SUBMIT_VOTE_RESULT':
       return submitVoteResult(
         state,
@@ -285,8 +287,71 @@ function startVote(
   events: GameEvent[],
 ): Result<CommandOutcome> {
   if (state.phase !== 'DAY') return invalidPhase('DAY', state.phase)
+  // Attempt mới = phiếu mới; bỏ phiếu trắng các attempt cũ không có giá trị.
+  state.voteSubmissions = {}
   transitionPhase(state, 'VOTE', events)
   return success(state, events)
+}
+
+function submitVote(
+  state: GameState,
+  actorId: string,
+  targetId: string | null,
+  events: GameEvent[],
+): Result<CommandOutcome> {
+  if (state.phase !== 'VOTE') return invalidPhase('VOTE', state.phase)
+  const actor = state.players.find((player) => player.id === actorId)
+  if (!actor?.alive) {
+    return failure('ACTOR_DEAD', 'Only a living player can vote')
+  }
+  if (state.voteSubmissions?.[actorId] !== undefined) {
+    return failure('INVALID_ACTION', 'Player has already voted this attempt')
+  }
+  if (targetId !== null) {
+    const target = state.players.find((player) => player.id === targetId)
+    if (!target?.alive) {
+      return failure('INVALID_TARGET', 'Vote target must be a living player')
+    }
+  }
+
+  const voteSubmissions = (state.voteSubmissions ??= {})
+  voteSubmissions[actorId] = targetId
+  // Audit-only: projection không lộ phiếu cho client nào trước resolution.
+  events.push({ type: 'VOTE_CAST', actorId, targetId })
+  return success(state, events)
+}
+
+// SELF mode: bot tally khi mọi người sống đã bỏ phiếu. Ưu tiên phiếu cao
+// nhất duy nhất; không ai dẫn tuyệt đối (hoặc cả bàn trắng) là hòa theo R14.
+export function tallyVotes(state: GameState): {
+  tied: boolean
+  selectedPlayerId: string | null
+} {
+  const counts = new Map<string, number>()
+  for (const player of state.players) {
+    if (!player.alive) continue
+    const targetId = state.voteSubmissions?.[player.id]
+    if (!targetId) continue
+    counts.set(targetId, (counts.get(targetId) ?? 0) + 1)
+  }
+
+  let bestTargetId: string | null = null
+  let bestCount = 0
+  let leadIsUnique = false
+  for (const [targetId, count] of counts) {
+    if (count > bestCount) {
+      bestTargetId = targetId
+      bestCount = count
+      leadIsUnique = true
+    } else if (count === bestCount) {
+      leadIsUnique = false
+    }
+  }
+
+  if (!leadIsUnique || bestCount === 0) {
+    return { tied: true, selectedPlayerId: null }
+  }
+  return { tied: false, selectedPlayerId: bestTargetId }
 }
 
 function submitVoteResult(
@@ -340,6 +405,8 @@ function confirmVoteResult(
 
   if (resolution.outcome === 'REVOTE') {
     state.voteAttempt = resolution.nextAttempt
+    // Attempt mới = phiếu mới (R14: revote đúng một lần).
+    state.voteSubmissions = {}
     transitionPhase(state, 'VOTE', events)
     return success(state, events)
   }
@@ -486,6 +553,7 @@ function transitionAfterElimination(
     state.round += 1
     state.voteAttempt = 1
     state.confirmedNightActions = []
+    state.voteSubmissions = {}
     state.queue = createQueue(state.players, state.round)
     transitionPhase(state, 'NIGHT', events)
     activateNextRunnableStep(state.queue, state.players, events)

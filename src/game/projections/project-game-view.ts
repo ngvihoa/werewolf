@@ -153,6 +153,7 @@ export function projectGameView(
           ? (game.state?.lastCourtesanTargetId ?? null)
           : null,
     },
+    vote: projectSelfVote(game, lobbyPlayer.id),
     publicHistory: history.flatMap((entry) =>
       entry.publicEntry ? [entry.publicEntry] : [],
     ),
@@ -161,6 +162,35 @@ export function projectGameView(
     ),
   }
   return view
+}
+
+// R20: phiếu chỉ hiện count + phiếu của chính mình — không lộ ai bỏ ai trước
+// resolution để tránh bandwagon khi cả bàn ngồi cạnh nhau.
+function projectSelfVote(
+  game: LocalGame,
+  playerId: string,
+): PlayerGameView['vote'] {
+  const state = game.state
+  if (game.mode !== 'SELF' || state?.phase !== 'VOTE') return undefined
+
+  const submissions = state.voteSubmissions ?? {}
+  const alivePlayers = state.players.filter((player) => player.alive)
+  return {
+    canVote: domainAlive(game, playerId) && submissions[playerId] === undefined,
+    hasVoted: submissions[playerId] !== undefined,
+    myTargetId: submissions[playerId] ?? null,
+    votedCount: alivePlayers.filter(
+      (player) => submissions[player.id] !== undefined,
+    ).length,
+    aliveCount: alivePlayers.length,
+    voteAttempt: state.voteAttempt,
+  }
+}
+
+function domainAlive(game: LocalGame, playerId: string): boolean {
+  return (
+    game.state?.players.find((player) => player.id === playerId)?.alive ?? false
+  )
 }
 
 function projectLover(

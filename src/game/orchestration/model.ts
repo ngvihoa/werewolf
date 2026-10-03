@@ -35,6 +35,9 @@ export type GameState = {
   voteAttempt: 1 | 2
   pendingVote: VoteSubmission | null
   pendingVoteResolution: VoteResolution | null
+  // SELF mode: phiếu bỏ trên thiết bị của attempt hiện tại,
+  // map playerId -> targetId (NULL = phiếu trắng). Reset mỗi attempt.
+  voteSubmissions?: Record<string, string | null>
   pendingHunterShot?: {
     hunterId: string
     targetId: string | null
