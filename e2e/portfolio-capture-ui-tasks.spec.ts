@@ -26,8 +26,10 @@ const OUT_DIR = join(
   process.env.CAPTURE_DIR ?? 'screenshots/ui-tasks-2026-10-03',
 )
 const VIEWPORT = {
-  width: Number(process.env.CAPTURE_W ?? 390),
-  height: Number(process.env.CAPTURE_H ?? 844),
+  viewport: {
+    width: Number(process.env.CAPTURE_W ?? 390),
+    height: Number(process.env.CAPTURE_H ?? 844),
+  },
   deviceScaleFactor: Number(process.env.CAPTURE_DPR ?? 2),
 }
 
