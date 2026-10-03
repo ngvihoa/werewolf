@@ -76,6 +76,32 @@ function phaseEvent(phase: GamePhase): string {
   )[phase]
 }
 
+/**
+ * Tông màu icon theo pha — chỉ là nhấn nghĩa trang trí gắn với tranh nền
+ * (amber = ngày, indigo = đêm, sky = gần sáng, orange = biểu quyết, lantern
+ * = kết thúc); KHÔNG phải semantic status — bảng mapping màu xem
+ * docs/revamp-ui-ux.md mục semantic color.
+ */
+function phaseIconTint(phase: GamePhase): string {
+  if (phase === 'NIGHT') {
+    return 'bg-indigo-300/10 text-indigo-200 ring-indigo-300/25'
+  }
+  if (phase === 'NIGHT_RESOLUTION') {
+    return 'bg-sky-300/10 text-sky-200 ring-sky-300/25'
+  }
+  if (
+    phase === 'VOTE' ||
+    phase === 'VOTE_RESOLUTION' ||
+    phase === 'HUNTER_SHOT'
+  ) {
+    return 'bg-orange-300/10 text-orange-200 ring-orange-300/25'
+  }
+  if (phase === 'GAME_OVER') {
+    return 'bg-lantern/10 text-lantern ring-lantern/25'
+  }
+  return 'bg-amber-300/10 text-amber-200 ring-amber-300/25'
+}
+
 export function PhaseIndicator({
   phase,
   round,
@@ -83,16 +109,11 @@ export function PhaseIndicator({
   phase: GamePhase
   round: number
 }) {
-  const isDay = phaseBackdrop(phase) === 'day'
-  const Icon = isDay ? Sun : Moon
+  const Icon = phaseBackdrop(phase) === 'day' ? Sun : Moon
   return (
     <div className="flex items-center gap-4">
       <span
-        className={`grid size-12 shrink-0 place-items-center rounded-full ring-1 ${
-          isDay
-            ? 'bg-amber-300/10 text-amber-200 ring-amber-300/25'
-            : 'bg-surface text-ink ring-line'
-        }`}
+        className={`grid size-12 shrink-0 place-items-center rounded-full ring-1 ${phaseIconTint(phase)}`}
       >
         <Icon aria-hidden="true" className="size-6" strokeWidth={1.5} />
       </span>
