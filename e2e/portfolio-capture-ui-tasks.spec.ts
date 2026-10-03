@@ -259,16 +259,24 @@ test('điều phối ván thật và chụp các màn của vòng task UI 2026-1
         timeout: 4_000,
       })
     }).toPass({ timeout: 90_000 })
-    // Sau vòng task UI, lịch sử nằm trong disclosure thu gọn — bấm mở nếu cần.
+    // Mở kết quả soi, tương thích 3 bản UI: (1) section card — nút "Xem kết
+    // quả" ngay; (2) disclosure + card — bấm toggle rồi nút; (3) disclosure +
+    // SecretRow — bấm toggle rồi chạm vào dòng kết quả.
     const historyToggle = seer.page.getByRole('button', { name: /Lịch sử soi/ })
-    if (
-      (await historyToggle.count()) > 0 &&
-      (await seer.page.getByRole('button', { name: 'Xem kết quả' }).count()) ===
-        0
-    ) {
+    if ((await historyToggle.count()) > 0) {
       await historyToggle.click()
     }
-    await seer.page.getByRole('button', { name: 'Xem kết quả' }).click()
+    const revealCardButton = seer.page.getByRole('button', {
+      name: 'Xem kết quả',
+    })
+    if ((await revealCardButton.count()) > 0) {
+      await revealCardButton.click()
+    } else {
+      await seer.page
+        .getByRole('button', { name: /Lần soi/ })
+        .first()
+        .click()
+    }
     await shoot(seer.page, '05-dem-1-tien-tri-lich-su')
 
     await submitNightAction(wolf1, { targetName: villager1.name })

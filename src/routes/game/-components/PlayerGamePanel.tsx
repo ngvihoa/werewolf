@@ -13,39 +13,48 @@ import { GameOverResult } from './GameOverResult'
 import { HunterShotForm } from './HunterShotForm'
 import { RoleCardDialog } from './RoleCardDialog'
 import { SecretNotice } from './SecretNotice'
+import { SecretRow } from './SecretRow'
 
 /**
  * Khối lịch sử (soi / dùng bình) — nội dung phụ nên nằm gọn dưới quyết định
- * hiện tại: mặc định thu gọn, mở khi cần tra lại.
+ * hiện tại: mặc định thu gọn, mở khi cần tra lại. Kết quả bên trong là các
+ * dòng SecretRow; dòng cảnh báo riêng tư hiển thị MỘT lần dưới tiêu đề.
  */
 function HistoryDisclosure({
   label,
+  hint,
   children,
 }: {
   label: string
+  hint?: string
   children: ReactNode
 }) {
   const [open, setOpen] = useState(false)
   return (
     <div className="flex flex-col gap-4">
-      <button
-        aria-expanded={open}
-        className="flex min-h-11 items-center justify-between gap-3 text-left"
-        type="button"
-        onClick={() => setOpen((current) => !current)}
-      >
-        <span className="font-mono text-sm tracking-wide text-accent uppercase">
-          {label}
-        </span>
-        <ChevronRight
-          aria-hidden="true"
-          className={cn(
-            'size-4 shrink-0 text-ink-muted transition-transform',
-            open && 'rotate-90',
-          )}
-        />
-      </button>
-      {open ? children : null}
+      <div className="flex flex-col gap-0.5">
+        <button
+          aria-expanded={open}
+          className="flex min-h-11 items-center justify-between gap-3 text-left"
+          type="button"
+          onClick={() => setOpen((current) => !current)}
+        >
+          <span className="font-mono text-sm tracking-wide text-accent uppercase">
+            {label}
+          </span>
+          <ChevronRight
+            aria-hidden="true"
+            className={cn(
+              'size-4 shrink-0 text-ink-muted transition-transform',
+              open && 'rotate-90',
+            )}
+          />
+        </button>
+        {hint ? <p className="text-sm/6 text-ink-subtle">{hint}</p> : null}
+      </div>
+      {open ? (
+        <div className="flex flex-col divide-y divide-line">{children}</div>
+      ) : null}
     </div>
   )
 }
@@ -170,19 +179,25 @@ export function PlayerGamePanel({
         />
       ) : null}
       {/* Lịch sử riêng là thông tin phụ — thu gọn dưới quyết định hiện tại,
-          mở khi cần tra lại. */}
+          mở khi cần tra lại. Kết quả dạng dòng SecretRow: nhãn luôn hiện,
+          chạm dòng để mở/ẩn giá trị. */}
       {seerResults.length > 0 ? (
-        <HistoryDisclosure label="Lịch sử soi">
+        <HistoryDisclosure
+          label="Lịch sử soi"
+          hint="Chỉ mở khi không có người khác nhìn màn hình."
+        >
           {seerResults.map((entry, index) =>
             entry.event.type === 'SEER_RESULT_RECORDED' ? (
-              <SecretNotice
+              <SecretRow
                 key={entry.sequence}
-                concealable
-                label={`Lần soi ${seerResults.length - index}: ${playerName(view.players, entry.event.targetPlayerId)}`}
+                label={`Lần soi ${seerResults.length - index} · ${playerName(view.players, entry.event.targetPlayerId)}`}
                 value={
                   entry.event.result === 'WEREWOLF'
                     ? 'MA SÓI'
                     : 'KHÔNG PHẢI MA SÓI'
+                }
+                valueTone={
+                  entry.event.result === 'WEREWOLF' ? 'danger' : 'success'
                 }
               />
             ) : null,
@@ -190,7 +205,10 @@ export function PlayerGamePanel({
         </HistoryDisclosure>
       ) : null}
       {witchActions.length > 0 ? (
-        <HistoryDisclosure label="Lịch sử dùng bình">
+        <HistoryDisclosure
+          label="Lịch sử dùng bình"
+          hint="Chỉ mở khi không có người khác nhìn màn hình."
+        >
           {witchActions.map((entry, index) => {
             if (
               entry.event.type !== 'OWN_NIGHT_ACTION_CONFIRMED' ||
@@ -202,22 +220,18 @@ export function PlayerGamePanel({
             const action = entry.event.action
             const uses = [
               action.heal
-                ? `Đã dùng bình cứu cho ${entry.event.healedTargetId ? playerName(view.players, entry.event.healedTargetId) : 'nạn nhân của Ma sói'}`
+                ? `Cứu ${entry.event.healedTargetId ? playerName(view.players, entry.event.healedTargetId) : 'nạn nhân của Ma sói'}`
                 : null,
               action.poisonTargetId
-                ? `Đã dùng bình độc với ${playerName(view.players, action.poisonTargetId)}`
+                ? `Độc ${playerName(view.players, action.poisonTargetId)}`
                 : null,
             ].filter((use): use is string => use !== null)
 
             return (
-              <SecretNotice
+              <SecretRow
                 key={entry.sequence}
-                concealable
-                hiddenLabel="Lịch sử dùng bình được giữ kín"
-                label={`Lượt Phù thủy ${witchActions.length - index}`}
-                value={
-                  uses.length > 0 ? uses.join(' · ') : 'Không dùng bình nào'
-                }
+                label={`Lượt ${witchActions.length - index}`}
+                value={uses.length > 0 ? uses.join(' · ') : 'Không dùng bình'}
               />
             )
           })}

@@ -288,14 +288,29 @@ test('dẫn dắt một ván Ma Sói trọn vẹn và chụp asset portfolio', a
     // 06 — Quản trò duyệt hành động (màn hình điều phối đặc trưng).
     await confirmSubmittedAction(mod, '06-quan-tro-duyet')
 
-    // Kết quả soi hiện riêng cho Tiên tri (thẻ bí mật cần bấm mở).
+    // Kết quả soi hiện riêng cho Tiên tri — tương thích cả bản card lẫn bản
+    // disclosure + SecretRow (bấm toggle nếu có, rồi nút hoặc chạm dòng).
     await expect(async () => {
       await seer.page.reload()
       await expect(seer.page.getByText('Lịch sử soi')).toBeVisible({
         timeout: 4_000,
       })
     }).toPass({ timeout: 90_000 })
-    await seer.page.getByRole('button', { name: 'Xem kết quả' }).click()
+    const historyToggle = seer.page.getByRole('button', { name: /Lịch sử soi/ })
+    if ((await historyToggle.count()) > 0) {
+      await historyToggle.click()
+    }
+    const revealCardButton = seer.page.getByRole('button', {
+      name: 'Xem kết quả',
+    })
+    if ((await revealCardButton.count()) > 0) {
+      await revealCardButton.click()
+    } else {
+      await seer.page
+        .getByRole('button', { name: /Lần soi/ })
+        .first()
+        .click()
+    }
     await shoot(seer.page, '07-tien-tri-ket-qua')
 
     // 08 — Ma sói chọn nạn nhân.
