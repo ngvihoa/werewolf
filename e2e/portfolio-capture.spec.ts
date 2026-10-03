@@ -1,9 +1,12 @@
+import type { TablePlayer } from './fixtures/table'
+import type { Page } from '@playwright/test'
+
 import { mkdirSync } from 'node:fs'
 import { join } from 'node:path'
 
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 
-import { createTable, type TablePlayer } from './fixtures/table'
+import { createTable } from './fixtures/table'
 
 // Kịch bản "đạo diễn": 9 trình duyệt chơi trọn một ván Ma Sói qua UI thật
 // (tương tác y như người chơi, không gọi API trực tiếp) và chụp lại các

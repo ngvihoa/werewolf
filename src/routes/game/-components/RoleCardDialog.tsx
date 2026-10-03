@@ -2,10 +2,9 @@ import type { Role } from '#/game/domain'
 
 import { roleAccentColor } from '#/game/presentation/role-art'
 import { roleLabel } from '#/game/presentation/labels'
-import { Eye, X } from 'lucide-react'
-import { useRef } from 'react'
-
 import { RoleCard } from '#/components/RoleCard'
+import { useRef } from 'react'
+import { Eye, X } from 'lucide-react'
 
 // Nút phụ thay cho thẻ vai cồng kềnh: trong lúc chơi vai đã xem ở sảnh chờ,
 // cần nhìn lại thì mở dialog — nhả không gian cho form hành động và bảng người chơi.
