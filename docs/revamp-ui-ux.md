@@ -340,6 +340,14 @@ tiên thấp (animation victory, kết quả cinematic) do user bỏ khỏi scop
   player là xem vai + sẵn sàng).
 - **PhaseIndicator**: tint icon theo pha — amber ngày / indigo đêm / sky gần
   sáng / orange biểu quyết / lantern kết thúc. Mở rộng component sẵn có.
+- **Tier tiêu đề màn chơi/lobby — scale theo viewport (2026-10-03)**:
+  `text-2xl sm:text-3xl` (24px mobile → 30px ≥sm) cho prompt hành động,
+  PhaseIndicator, heading lobby, kết thúc ván; "Vai trò đã được phân"
+  `text-3xl sm:text-4xl`. Điều chỉnh quyết định "tiêu đề pha ~30px" ở mục 5:
+  desktop giữ nguyên look đã duyệt, chỉ mobile tune riêng — prompt dài tiếng
+  Việt ở 390px thường về 1 dòng, nhả chiều cao cho picker + CTA. Landing/
+  rules đã stepped sẵn từ trước; ModeratorGamePanel giữ 2xl (dashboard vận
+  hành, chữ dày hơn có chủ ý).
 
 **Bảng mapping màu ngữ nghĩa (CHỐT — không đổi palette):**
 
