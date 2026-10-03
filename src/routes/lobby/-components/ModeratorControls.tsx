@@ -97,7 +97,7 @@ export function ModeratorControls({
           >
             <input
               checked={mode === value}
-              className="size-4 accent-red-600"
+              className="size-4 accent-danger"
               disabled={value === 'NO_VILLAGER' && playerCount === 15}
               name="composition-mode"
               type="radio"
@@ -141,7 +141,7 @@ export function ModeratorControls({
                   <input
                     aria-label={`Chọn ${roleLabel(role)}`}
                     checked={roleCounts[role] === 1}
-                    className="size-4 accent-red-600"
+                    className="size-4 accent-danger"
                     type="checkbox"
                     onChange={(event) =>
                       setRoleCounts((current) => ({

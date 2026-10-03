@@ -147,7 +147,7 @@ export function NightActionForm({
         <>
           <label className="flex items-center gap-3 text-base/7 text-ink-muted sm:text-sm/6">
             <input
-              className="size-5 accent-red-600 sm:size-4"
+              className="size-5 accent-danger sm:size-4"
               name="heal"
               type="checkbox"
               checked={heal}
@@ -203,7 +203,7 @@ export function NightActionForm({
           {step === 'WEREWOLF_ATTACK' && view.me.role === 'ALPHA_WEREWOLF' ? (
             <label className="flex items-start gap-3 text-base/7 text-ink-muted sm:text-sm/6">
               <input
-                className="mt-1 size-5 accent-red-600 sm:size-4"
+                className="mt-1 size-5 accent-danger sm:size-4"
                 name="enhanced"
                 type="checkbox"
                 checked={enhanced}

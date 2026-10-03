@@ -28,10 +28,6 @@ export default defineConfig({
       use: {
         viewport: { width: 1600, height: 1000 },
         deviceScaleFactor: 2,
-        recordVideo: {
-          dir: 'portfolio-assets/videos',
-          size: { width: 960, height: 600 },
-        },
       },
     },
   ],

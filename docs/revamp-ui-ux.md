@@ -318,3 +318,42 @@ trúc user chỉnh tay trong file), icon Crown/Users thành FILL silhouette
 debug: đĩa `absolute z-0` vẽ ĐÈ lên icon tĩnh (positioned element luôn
 trên static content) → icon phải bọc `relative z-10`; screenshot trống +
 DOM fill đúng = sign của layering, không phải của fill prop.
+
+## 12. Vòng task từ GPT review + semantic color mapping (2026-10-03) ✅
+
+GPT review (`docs/gpt-review-werewolf-ui-ux-improvements.md`) đã đánh giá và
+chưng cất thành 6 task không conflict tại `docs/tasks-2026-10-03.md`. Loại:
+display font (vi phạm nguyên tắc #3), role reveal điện ảnh (ngược quyết định
+"đừng quan trọng hóa thẻ role"), 8 tranh nền (scope artwork), "PlayerTile/
+PhaseHeader" xây mới (đã có PlayerToken/PhaseIndicator — chỉ mở rộng). Ưu
+tiên thấp (animation victory, kết quả cinematic) do user bỏ khỏi scope.
+
+Đã thực thi (task 1–3, 5, 6):
+
+- **Màn đêm player**: form hành động lên TRƯỚC; lịch sử soi/dùng bình thành
+  disclosure thu gọn dưới form (mất 2 header + helper); ghi chú riêng tư dời
+  về đáy cạnh nút "Xem vai trò".
+- **Ban ngày chờ**: khoảng lặng có chủ ý — lời mời thảo luận + số người còn
+  sống, không card mới (spacing-first).
+- **Lobby Quản trò**: lưới người chơi TRƯỚC khối điều khiển (đọc thành
+  configure → xem bàn → start); player side giữ controls trước (việc của
+  player là xem vai + sẵn sàng).
+- **PhaseIndicator**: tint icon theo pha — amber ngày / indigo đêm / sky gần
+  sáng / orange biểu quyết / lantern kết thúc. Mở rộng component sẵn có.
+
+**Bảng mapping màu ngữ nghĩa (CHỐT — không đổi palette):**
+
+| Class trong code          | Giá trị thực                         | Nghĩa                                                                            |
+| ------------------------- | ------------------------------------ | -------------------------------------------------------------------------------- |
+| `accent` / `text-red-300` | `--color-accent` = red-300 `#eaa9af` | nhãn mono uppercase, nhấn phụ                                                    |
+| `danger` ≡ `red-500`      | `--color-danger` = red-500 `#d95d69` | elimination, selection ring, acting dot, focus ring                              |
+| `red-600` / `red-700`     | đỏ máu đậm                           | nền CTA chính, badge đếm, hero CTA                                               |
+| `accent-danger` (input)   | = red-500                            | accent-color checkbox/radio = lựa chọn nguy hiểm (bình độc, cắn xuyên, phân vai) |
+| `success`                 | emerald-300                          | trạng thái hoàn thành                                                            |
+
+Quy ước chốt: **selection ring = danger** kể cả với Tiên tri (mọi picker
+trong game đều là hành động đe dọa/soi — "đang nhắm vào ai đó"); tint
+PhaseIndicator là trang trí theo pha, KHÔNG phải status; focus ring giữ
+`outline-red-500` (≡ danger — đổi tên token là churn thuần, không làm).
+Kèm fix: gỡ `recordVideo` chết trong `use:` của playwright.config (tsc fail
+có sẵn trên HEAD; portfolio spec tự set recordVideo trong context riêng).
