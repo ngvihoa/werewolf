@@ -348,6 +348,16 @@ tiên thấp (animation victory, kết quả cinematic) do user bỏ khỏi scop
   Việt ở 390px thường về 1 dòng, nhả chiều cao cho picker + CTA. Landing/
   rules đã stepped sẵn từ trước; ModeratorGamePanel giữ 2xl (dashboard vận
   hành, chữ dày hơn có chủ ý).
+- **Kích thước component scale theo viewport (2026-10-03)** — hai nhóm,
+  đúng 2 tiền lệ sẵn có (checkbox `size-5 sm:size-4`, body `base sm:text-sm`):
+  (a) component chạm/lặp lại — mobile giữ touch target, desktop GỌN: thẻ
+  thành viên `min-h-28 sm:min-h-24` + avatar `size-10 sm:size-9`, nút lg
+  `min-h-14 sm:min-h-12`, tile pha `size-12 sm:size-10`; (b) component tiêu
+  điểm — mobile giữ, desktop PHÓNG: thẻ bài `max-w-64 sm:max-w-72`. **Fix
+  kèm (commit `ccd37fd`): dialog "Xem vai trò" shrink-wrap từ trước** —
+  `<dialog>` không width + thẻ `w-full` co theo bề rộng text (~194px), max-w
+  không bao giờ bind; giờ container `w-80 sm:w-96` tường minh → thẻ 320/384,
+  chibi to đúng ý "nhân vật to ra". EntryGate KHÔNG đụng (brand mockup).
 
 **Bảng mapping màu ngữ nghĩa (CHỐT — không đổi palette):**
 
