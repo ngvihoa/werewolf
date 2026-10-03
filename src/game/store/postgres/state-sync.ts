@@ -11,7 +11,8 @@ export async function persistGameAction(
     gameId: string
     previousState: GameState
     command: GameCommand
-    sessionId: string
+    // NULL khi quyết định thuộc về quản trò bot (không có session).
+    sessionId: string | null
     now: Date
   },
 ): Promise<void> {

@@ -22,6 +22,7 @@ import type { GameView } from '../projections/model'
 import { gameCommandSchema } from '../orchestration/schema'
 import { projectGameView } from '../projections/project-game-view'
 import { assignRoles } from '../rules/role-assignment'
+import { runBotLoop } from '../bot/bot-moderator'
 import {
   createFirstNightState,
   executeCommand,
@@ -401,14 +402,27 @@ export class InMemoryGameStore implements GameStore {
       return failure('INVALID_GAME_STATE', outcome.error.message)
     }
 
-    game.state = outcome.value.state
+    let finalState = outcome.value.state
+    const humanEvents = outcome.value.events
+    let botEvents: GameEvent[] = []
+
+    // SELF: sau lệnh người chơi, quản trò bot chạy tới fixpoint trong cùng
+    // "transaction" — version chỉ tăng một lần cho cả thay đổi.
+    if (game.mode === 'SELF') {
+      const bot = runBotLoop(finalState)
+      if (!bot.ok) {
+        return failure('INVALID_GAME_STATE', bot.error.message)
+      }
+      finalState = bot.state
+      botEvents = bot.events
+    }
+
+    game.state = finalState
     game.version += 1
-    this.#appendEvents(
-      game,
-      session.kind,
-      session.playerId,
-      outcome.value.events,
-    )
+    this.#appendEvents(game, session.kind, session.playerId, humanEvents)
+    if (botEvents.length > 0) {
+      this.#appendEvents(game, 'SYSTEM', null, botEvents)
+    }
     const result = {
       gameId: game.id,
       version: game.version,

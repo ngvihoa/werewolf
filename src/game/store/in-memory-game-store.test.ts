@@ -525,11 +525,16 @@ describe('InMemoryGameStore self mode (không quản trò)', () => {
 
   function startSelfGame() {
     const { store, created } = createSelfGame()
-    const tokens = [created.playerSessionToken]
+    const players = [
+      { playerId: created.playerId, token: created.playerSessionToken },
+    ]
     for (const name of ['An', 'Binh', 'Cuong', 'Dung']) {
       const joined = store.joinGame(created.roomCode, name)
       if (!joined.ok) throw new Error(joined.error.message)
-      tokens.push(joined.value.playerSessionToken)
+      players.push({
+        playerId: joined.value.playerId,
+        token: joined.value.playerSessionToken,
+      })
     }
 
     // Chủ phòng phân vai bằng player session của chính mình (R24).
@@ -540,12 +545,12 @@ describe('InMemoryGameStore self mode (không quản trò)', () => {
     )
     if (!assigned.ok) throw new Error(assigned.error.message)
 
-    for (const token of tokens) {
+    for (const player of players) {
       const ready = store.setReady(
-        token,
+        player.token,
         currentVersion(store, created.gameId),
         true,
-        `self-ready-${token}`,
+        `self-ready-${player.token}`,
       )
       if (!ready.ok) throw new Error(ready.error.message)
     }
@@ -556,7 +561,7 @@ describe('InMemoryGameStore self mode (không quản trò)', () => {
       'self-start',
     )
     if (!started.ok) throw new Error(started.error.message)
-    return { store, created }
+    return { store, created, players }
   }
 
   it('tạo phòng SELF: chủ phòng là player thường và nhận player session', () => {
@@ -670,5 +675,65 @@ describe('InMemoryGameStore self mode (không quản trò)', () => {
       ok: false,
       error: { code: 'NOT_ALL_PLAYERS_READY' },
     })
+  })
+  it('SELF: một lệnh submit của player kéo theo chuỗi confirm SYSTEM của bot', () => {
+    const { store, created, players } = startSelfGame()
+    const snapshot = store.getGame(created.gameId)
+    if (!snapshot.ok) throw new Error(snapshot.error.message)
+    const seer = snapshot.value.lobbyPlayers.find(
+      (player) => player.role === 'SEER',
+    )
+    if (!seer) throw new Error('Composition is missing a seer')
+    const seerSession = players.find((player) => player.playerId === seer.id)
+    if (!seerSession) throw new Error('Seer session is missing')
+    const target = snapshot.value.lobbyPlayers.find(
+      (player) => player.id !== seer.id,
+    )
+    if (!target) throw new Error('No vote target available')
+
+    const result = store.execute({
+      gameId: created.gameId,
+      sessionToken: seerSession.token,
+      idempotencyKey: 'self-seer-submit',
+      expectedVersion: snapshot.value.version,
+      command: {
+        type: 'SUBMIT_NIGHT_ACTION',
+        action: {
+          type: 'SEER_INSPECT',
+          actorId: seer.id,
+          targetId: target.id,
+        },
+      },
+    })
+    expect(result.ok).toBe(true)
+
+    const after = store.getGame(created.gameId)
+    expect(after.ok).toBe(true)
+    if (!after.ok) return
+    const seerStep = after.value.state?.queue.find(
+      (item) => item.step === 'SEER_INSPECT',
+    )
+    // Bot confirm ngay trong cùng lệnh: step COMPLETED, step kế ACTIVE.
+    expect(seerStep?.status).toBe('COMPLETED')
+    const activeStep = after.value.state?.queue.find(
+      (item) => item.status === 'ACTIVE',
+    )
+    expect(activeStep).toBeDefined()
+
+    const events = after.value.history.map((entry) => entry.event.type)
+    expect(events).toContain('NIGHT_ACTION_CONFIRMED')
+    expect(events).toContain('SEER_RESULT_RECORDED')
+
+    // Event do người chơi submit ghi actor PLAYER; event bot ghi SYSTEM.
+    const submittedEntry = after.value.history.find(
+      (entry) => entry.event.type === 'NIGHT_ACTION_SUBMITTED',
+    )
+    expect(submittedEntry?.actor).toBe('PLAYER')
+    expect(submittedEntry?.actorPlayerId).toBe(seer.id)
+    const confirmedEntry = after.value.history.find(
+      (entry) => entry.event.type === 'NIGHT_ACTION_CONFIRMED',
+    )
+    expect(confirmedEntry?.actor).toBe('SYSTEM')
+    expect(confirmedEntry?.actorPlayerId).toBeNull()
   })
 })

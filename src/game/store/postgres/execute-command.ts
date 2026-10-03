@@ -1,6 +1,8 @@
 import type { GameMutationResult, StoreResult } from '../model'
 import type { ExecuteGameCommandInput } from '../game-store'
 import type { PostgresStoreDeps } from './shared'
+import type { GameEvent } from '../../orchestration/events'
+import type { BotStep } from '../../bot/bot-moderator'
 
 import { commandReceipts } from '#/db/schema'
 import { and, eq } from 'drizzle-orm'
@@ -8,6 +10,7 @@ import { and, eq } from 'drizzle-orm'
 import { gameMutationResultSchema, storeErrorCodeSchema } from '../schema'
 import { authorizeCommand } from '../command-authorization'
 import { executeCommand } from '../../orchestration/game-orchestrator'
+import { runBotLoop } from '../../bot/bot-moderator'
 
 import { persistGameAction, syncGamePlayers, syncGameQueue } from './state-sync'
 import { appendGameEvent, getEventTargetPlayerId } from './game-events'
@@ -95,6 +98,23 @@ export async function executeGameCommand(
       return failure(STORE_ERROR_CODE.INVALID_GAME_STATE, outcome.error.message)
     }
 
+    let finalState = outcome.value.state
+    const humanEvents = outcome.value.events
+    let botEvents: GameEvent[] = []
+    let botSteps: BotStep[] = []
+
+    // SELF: quản trò bot chạy tới fixpoint trong cùng transaction — người chơi
+    // gửi một lệnh, cả chuỗi confirm hệ thống ghi cùng một version.
+    if (game.mode === 'SELF') {
+      const bot = runBotLoop(finalState)
+      if (!bot.ok) {
+        return failure(STORE_ERROR_CODE.INVALID_GAME_STATE, bot.error.message)
+      }
+      finalState = bot.state
+      botEvents = bot.events
+      botSteps = bot.steps
+    }
+
     await persistGameAction(transaction, {
       gameId: game.id,
       previousState: game.state,
@@ -103,35 +123,56 @@ export async function executeGameCommand(
       now,
     })
 
-    await syncGamePlayers(transaction, game.id, outcome.value.state)
-    await syncGameQueue(transaction, game.id, outcome.value.state, now)
+    // Bot CONFIRM_STEP cũng phải đóng action row đang SUBMITTED; quyết định
+    // của bot không thuộc session nào nên decided_by_session_id để NULL.
+    for (const step of botSteps) {
+      if (step.command.type !== 'CONFIRM_STEP') continue
+      await persistGameAction(transaction, {
+        gameId: game.id,
+        previousState: step.previousState,
+        command: step.command,
+        sessionId: null,
+        now,
+      })
+    }
+
+    await syncGamePlayers(transaction, game.id, finalState)
+    await syncGameQueue(transaction, game.id, finalState, now)
 
     const nextVersion = await updateGameAndIncrementVersion(
       transaction,
       game,
       now,
       {
-        state: outcome.value.state,
-        status:
-          outcome.value.state.phase === 'GAME_OVER'
-            ? 'GAME_OVER'
-            : 'IN_PROGRESS',
-        phase: outcome.value.state.phase,
-        round: outcome.value.state.round,
+        state: finalState,
+        status: finalState.phase === 'GAME_OVER' ? 'GAME_OVER' : 'IN_PROGRESS',
+        phase: finalState.phase,
+        round: finalState.round,
       },
     )
 
     // Event append cùng transaction nên state, version và audit history
-    // luôn cùng thành công hoặc cùng rollback.
-    for (const event of outcome.value.events) {
+    // luôn cùng thành công hoặc cùng rollback. Event của bot ghi actor SYSTEM.
+    const eventGame = {
+      id: game.id,
+      phase: finalState.phase,
+      round: finalState.round,
+    }
+    for (const event of humanEvents) {
       await appendGameEvent(transaction, {
-        game: {
-          id: game.id,
-          phase: outcome.value.state.phase,
-          round: outcome.value.state.round,
-        },
+        game: eventGame,
         createdBy: session.kind,
         actorPlayerId: session.playerId,
+        targetPlayerId: getEventTargetPlayerId(event),
+        createdAt: now,
+        event,
+      })
+    }
+    for (const event of botEvents) {
+      await appendGameEvent(transaction, {
+        game: eventGame,
+        createdBy: 'SYSTEM',
+        actorPlayerId: null,
         targetPlayerId: getEventTargetPlayerId(event),
         createdAt: now,
         event,
