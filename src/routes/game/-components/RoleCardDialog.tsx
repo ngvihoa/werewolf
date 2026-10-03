@@ -34,10 +34,12 @@ export function RoleCardDialog({ role }: { role: Role }) {
           if (event.key === 'Escape') event.currentTarget.close()
         }}
       >
-        <div className="relative px-6 py-8">
+        {/* w-80/sm:w-96 tường minh: <dialog> shrink-wrap theo nội dung, nếu
+            chỉ dựa max-w thì w-full của thẻ co về bề rộng text (~194px). */}
+        <div className="relative w-80 py-8 sm:w-96">
           <button
             aria-label="Đóng thẻ vai"
-            className="absolute top-2 right-2 grid size-10 place-items-center rounded-full text-stone-400 transition-colors hover:bg-white/5 hover:text-stone-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500"
+            className="absolute top-2 right-2 z-10 grid size-10 place-items-center rounded-full text-stone-400 transition-colors hover:bg-white/5 hover:text-stone-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500"
             type="button"
             onClick={() => dialogRef.current?.close()}
           >
@@ -48,11 +50,7 @@ export function RoleCardDialog({ role }: { role: Role }) {
             className="pointer-events-none absolute top-1/2 left-1/2 size-72 -translate-x-1/2 -translate-y-1/2 rounded-full"
             style={{ background: `${roleAccentColor(role)}26` }}
           />
-          <RoleCard
-            className="max-w-80 sm:max-w-96"
-            defaultRevealed
-            role={role}
-          />
+          <RoleCard className="w-full" defaultRevealed role={role} />
         </div>
       </dialog>
     </>
