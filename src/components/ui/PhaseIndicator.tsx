@@ -118,7 +118,7 @@ export function PhaseIndicator({
         <Icon aria-hidden="true" className="size-6" strokeWidth={1.5} />
       </span>
       <div className="min-w-0">
-        <h2 className="text-3xl font-medium tracking-tight text-ink">
+        <h2 className="text-2xl font-medium tracking-tight text-ink sm:text-3xl">
           {phaseDisplay(phase, round)}
         </h2>
         <p className="pt-0.5 text-sm text-ink-muted">{phaseEvent(phase)}</p>

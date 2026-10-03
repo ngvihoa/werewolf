@@ -8,7 +8,7 @@ export function GameOver({ winner }: { winner: GameState['winner'] }) {
       <p className="font-mono text-sm tracking-wide text-accent uppercase">
         Ván chơi kết thúc
       </p>
-      <h2 className="text-balance text-3xl font-medium tracking-tight text-ink">
+      <h2 className="text-balance text-2xl font-medium tracking-tight text-ink sm:text-3xl">
         {winner === 'FOOL'
           ? 'Thằng ngốc chiến thắng'
           : winner === 'PIPER'

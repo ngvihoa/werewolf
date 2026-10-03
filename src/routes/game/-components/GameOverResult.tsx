@@ -66,7 +66,7 @@ export function GameOverResult({ view }: { view: PlayerGameView }) {
           >
             {won ? 'Chiến thắng' : 'Thất bại'}
           </p>
-          <h2 className="text-balance text-3xl font-medium tracking-tight text-ink">
+          <h2 className="text-balance text-2xl font-medium tracking-tight text-ink sm:text-3xl">
             {winner
               ? `${winnerDisplayName(winner)} chiến thắng`
               : 'Ván đã kết thúc'}

@@ -94,7 +94,7 @@ export function PlayerGamePanel({
 
   return (
     <div className="flex flex-col gap-8">
-      <h2 className="text-balance text-3xl font-medium tracking-tight text-ink">
+      <h2 className="text-balance text-2xl font-medium tracking-tight text-ink sm:text-3xl">
         {canSubmit && activeStep
           ? actionPrompt(activeStep)
           : canSubmit

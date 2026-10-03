@@ -23,7 +23,7 @@ export function PlayerControls({
         <p className="font-mono text-sm tracking-wide text-accent uppercase">
           Đang chờ Quản trò
         </p>
-        <h2 className="text-balance text-3xl font-medium tracking-tight text-ink">
+        <h2 className="text-balance text-2xl font-medium tracking-tight text-ink sm:text-3xl">
           Vai trò chưa được phân
         </h2>
         <p className="text-pretty text-base/7 text-ink-muted sm:text-sm/6">
@@ -40,7 +40,7 @@ export function PlayerControls({
         <p className="font-mono text-sm tracking-wide text-accent uppercase">
           Vai của bạn
         </p>
-        <h2 className="text-4xl font-medium tracking-tight text-ink">
+        <h2 className="text-3xl font-medium tracking-tight text-ink sm:text-4xl">
           Vai trò đã được phân
         </h2>
         <p className="text-pretty text-base/7 text-ink-muted sm:text-sm/6">

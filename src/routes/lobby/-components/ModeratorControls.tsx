@@ -59,7 +59,7 @@ export function ModeratorControls({
         <p className="font-mono text-sm tracking-wide text-red-300 uppercase">
           Điều khiển sảnh
         </p>
-        <h2 className="text-balance text-3xl font-medium tracking-tight text-stone-50">
+        <h2 className="text-balance text-2xl font-medium tracking-tight text-stone-50 sm:text-3xl">
           Chuẩn bị trước khi đêm xuống
         </h2>
         <p className="text-pretty text-base/7 text-stone-400 sm:text-sm/6">
