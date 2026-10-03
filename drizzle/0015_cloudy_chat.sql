@@ -1,0 +1,1 @@
+ALTER TABLE "game_players" ADD COLUMN "left_at" timestamp with time zone;

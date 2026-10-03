@@ -263,15 +263,20 @@ export class InMemoryGameStore implements GameStore {
       return failure('GAME_ALREADY_STARTED', 'Game has already started')
     }
 
+    // R23: người đã rời (lobby) không nhận vai — composition tính trên số
+    // người còn tham gia.
+    const assignablePlayers = game.lobbyPlayers.filter(
+      (player) => !player.leftAt,
+    )
     const assigned = assignRoles(
-      game.lobbyPlayers.map((player) => player.id),
+      assignablePlayers.map((player) => player.id),
       composition,
       this.#randomIndex,
     )
     if (!assigned.ok) {
       return failure('INVALID_GAME_STATE', assigned.error.message)
     }
-    for (const player of game.lobbyPlayers) {
+    for (const player of assignablePlayers) {
       player.role = assigned.value.get(player.id) ?? null
       player.ready = false
     }
@@ -305,18 +310,21 @@ export class InMemoryGameStore implements GameStore {
     if (game.state) {
       return failure('GAME_ALREADY_STARTED', 'Game has already started')
     }
-    if (game.lobbyPlayers.some((player) => !player.role)) {
+    // R23: người đã rời không tham gia ván — không chặn ready-check, không
+    // nhận vai ảo trong domain state.
+    const participants = game.lobbyPlayers.filter((player) => !player.leftAt)
+    if (participants.some((player) => !player.role)) {
       return failure(
         'ROLES_NOT_ASSIGNED',
         'Roles must be assigned before start',
       )
     }
-    if (game.lobbyPlayers.some((player) => !player.ready)) {
+    if (participants.some((player) => !player.ready)) {
       return failure('NOT_ALL_PLAYERS_READY', 'Every player must be ready')
     }
 
     const players: Player[] = []
-    for (const player of game.lobbyPlayers) {
+    for (const player of participants) {
       if (!player.role) {
         return failure(
           'ROLES_NOT_ASSIGNED',
@@ -359,11 +367,94 @@ export class InMemoryGameStore implements GameStore {
     for (const player of game.lobbyPlayers) {
       player.role = null
       player.ready = false
+      // R23: ván mới — ai rời ván cũ cũng quay lại sảnh bình thường.
+      player.leftAt = null
     }
     game.version += 1
     this.#appendEvents(game, session.kind, session.playerId, [
       { type: 'MATCH_RESET' },
     ])
+    const result = { gameId: game.id, version: game.version }
+    this.#commandReceipts.set(receiptKey, { request, result })
+    return success(result)
+  }
+
+  // R23 (SELF): rời game không mark dead — domain state chỉ đổi qua bot
+  // (skip step/vote của người rời). Event PLAYER_LEFT_GAME chỉ mang hiển thị.
+  leaveGame(
+    sessionToken: string,
+    expectedVersion: number,
+    idempotencyKey: string,
+  ): StoreResult<GameMutationResult> {
+    const resolved = this.#resolveSession(sessionToken)
+    if (!resolved.ok) return resolved
+    const { game, session } = resolved.value
+    const receiptKey = `${session.token}:${idempotencyKey}`
+    const request = JSON.stringify({ type: 'LEAVE_GAME', expectedVersion })
+    const receipt = this.#commandReceipts.get(receiptKey)
+    if (receipt) return replayReceipt(receipt, request)
+
+    if (game.version !== expectedVersion) {
+      return failure('STALE_VERSION', 'Game version is stale')
+    }
+    if (game.mode !== 'SELF') {
+      return failure(
+        'NOT_AUTHORIZED',
+        'Leaving is only available in self-moderated games',
+      )
+    }
+    if (session.kind !== 'PLAYER' || !session.playerId) {
+      return failure('NOT_AUTHORIZED', 'Only a player can leave the game')
+    }
+    if (game.state?.phase === 'GAME_OVER') {
+      return failure('INVALID_GAME_STATE', 'Game is already over')
+    }
+
+    const player = game.lobbyPlayers.find(
+      (candidate) => candidate.id === session.playerId,
+    )
+    if (!player) {
+      return failure('INVALID_GAME_STATE', 'Session player is missing')
+    }
+    if (player.leftAt) {
+      return failure('INVALID_GAME_STATE', 'Player has already left')
+    }
+
+    // Bot loop chạy trên bản clone trước khi commit: failure giữa chừng không
+    // để lại nửa trái (leftAt đã set mà state chưa skip).
+    let nextState = game.state
+    let botEvents: GameEvent[] = []
+    if (game.state) {
+      const now = this.#now()
+      const leftPlayerIds = [
+        ...game.lobbyPlayers
+          .filter((candidate) => candidate.leftAt)
+          .map((candidate) => candidate.id),
+        player.id,
+      ]
+      const bot = runBotLoop(structuredClone(game.state), {
+        now,
+        leftPlayerIds,
+      })
+      if (!bot.ok) {
+        return failure('INVALID_GAME_STATE', bot.error.message)
+      }
+      nextState = bot.state
+      stampDiscussionDeadline(nextState, now)
+      stampWaitingDeadline(nextState, now)
+      botEvents = bot.events
+    }
+
+    player.leftAt = this.#now().toISOString()
+    game.state = nextState
+    game.version += 1
+    this.#appendEvents(game, 'PLAYER', player.id, [
+      { type: 'PLAYER_LEFT_GAME', playerId: player.id },
+    ])
+    if (botEvents.length > 0) {
+      this.#appendEvents(game, 'SYSTEM', null, botEvents)
+    }
+
     const result = { gameId: game.id, version: game.version }
     this.#commandReceipts.set(receiptKey, { request, result })
     return success(result)
@@ -402,6 +493,27 @@ export class InMemoryGameStore implements GameStore {
 
     const authorization = authorizeCommand(session, input.command)
     if (!authorization.ok) return authorization
+    // R23: player chỉ được END_GAME khi là chủ phòng ở SELF.
+    if (input.command.type === 'END_GAME' && session.kind === 'PLAYER') {
+      if (game.mode !== 'SELF' || game.hostPlayerId !== session.playerId) {
+        return failure('NOT_AUTHORIZED', 'Only the host can end the game early')
+      }
+    }
+    // R23: người đã rời không hành động/bỏ phiếu nữa (session cũ chỉ còn xem)
+    // — trừ END_GAME: chủ phòng rời vẫn giữ quyền kết thúc ván (host đã kiểm
+    // ở trên, player thường đã bị chặn).
+    if (
+      input.command.type !== 'END_GAME' &&
+      session.kind === 'PLAYER' &&
+      game.mode === 'SELF'
+    ) {
+      const actor = game.lobbyPlayers.find(
+        (candidate) => candidate.id === session.playerId,
+      )
+      if (actor?.leftAt) {
+        return failure('NOT_AUTHORIZED', 'Player has left the game')
+      }
+    }
     const outcome = executeCommand(game.state, input.command)
     if (!outcome.ok) {
       return failure('INVALID_GAME_STATE', outcome.error.message)
@@ -419,7 +531,10 @@ export class InMemoryGameStore implements GameStore {
       // thường được tạo bên trong loop bởi chính bot.
       stampDiscussionDeadline(finalState, now)
       stampWaitingDeadline(finalState, now)
-      const bot = runBotLoop(finalState, { now })
+      const bot = runBotLoop(finalState, {
+        now,
+        leftPlayerIds: this.#leftPlayerIds(game),
+      })
       if (!bot.ok) {
         return failure('INVALID_GAME_STATE', bot.error.message)
       }
@@ -464,7 +579,10 @@ export class InMemoryGameStore implements GameStore {
     const now = this.#now()
     stampDiscussionDeadline(state, now)
     stampWaitingDeadline(state, now)
-    const bot = runBotLoop(state, { now })
+    const bot = runBotLoop(state, {
+      now,
+      leftPlayerIds: this.#leftPlayerIds(game),
+    })
     if (!bot.ok) {
       return failure('INVALID_GAME_STATE', bot.error.message)
     }
@@ -529,6 +647,13 @@ export class InMemoryGameStore implements GameStore {
     const game = this.#games.get(session.gameId)
     if (!game) return failure('GAME_NOT_FOUND', 'Session game does not exist')
     return success({ game, session })
+  }
+
+  // R23: danh sách player đã rời — bot dùng để skip step/abstain phiếu.
+  #leftPlayerIds(game: LocalGame): string[] {
+    return game.lobbyPlayers
+      .filter((player) => player.leftAt)
+      .map((player) => player.id)
   }
 
   // MODERATED: chỉ Quản trò điều khiển sảnh. SELF: chủ phòng (player tạo

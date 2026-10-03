@@ -13,6 +13,10 @@ const PLAYER_COMMANDS = new Set<GameCommand['type']>([
   'SUBMIT_VOTE_CONSENT',
 ])
 
+// R23: kết thúc ván sớm — Quản trò (MODERATED) hoặc chủ phòng (SELF).
+// Player gửi END_GAME qua đây; store kiểm tra host theo mode của game.
+const DUAL_ACTOR_COMMANDS = new Set<GameCommand['type']>(['END_GAME'])
+
 // Authorization là application policy dùng chung cho mọi GameStore.
 // Rule engine phía sau chỉ kiểm tra luật chơi, không xác thực session.
 export function authorizeCommand(
@@ -39,6 +43,15 @@ export function authorizeCommand(
     }
 
     return { ok: true, value: true }
+  }
+
+  if (DUAL_ACTOR_COMMANDS.has(command.type)) {
+    // Moderator luôn được; player phải là chủ phòng — store kiểm tra phần đó
+    // vì cần biết game mode (chức năng này không có ở session).
+    if (session.kind === 'MODERATOR' || session.kind === 'PLAYER') {
+      return { ok: true, value: true }
+    }
+    return failure('Moderator or host session is required')
   }
 
   return session.kind === 'MODERATOR'

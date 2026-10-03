@@ -109,6 +109,17 @@ export interface GameStore {
   ): Awaitable<StoreResult<GameMutationResult>>
 
   /**
+   * R23 (SELF) — player rời game giữa ván: không mark dead, vẫn xem được view
+   * qua session cũ; action/vote còn thiếu do bot tự skip/abstain. Ở lobby,
+   * người rời bị loại khỏi phân vai và ready-check.
+   */
+  leaveGame(
+    sessionToken: string,
+    expectedVersion: number,
+    idempotencyKey: string,
+  ): Awaitable<StoreResult<GameMutationResult>>
+
+  /**
    * Thực thi một lệnh bất kỳ xảy ra trong một đêm
    * @param input Thông tin lệnh
    * @returns Kết quả thực thi lệnh

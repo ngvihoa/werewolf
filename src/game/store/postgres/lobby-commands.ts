@@ -7,8 +7,9 @@ import type {
 import type { RoleCompositionSelection } from '../../domain'
 import type { PostgresStoreDeps } from './shared'
 import type { CreateGameInput } from '../game-store'
+import type { GameEvent } from '../../orchestration/events'
 
-import { and, desc, eq } from 'drizzle-orm'
+import { and, desc, eq, isNull } from 'drizzle-orm'
 import {
   gameQueueSteps,
   gameSessions,
@@ -25,14 +26,21 @@ import {
   assignRoles as assignRolesToPlayers,
   validateRoleComposition,
 } from '../../rules/role-assignment'
+import {
+  stampDiscussionDeadline,
+  stampWaitingDeadline,
+  runBotLoop,
+} from '../../bot/bot-moderator'
 
 import { isDuplicateDisplayNameCollision, isRoomCodeCollision } from './errors'
-import { appendGameEvent } from './game-events'
+import { persistGameAction, syncGamePlayers, syncGameQueue } from './state-sync'
+import { appendGameEvent, getEventTargetPlayerId } from './game-events'
 import { failure } from './shared'
 import {
   updateGameAndIncrementVersion,
   validateLobbyMutation,
   findActiveSession,
+  findLeftPlayerIds,
   isGameController,
   lockGame,
 } from './sessions'
@@ -511,6 +519,8 @@ export async function assignRoles(
 
     const game = gameResult.value
 
+    // R23: người đã rời (lobby) không nhận vai — composition tính trên số
+    // người còn tham gia.
     const players = await transaction
       .select({
         id: gamePlayers.id,
@@ -520,6 +530,7 @@ export async function assignRoles(
         and(
           eq(gamePlayers.gameId, game.id),
           eq(gamePlayers.isModerator, false),
+          isNull(gamePlayers.leftAt),
         ),
       )
 
@@ -655,6 +666,8 @@ export async function startGame(
 
     const game = gameResult.value
 
+    // R23: người đã rời không tham gia ván — không chặn ready-check, không
+    // nhận vai ảo trong domain state.
     const players = await transaction
       .select({
         id: gamePlayers.id,
@@ -669,6 +682,7 @@ export async function startGame(
         and(
           eq(gamePlayers.gameId, game.id),
           eq(gamePlayers.isModerator, false),
+          isNull(gamePlayers.leftAt),
         ),
       )
 
@@ -825,7 +839,14 @@ export async function rematch(
       .where(eq(gameQueueSteps.gameId, game.id))
     await transaction
       .update(gamePlayers)
-      .set({ role: null, abilityState: null, isReady: false, isAlive: true })
+      .set({
+        role: null,
+        abilityState: null,
+        isReady: false,
+        isAlive: true,
+        // R23: ván mới — ai rời ván cũ cũng quay lại sảnh bình thường.
+        leftAt: null,
+      })
       .where(eq(gamePlayers.gameId, game.id))
     await appendGameEvent(transaction, {
       game: { id: game.id, phase: 'SETUP', round: 0 },
@@ -847,6 +868,189 @@ export async function rematch(
       idempotencyKey,
       requestHash,
       commandType: 'REMATCH',
+      expectedVersion,
+      result,
+    })
+    return { ok: true as const, value: result }
+  })
+}
+
+// R23 (SELF): player rời game giữa ván — không mark dead (domain state chỉ
+// đổi qua bot skip step/vote của người rời), không thu hồi session nên quay
+// lại vẫn xem được view. Ở lobby, người rời bị loại khỏi phân vai/ready-check.
+export async function leaveGame(
+  deps: PostgresStoreDeps,
+  sessionToken: string,
+  expectedVersion: number,
+  idempotencyKey: string,
+): Promise<StoreResult<GameMutationResult>> {
+  const { database } = deps
+  const sessionTokenHash = deps.hashSessionToken(sessionToken)
+  const now = deps.now()
+
+  return database.transaction(async (transaction) => {
+    const session = await findActiveSession(transaction, sessionTokenHash, now)
+    if (!session) {
+      return failure(
+        STORE_ERROR_CODE.SESSION_NOT_FOUND,
+        'Session does not exist or is no longer active',
+      )
+    }
+    if (session.kind !== 'PLAYER' || !session.playerId) {
+      return failure(
+        STORE_ERROR_CODE.NOT_AUTHORIZED,
+        'Only a player can leave the game',
+      )
+    }
+
+    const lockedGame = await lockGame(transaction, session.gameId)
+
+    const requestHash = hashMutationRequest({
+      type: 'LEAVE_GAME',
+      expectedVersion,
+    })
+    const replay = await replayCommandReceipt(
+      transaction,
+      session.id,
+      idempotencyKey,
+      requestHash,
+    )
+    if (replay) return replay
+
+    if (!lockedGame) {
+      return failure(STORE_ERROR_CODE.GAME_NOT_FOUND, 'Game not found')
+    }
+    if (lockedGame.mode !== 'SELF') {
+      return failure(
+        STORE_ERROR_CODE.NOT_AUTHORIZED,
+        'Leaving is only available in self-moderated games',
+      )
+    }
+    if (lockedGame.version !== expectedVersion) {
+      return failure(STORE_ERROR_CODE.STALE_VERSION, 'Game version is stale')
+    }
+    if (lockedGame.status === 'GAME_OVER') {
+      return failure(
+        STORE_ERROR_CODE.INVALID_GAME_STATE,
+        'Game is already over',
+      )
+    }
+
+    const [player] = await transaction
+      .select({ id: gamePlayers.id, leftAt: gamePlayers.leftAt })
+      .from(gamePlayers)
+      .where(
+        and(
+          eq(gamePlayers.gameId, lockedGame.id),
+          eq(gamePlayers.id, session.playerId),
+        ),
+      )
+      .limit(1)
+
+    if (!player) {
+      return failure(
+        STORE_ERROR_CODE.INVALID_GAME_STATE,
+        'Session player is missing',
+      )
+    }
+    if (player.leftAt) {
+      return failure(
+        STORE_ERROR_CODE.INVALID_GAME_STATE,
+        'Player has already left',
+      )
+    }
+
+    await transaction
+      .update(gamePlayers)
+      .set({ leftAt: now })
+      .where(
+        and(
+          eq(gamePlayers.gameId, lockedGame.id),
+          eq(gamePlayers.id, player.id),
+        ),
+      )
+
+    // Ván đang chạy: bot skip ngay step/phát bắn còn thiếu của người vừa rời
+    // trong cùng transaction — ván không phải chờ timer (R22).
+    let finalState = lockedGame.state
+    let botEvents: GameEvent[] = []
+    if (finalState) {
+      const leftPlayerIds = await findLeftPlayerIds(transaction, lockedGame.id)
+      const bot = runBotLoop(structuredClone(finalState), {
+        now,
+        leftPlayerIds,
+      })
+      if (!bot.ok) {
+        return failure(STORE_ERROR_CODE.INVALID_GAME_STATE, bot.error.message)
+      }
+      finalState = bot.state
+      stampDiscussionDeadline(finalState, now)
+      stampWaitingDeadline(finalState, now)
+      botEvents = bot.events
+
+      // Bot CONFIRM_STEP (nếu có) đóng action row SUBMITTED với session NULL.
+      for (const step of bot.steps) {
+        if (step.command.type !== 'CONFIRM_STEP') continue
+        await persistGameAction(transaction, {
+          gameId: lockedGame.id,
+          previousState: step.previousState,
+          command: step.command,
+          sessionId: null,
+          now,
+        })
+      }
+      await syncGamePlayers(transaction, lockedGame.id, finalState)
+      await syncGameQueue(transaction, lockedGame.id, finalState, now)
+    }
+
+    const nextVersion = await updateGameAndIncrementVersion(
+      transaction,
+      lockedGame,
+      now,
+      finalState
+        ? {
+            state: finalState,
+            status:
+              finalState.phase === 'GAME_OVER' ? 'GAME_OVER' : 'IN_PROGRESS',
+            phase: finalState.phase,
+            round: finalState.round,
+          }
+        : {},
+    )
+
+    const eventGame = {
+      id: lockedGame.id,
+      phase: finalState?.phase ?? 'SETUP',
+      round: finalState?.round ?? 0,
+    }
+    await appendGameEvent(transaction, {
+      game: eventGame,
+      createdBy: 'PLAYER',
+      actorPlayerId: player.id,
+      createdAt: now,
+      event: { type: 'PLAYER_LEFT_GAME', playerId: player.id },
+    })
+    for (const event of botEvents) {
+      await appendGameEvent(transaction, {
+        game: eventGame,
+        createdBy: 'SYSTEM',
+        actorPlayerId: null,
+        targetPlayerId: getEventTargetPlayerId(event),
+        createdAt: now,
+        event,
+      })
+    }
+
+    const result = {
+      gameId: lockedGame.id,
+      version: nextVersion,
+    }
+    await saveCommandReceipt(transaction, {
+      gameId: lockedGame.id,
+      sessionId: session.id,
+      idempotencyKey,
+      requestHash,
+      commandType: 'LEAVE_GAME',
       expectedVersion,
       result,
     })

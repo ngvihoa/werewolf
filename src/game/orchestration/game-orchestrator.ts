@@ -83,6 +83,8 @@ export function executeCommand(
       return confirmHunterShot(state, events)
     case 'SKIP_HUNTER_SHOT':
       return skipHunterShot(state, events)
+    case 'END_GAME':
+      return endGameManually(state, command.reason, events)
   }
 }
 
@@ -535,6 +537,28 @@ function confirmHunterShot(
   )
   state.pendingHunterShot = null
   return transitionAfterElimination(state, 'NIGHT', events)
+}
+
+// R23: kết thúc ván sớm. winner giữ NULL — màn kết quả hiển thị "Ván đã
+// kết thúc" thay vì công bố phe thắng. Lý do bắt buộc để audit.
+function endGameManually(
+  state: GameState,
+  reason: string,
+  events: GameEvent[],
+): Result<CommandOutcome> {
+  if (state.phase === 'GAME_OVER') {
+    return failure('INVALID_ACTION', 'Game is already over')
+  }
+  if (!reason.trim()) return reasonRequired()
+
+  state.pendingNightAction = null
+  state.pendingNightResolution = null
+  state.pendingVote = null
+  state.pendingVoteResolution = null
+  state.pendingHunterShot = null
+  transitionPhase(state, 'GAME_OVER', events)
+  events.push({ type: 'GAME_ENDED_MANUAL', reason: reason.trim() })
+  return success(state, events)
 }
 
 // R22: Thợ săn không bắn đúng hạn thì mất phát bắn — ván tiếp tục sang đêm.

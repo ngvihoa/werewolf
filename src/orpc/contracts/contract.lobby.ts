@@ -64,6 +64,10 @@ export const lobbyContract = {
     .input(versionedSessionInputSchema)
     .output(operationResultSchema),
   rematch: oc.input(versionedSessionInputSchema).output(operationResultSchema),
+  // R23 (SELF): player rời game giữa ván — không mark dead, bot tự skip/abstain.
+  leaveGame: oc
+    .input(versionedSessionInputSchema)
+    .output(operationResultSchema),
   executeGameCommand: oc
     .input(
       z.object({

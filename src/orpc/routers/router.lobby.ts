@@ -85,6 +85,17 @@ export const lobbyRouter = baseRouter.lobby.router({
     return toOperationResult(result)
   }),
 
+  // R23 (SELF): rời game giữa ván — session cũ giữ nguyên để xem view.
+  leaveGame: baseRouter.lobby.leaveGame.handler(async ({ input }) => {
+    const result = await localGameStore.leaveGame(
+      input.sessionToken,
+      input.expectedVersion,
+      input.idempotencyKey,
+    )
+    if (result.ok) await publishGameInvalidation(result.value)
+    return toOperationResult(result)
+  }),
+
   executeGameCommand: baseRouter.lobby.executeGameCommand.handler(
     async ({ input }) => {
       const result = await localGameStore.execute(input)

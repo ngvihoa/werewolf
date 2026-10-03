@@ -13,8 +13,8 @@ import {
 } from '../../bot/bot-moderator'
 
 import { persistGameAction, syncGamePlayers, syncGameQueue } from './state-sync'
+import { findActiveSession, findLeftPlayerIds, lockGame } from './sessions'
 import { appendGameEvent, getEventTargetPlayerId } from './game-events'
-import { findActiveSession, lockGame } from './sessions'
 import { failure } from './shared'
 
 // Runtime schema là source of truth cho mọi error code được trả qua StoreResult.
@@ -59,7 +59,9 @@ export async function tickGame(
     const state = structuredClone(game.state)
     stampDiscussionDeadline(state, now)
     stampWaitingDeadline(state, now)
-    const bot = runBotLoop(state, { now })
+    // R23: người đã rời — bot skip step/phát bắn của họ và abstain phiếu thiếu.
+    const leftPlayerIds = await findLeftPlayerIds(transaction, game.id)
+    const bot = runBotLoop(state, { now, leftPlayerIds })
     if (!bot.ok) {
       return failure(STORE_ERROR_CODE.INVALID_GAME_STATE, bot.error.message)
     }

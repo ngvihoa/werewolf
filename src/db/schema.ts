@@ -131,6 +131,8 @@ export const gamePlayers = pgTable(
     // SELF mode: player tạo phòng giữ vai trò chủ phòng (cấu hình vai, start,
     // rematch) mà không cần session moderator riêng.
     isHost: boolean('is_host').notNull().default(false),
+    // R23: player rời game giữa ván — không mark dead, vẫn được quay lại.
+    leftAt: timestamp('left_at', { withTimezone: true }),
     isReady: boolean('is_ready').notNull().default(false),
     isAlive: boolean('is_alive').notNull().default(true),
     joinedAt: timestamp('joined_at', { withTimezone: true })

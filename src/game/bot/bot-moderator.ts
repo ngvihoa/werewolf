@@ -1,9 +1,11 @@
+import type { GameState, NightQueueItem } from '../orchestration/model'
 import type { DomainError } from '../domain'
 import type { GameCommand } from '../orchestration/commands'
-import type { GameState } from '../orchestration/model'
 import type { GameEvent } from '../orchestration/events'
 
 import { executeCommand, tallyVotes } from '../orchestration/game-orchestrator'
+import { isWerewolfPlayer } from '../domain'
+import { STEP_ROLE } from '../rules/transitions'
 
 // Giới hạn fixpoint chống vòng lặp vô hạn: một lệnh của bot không được tự
 // kích hoạt chính nó lại. Flow dài nhất của game vẫn cách xa con số này.
@@ -22,6 +24,9 @@ export const HUNTER_SHOT_TIMEOUT_MS = 60_000
 export type BotClock = {
   // Thời điểm hiện tại — store inject deps.now() để bot so mốc deadline.
   now: Date
+  // R23: player đã rời game giữa ván (SELF). Bot skip step/phát bắn của họ và
+  // abstain phiếu còn thiếu NGAY thay vì chờ timer (R22).
+  leftPlayerIds?: readonly string[]
 }
 
 /**
@@ -36,35 +41,51 @@ export function nextBotCommands(
   if (state.winner) return []
 
   switch (state.phase) {
-    case 'NIGHT':
+    case 'NIGHT': {
       // Submit sai target đã bị rule engine từ chối lúc submit, nên mọi action
       // chờ confirm đều hợp lệ — bot confirm luôn, không có đường REJECT.
       if (state.pendingNightAction) return [{ type: 'CONFIRM_STEP' }]
+      // R23: chủ sở hữu step đã rời game → skip ngay (không ai còn hành động
+      // được), dù timer chưa hết.
+      const activeStep = state.queue.find((item) => item.status === 'ACTIVE')
+      if (activeStep && stepOwnerLeft(state, activeStep.step, clock)) {
+        return [{ type: 'SKIP_STEP', reason: 'PLAYER_LEFT' }]
+      }
       // R22: step đêm hết giờ → skip (ability không tiêu thụ vì chưa confirm).
       return deadlineExpired(state, clock)
         ? [{ type: 'SKIP_STEP', reason: 'TIMEOUT' }]
         : []
+    }
     case 'NIGHT_RESOLUTION':
       return state.pendingNightResolution
         ? [{ type: 'CONFIRM_NIGHT_RESOLUTION' }]
         : []
-    case 'HUNTER_SHOT':
+    case 'HUNTER_SHOT': {
       // Hunter tự submit phát bắn qua thiết bị; bot chỉ xác nhận.
       if (state.pendingHunterShot?.targetId) {
         return [{ type: 'CONFIRM_HUNTER_SHOT' }]
+      }
+      // R23: hunter đã rời game mà chưa bắn → mất phát bắn ngay.
+      if (
+        state.pendingHunterShot &&
+        hasPlayerLeft(state.pendingHunterShot.hunterId, clock)
+      ) {
+        return [{ type: 'SKIP_HUNTER_SHOT' }]
       }
       // R22: hunter không bắn đúng hạn → mất phát bắn, ván đi tiếp.
       return state.pendingHunterShot && deadlineExpired(state, clock)
         ? [{ type: 'SKIP_HUNTER_SHOT' }]
         : []
+    }
     case 'DAY':
       // R21: đủ majority người sống bấm "Sẵn sàng bỏ phiếu" VÀ đã qua mốc
       // thảo luận tối thiểu → mở vote. Một người chưa đồng ý không kẹt ván.
       return canOpenVote(state, clock) ? [{ type: 'START_VOTE' }] : []
     case 'VOTE':
-      // R20: khi mọi người sống đã bỏ phiếu, bot tally và phát kết quả —
-      // hòa theo R14 (attempt 1 → revote, attempt 2 → không ai bị loại).
-      if (allAliveVoted(state)) {
+      // R20: khi mọi người sống (không tính người đã rời — R23) đã bỏ phiếu,
+      // bot tally và phát kết quả — hòa theo R14 (attempt 1 → revote,
+      // attempt 2 → không ai bị loại).
+      if (allAliveVoted(state, clock)) {
         return [{ type: 'SUBMIT_VOTE_RESULT', ...tallyVotes(state) }]
       }
       // R22: hết giờ biểu quyết → phiếu thiếu tính trắng, tally luôn.
@@ -86,6 +107,31 @@ function deadlineExpired(
 ): boolean {
   if (!state.waitingDeadlineAt || !clock) return false
   return clock.now.getTime() >= Date.parse(state.waitingDeadlineAt)
+}
+
+// R23: player có mặt trong danh sách người rời do store inject qua clock.
+function hasPlayerLeft(playerId: string, clock?: BotClock): boolean {
+  return clock?.leftPlayerIds?.includes(playerId) ?? false
+}
+
+// R23: step đêm cần chủ sở hữu còn ở lại — werewolf thì chỉ cần MỘT sói còn
+// ngồi tại bàn. Người rời vẫn "sống" trong rule engine nên phải loại trừ tường
+// minh; ánh xạ role trùng activateNextRunnableStep của orchestrator.
+function stepOwnerLeft(
+  state: Readonly<GameState>,
+  step: NightQueueItem['step'],
+  clock?: BotClock,
+): boolean {
+  if (!clock?.leftPlayerIds?.length) return false
+  const left = new Set(clock.leftPlayerIds)
+  return !state.players.some(
+    (player) =>
+      player.alive &&
+      !left.has(player.id) &&
+      (step === 'WEREWOLF_ATTACK'
+        ? isWerewolfPlayer(player)
+        : player.role === STEP_ROLE[step]),
+  )
 }
 
 /**
@@ -129,7 +175,9 @@ export function waitingContext(
 }
 
 function canOpenVote(state: Readonly<GameState>, clock?: BotClock): boolean {
-  const aliveCount = state.players.filter((player) => player.alive).length
+  // R23: người đã rời không đếm vào majority — DAY không có timer nên tính
+  // họ vào mẫu số sẽ kẹt ván vĩnh viễn nếu họ chưa kịp consent.
+  const aliveCount = participatingPlayers(state, clock).length
   const majority = Math.floor(aliveCount / 2) + 1
   const consentCount = state.voteConsentIds?.length ?? 0
   if (consentCount < majority) return false
@@ -172,10 +220,23 @@ export function stampDiscussionDeadline(state: GameState, now: Date): void {
   }
 }
 
-function allAliveVoted(state: Readonly<GameState>): boolean {
-  return state.players
-    .filter((player) => player.alive)
-    .every((player) => state.voteSubmissions?.[player.id] !== undefined)
+// Người chơi còn tham gia: sống và chưa rời game (R23). Người rời không bị
+// mark dead nên phải loại trừ tường minh ở mọi chỗ đếm "người sống".
+function participatingPlayers(
+  state: Readonly<GameState>,
+  clock?: BotClock,
+): readonly { id: string }[] {
+  if (!clock?.leftPlayerIds?.length) {
+    return state.players.filter((player) => player.alive)
+  }
+  const left = new Set(clock.leftPlayerIds)
+  return state.players.filter((player) => player.alive && !left.has(player.id))
+}
+
+function allAliveVoted(state: Readonly<GameState>, clock?: BotClock): boolean {
+  return participatingPlayers(state, clock).every(
+    (player) => state.voteSubmissions?.[player.id] !== undefined,
+  )
 }
 
 export type BotStep = {

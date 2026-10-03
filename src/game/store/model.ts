@@ -30,6 +30,8 @@ export type LobbyPlayer = {
   displayName: string
   ready: boolean
   role: Role | null
+  // R23: mốc player rời game giữa ván (SELF) — null nghĩa là vẫn đang ở lại.
+  leftAt?: string | null
 }
 
 export type SetupEvent = z.infer<typeof setupEventSchema>

@@ -560,3 +560,142 @@ describe('R22 timeout (bot + clock)', () => {
     expect(bot.state.round).toBe(2)
   })
 })
+
+describe('R23: người chơi rời game (leftPlayerIds qua clock)', () => {
+  const NOW = new Date('2026-08-08T00:00:00.000Z')
+
+  it('NIGHT: chủ sở hữu step đã rời → SKIP_STEP PLAYER_LEFT ngay, không chờ timer', () => {
+    const state = createFirstNightState(FIVE_PLAYERS)
+    // Step ACTIVE đầu tiên là SEER_INSPECT.
+    const commands = nextBotCommands(state, {
+      now: NOW,
+      leftPlayerIds: ['seer'],
+    })
+    expect(commands).toEqual([{ type: 'SKIP_STEP', reason: 'PLAYER_LEFT' }])
+  })
+
+  it('NIGHT: action đã submit trước khi rời thì vẫn CONFIRM_STEP (ưu tiên skip không đè confirm)', () => {
+    let state = createFirstNightState(FIVE_PLAYERS)
+    state = submit(state, {
+      type: 'SEER_INSPECT',
+      actorId: 'seer',
+      targetId: 'wolf',
+    })
+    // Step SEER đang WAITING_CONFIRMATION với pendingNightAction — người rời
+    // đã hành động khi còn ngồi nên action vẫn được tính.
+    const commands = nextBotCommands(state, {
+      now: NOW,
+      leftPlayerIds: ['seer'],
+    })
+    expect(commands).toEqual([{ type: 'CONFIRM_STEP' }])
+  })
+
+  it('NIGHT: người rời không phải chủ sở hữu step hiện tại → bot không làm gì', () => {
+    const state = createFirstNightState(FIVE_PLAYERS)
+    // Step ACTIVE đầu tiên là SEER_INSPECT — wolf rời không ảnh hưởng.
+    const commands = nextBotCommands(state, {
+      now: NOW,
+      leftPlayerIds: ['wolf'],
+    })
+    expect(commands).toEqual([])
+  })
+
+  it('NIGHT: người rời + hết giờ cùng xảy ra → PLAYER_LEFT thắng TIMEOUT', () => {
+    const state = createFirstNightState(FIVE_PLAYERS)
+    state.waitingKey = 'STEP:1:SEER_INSPECT'
+    state.waitingDeadlineAt = '2026-08-08T00:00:45.000Z'
+    const commands = nextBotCommands(state, {
+      now: new Date('2026-08-08T00:00:46.000Z'),
+      leftPlayerIds: ['seer'],
+    })
+    expect(commands).toEqual([{ type: 'SKIP_STEP', reason: 'PLAYER_LEFT' }])
+  })
+
+  it('runBotLoop: cả wolf lẫn seer rời → skip lần lượt tới NIGHT_RESOLUTION rồi DAY', () => {
+    const state = createFirstNightState(FIVE_PLAYERS)
+    const bot = runBotLoop(state, { now: NOW, leftPlayerIds: ['wolf', 'seer'] })
+    if (!bot.ok) throw new Error(bot.error.message)
+
+    expect(bot.state.phase).toBe('DAY')
+    const skipped = bot.state.queue
+      .filter((item) => item.status === 'SKIPPED')
+      .map((item) => [item.step, item.skipReason])
+    expect(skipped).toContainEqual(['WEREWOLF_ATTACK', 'PLAYER_LEFT'])
+    expect(skipped).toContainEqual(['SEER_INSPECT', 'PLAYER_LEFT'])
+    expect(bot.events).toContainEqual({
+      type: 'QUEUE_STEP_SKIPPED',
+      step: 'WEREWOLF_ATTACK',
+      reason: 'PLAYER_LEFT',
+    })
+  })
+
+  it('VOTE: người rời chưa bỏ phiếu → bot tally ngay (phiếu trắng), không chờ timer', () => {
+    const state = createFirstNightState(FIVE_PLAYERS)
+    state.phase = 'VOTE'
+    // wolf, seer, v2, v3 đã bỏ — v1 đã rời là phiếu thiếu duy nhất.
+    state.voteSubmissions = {
+      wolf: 'seer',
+      seer: 'wolf',
+      v2: 'wolf',
+      v3: 'wolf',
+    }
+    const commands = nextBotCommands(state, {
+      now: NOW,
+      leftPlayerIds: ['v1'],
+    })
+    // Không có waitingDeadlineAt nên tally này do loại trừ người rời.
+    expect(commands).toEqual([
+      { type: 'SUBMIT_VOTE_RESULT', tied: false, selectedPlayerId: 'wolf' },
+    ])
+  })
+
+  it('VOTE: còn phiếu thiếu của người CHƯA rời → bot chờ (không tally sớm)', () => {
+    const state = createFirstNightState(FIVE_PLAYERS)
+    state.phase = 'VOTE'
+    state.voteSubmissions = {
+      wolf: 'seer',
+      seer: 'wolf',
+      v2: 'wolf',
+      v3: 'wolf',
+    }
+    const commands = nextBotCommands(state, { now: NOW })
+    expect(commands).toEqual([])
+  })
+
+  it('DAY: majority consent không tính người đã rời', () => {
+    const state = createFirstNightState(FIVE_PLAYERS)
+    state.phase = 'DAY'
+    // v1 rời → 4 người tham gia → majority 3.
+    state.voteConsentIds = ['wolf', 'seer']
+    expect(nextBotCommands(state, { now: NOW, leftPlayerIds: ['v1'] })).toEqual(
+      [],
+    )
+
+    state.voteConsentIds = ['wolf', 'seer', 'v2']
+    expect(nextBotCommands(state, { now: NOW, leftPlayerIds: ['v1'] })).toEqual(
+      [{ type: 'START_VOTE' }],
+    )
+  })
+
+  it('HUNTER_SHOT: hunter rời và chưa bắn → mất phát bắn ngay', () => {
+    const state = createFirstNightState(FIVE_PLAYERS)
+    state.phase = 'HUNTER_SHOT'
+    state.pendingHunterShot = { hunterId: 'v1', targetId: null }
+    const commands = nextBotCommands(state, {
+      now: NOW,
+      leftPlayerIds: ['v1'],
+    })
+    expect(commands).toEqual([{ type: 'SKIP_HUNTER_SHOT' }])
+  })
+
+  it('HUNTER_SHOT: hunter rời NHƯNG đã chọn target trước đó → vẫn confirm phát bắn', () => {
+    const state = createFirstNightState(FIVE_PLAYERS)
+    state.phase = 'HUNTER_SHOT'
+    state.pendingHunterShot = { hunterId: 'v1', targetId: 'wolf' }
+    const commands = nextBotCommands(state, {
+      now: NOW,
+      leftPlayerIds: ['v1'],
+    })
+    expect(commands).toEqual([{ type: 'CONFIRM_HUNTER_SHOT' }])
+  })
+})

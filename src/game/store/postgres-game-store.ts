@@ -31,6 +31,7 @@ import {
   assignRoles as assignRolesCommand,
   createGame as createGameCommand,
   startGame as startGameCommand,
+  leaveGame as leaveGameCommand,
   joinGame as joinGameCommand,
   setReady as setReadyCommand,
   rematch as rematchCommand,
@@ -131,6 +132,20 @@ export class PostgresGameStore implements GameStore {
     idempotencyKey: string,
   ): Promise<StoreResult<GameMutationResult>> {
     return rematchCommand(
+      this.#deps,
+      sessionToken,
+      expectedVersion,
+      idempotencyKey,
+    )
+  }
+
+  // R23 (SELF): rời game giữa ván — không mark dead, bot tự skip/abstain.
+  leaveGame(
+    sessionToken: string,
+    expectedVersion: number,
+    idempotencyKey: string,
+  ): Promise<StoreResult<GameMutationResult>> {
+    return leaveGameCommand(
       this.#deps,
       sessionToken,
       expectedVersion,

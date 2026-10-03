@@ -69,6 +69,8 @@ export async function getGameView(
           isModerator: gamePlayers.isModerator,
           isHost: gamePlayers.isHost,
           abilityState: gamePlayers.abilityState,
+          // R23: mốc rời game — projection dùng để hiện "đã rời".
+          leftAt: gamePlayers.leftAt,
         })
         .from(gamePlayers)
         .where(eq(gamePlayers.gameId, game.id))
@@ -110,6 +112,7 @@ export async function getGameView(
           isModerator: p.isModerator,
           displayName: p.displayName,
           ready: p.isReady,
+          leftAt: p.leftAt?.toISOString() ?? null,
         })),
         state: game.state,
         history,

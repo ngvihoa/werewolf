@@ -38,6 +38,8 @@ export const publicPlayerViewSchema = z.object({
   displayName: z.string(),
   alive: z.boolean(),
   ready: z.boolean(),
+  // R23: player đã rời game giữa ván (SELF) — hiển thị "đã rời".
+  left: z.boolean().optional(),
 })
 
 /**
@@ -55,6 +57,8 @@ export const playerPrivateViewSchema = z.object({
   ready: z.boolean(),
   alive: z.boolean(),
   role: roleSchema.nullable(),
+  // R23 (SELF): chính viewer đã rời ván — UI hiện trạng "đã rời" thay form.
+  left: z.boolean().optional(),
   abilityState: z
     .union([
       witchResourcesSchema,
@@ -78,6 +82,7 @@ export const publicHistoryEventSchema = z.discriminatedUnion('type', [
     playerId: z.string(),
     ready: z.boolean(),
   }),
+  z.object({ type: z.literal('PLAYER_LEFT_GAME'), playerId: z.string() }),
   z.object({ type: z.literal('ROLES_ASSIGNED') }),
   z.object({ type: z.literal('GAME_STARTED') }),
   z.object({
@@ -246,6 +251,8 @@ const localGameSchema = z.object({
       displayName: z.string(),
       ready: z.boolean(),
       role: roleSchema.nullable(),
+      // R23 (SELF): chỉ xuất hiện khi player đã rời — optional chống lệch phiên.
+      left: z.boolean().optional(),
     }),
   ),
   state: gameStateSchema.nullable(),

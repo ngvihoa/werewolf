@@ -737,3 +737,347 @@ describe('InMemoryGameStore self mode (không quản trò)', () => {
     expect(confirmedEntry?.actorPlayerId).toBeNull()
   })
 })
+
+describe('InMemoryGameStore rời game (R23)', () => {
+  function createSelfGame() {
+    const store = createStore()
+    const created = store.createGame({ mode: 'SELF', creatorName: 'Hoa' })
+    if (!created.ok) throw new Error(created.error.message)
+    return { store, created: selfGame(created.value) }
+  }
+
+  function currentVersion(store: InMemoryGameStore, gameId: string): number {
+    const snapshot = store.getGame(gameId)
+    if (!snapshot.ok) throw new Error(snapshot.error.message)
+    return snapshot.value.version
+  }
+
+  function startSelfGame() {
+    const { store, created } = createSelfGame()
+    const players = [
+      { playerId: created.playerId, token: created.playerSessionToken },
+    ]
+    for (const name of ['An', 'Binh', 'Cuong', 'Dung']) {
+      const joined = store.joinGame(created.roomCode, name)
+      if (!joined.ok) throw new Error(joined.error.message)
+      players.push({
+        playerId: joined.value.playerId,
+        token: joined.value.playerSessionToken,
+      })
+    }
+
+    const assigned = store.assignRoles(
+      created.playerSessionToken,
+      currentVersion(store, created.gameId),
+      'self-assign',
+    )
+    if (!assigned.ok) throw new Error(assigned.error.message)
+
+    for (const player of players) {
+      const ready = store.setReady(
+        player.token,
+        currentVersion(store, created.gameId),
+        true,
+        `self-ready-${player.token}`,
+      )
+      if (!ready.ok) throw new Error(ready.error.message)
+    }
+
+    const started = store.startGame(
+      created.playerSessionToken,
+      currentVersion(store, created.gameId),
+      'self-start',
+    )
+    if (!started.ok) throw new Error(started.error.message)
+    return { store, created, players }
+  }
+
+  function findPlayerSession(
+    players: { playerId: string; token: string }[],
+    playerId: string,
+  ): { playerId: string; token: string } {
+    const session = players.find((player) => player.playerId === playerId)
+    if (!session) throw new Error('Player session is missing')
+    return session
+  }
+
+  it('rời ván giữa đêm: step của người rời bị bot skip ngay (PLAYER_LEFT), event PLAYER_LEFT_GAME actor PLAYER', () => {
+    const { store, created, players } = startSelfGame()
+    const snapshot = store.getGame(created.gameId)
+    if (!snapshot.ok) throw new Error(snapshot.error.message)
+    // Step ACTIVE đầu tiên của đêm là SEER_INSPECT — seer rời là chủ step.
+    const seer = snapshot.value.lobbyPlayers.find(
+      (player) => player.role === 'SEER',
+    )
+    if (!seer) throw new Error('Composition is missing a seer')
+    const seerSession = findPlayerSession(players, seer.id)
+
+    const left = store.leaveGame(
+      seerSession.token,
+      snapshot.value.version,
+      'leave-mid-night',
+    )
+    expect(left.ok).toBe(true)
+
+    const after = store.getGame(created.gameId)
+    if (!after.ok) throw new Error(after.error.message)
+    // Không mark dead — rule engine vẫn coi người rời đang sống.
+    expect(
+      after.value.state?.players.find((player) => player.id === seer.id)?.alive,
+    ).toBe(true)
+    expect(
+      after.value.lobbyPlayers.find((player) => player.id === seer.id)?.leftAt,
+    ).toBeTruthy()
+
+    const seerStep = after.value.state?.queue.find(
+      (item) => item.step === 'SEER_INSPECT',
+    )
+    expect(seerStep).toMatchObject({
+      status: 'SKIPPED',
+      skipReason: 'PLAYER_LEFT',
+    })
+    // Ván đi tiếp ngay: step kế đã ACTIVE mà không cần chờ timer.
+    expect(
+      after.value.state?.queue.find((item) => item.status === 'ACTIVE')?.step,
+    ).toBe('WEREWOLF_ATTACK')
+
+    const leftEvent = after.value.history.find(
+      (entry) => entry.event.type === 'PLAYER_LEFT_GAME',
+    )
+    expect(leftEvent).toMatchObject({ actor: 'PLAYER', actorPlayerId: seer.id })
+  })
+
+  it('người rời dùng session cũ vẫn xem được view với cờ left (reconnect chỉ xem)', () => {
+    const { store, created, players } = startSelfGame()
+    const snapshot = store.getGame(created.gameId)
+    if (!snapshot.ok) throw new Error(snapshot.error.message)
+    const seer = snapshot.value.lobbyPlayers.find(
+      (player) => player.role === 'SEER',
+    )
+    if (!seer) throw new Error('Composition is missing a seer')
+    const seerSession = findPlayerSession(players, seer.id)
+    const left = store.leaveGame(
+      seerSession.token,
+      snapshot.value.version,
+      'leave-for-view',
+    )
+    if (!left.ok) throw new Error(left.error.message)
+
+    const view = store.getGameView(seerSession.token)
+    expect(view.ok).toBe(true)
+    if (!view.ok || view.value.viewer !== 'PLAYER') return
+    expect(view.value.me.left).toBe(true)
+    expect(view.value.me.alive).toBe(true)
+    expect(
+      view.value.players.find((player) => player.id === seer.id)?.left,
+    ).toBe(true)
+
+    // Người khác cũng thấy seer đã rời.
+    const other = players.find((player) => player.playerId !== seer.id)
+    if (!other) throw new Error('Other player is missing')
+    const otherView = store.getGameView(other.token)
+    if (!otherView.ok || otherView.value.viewer !== 'PLAYER') return
+    expect(
+      otherView.value.players.find((player) => player.id === seer.id)?.left,
+    ).toBe(true)
+  })
+
+  it('người rời không submit được command nữa (NOT_AUTHORIZED)', () => {
+    const { store, created, players } = startSelfGame()
+    const snapshot = store.getGame(created.gameId)
+    if (!snapshot.ok) throw new Error(snapshot.error.message)
+    const seer = snapshot.value.lobbyPlayers.find(
+      (player) => player.role === 'SEER',
+    )
+    if (!seer) throw new Error('Composition is missing a seer')
+    const seerSession = findPlayerSession(players, seer.id)
+    const left = store.leaveGame(
+      seerSession.token,
+      snapshot.value.version,
+      'leave-then-act',
+    )
+    if (!left.ok) throw new Error(left.error.message)
+    const after = store.getGame(created.gameId)
+    if (!after.ok) throw new Error(after.error.message)
+
+    const submitted = store.execute({
+      gameId: created.gameId,
+      sessionToken: seerSession.token,
+      idempotencyKey: 'leaver-act',
+      expectedVersion: after.value.version,
+      command: {
+        type: 'SUBMIT_NIGHT_ACTION',
+        action: { type: 'SEER_INSPECT', actorId: seer.id, targetId: seer.id },
+      },
+    })
+    expect(submitted).toMatchObject({
+      ok: false,
+      error: { code: 'NOT_AUTHORIZED' },
+    })
+  })
+
+  it('END_GAME: chủ phòng kết thúc ván sớm (winner null); player thường bị chặn', () => {
+    const { store, created, players } = startSelfGame()
+    const snapshot = store.getGame(created.gameId)
+    if (!snapshot.ok) throw new Error(snapshot.error.message)
+
+    // Player thường không phải chủ phòng.
+    const other = players.find((player) => player.playerId !== created.playerId)
+    if (!other) throw new Error('Other player is missing')
+    const rejected = store.execute({
+      gameId: created.gameId,
+      sessionToken: other.token,
+      idempotencyKey: 'end-not-host',
+      expectedVersion: snapshot.value.version,
+      command: { type: 'END_GAME', reason: 'Không đủ người' },
+    })
+    expect(rejected).toMatchObject({
+      ok: false,
+      error: { code: 'NOT_AUTHORIZED' },
+    })
+
+    const ended = store.execute({
+      gameId: created.gameId,
+      sessionToken: created.playerSessionToken,
+      idempotencyKey: 'end-by-host',
+      expectedVersion: snapshot.value.version,
+      command: { type: 'END_GAME', reason: 'Không đủ người' },
+    })
+    expect(ended.ok).toBe(true)
+
+    const after = store.getGame(created.gameId)
+    if (!after.ok) throw new Error(after.error.message)
+    expect(after.value.state?.phase).toBe('GAME_OVER')
+    expect(after.value.state?.winner).toBeNull()
+    expect(
+      after.value.history.find(
+        (entry) => entry.event.type === 'GAME_ENDED_MANUAL',
+      ),
+    ).toMatchObject({ actor: 'PLAYER', actorPlayerId: created.playerId })
+  })
+
+  it('lobby: người rời không nhận vai và không chặn start (6 người, 1 rời, start với 5)', () => {
+    const { store, created } = createSelfGame()
+    const joinedPlayers = []
+    for (const name of ['An', 'Binh', 'Cuong', 'Dung', 'Giang']) {
+      const joined = store.joinGame(created.roomCode, name)
+      if (!joined.ok) throw new Error(joined.error.message)
+      joinedPlayers.push({
+        playerId: joined.value.playerId,
+        token: joined.value.playerSessionToken,
+      })
+    }
+    const leaver = joinedPlayers[0]
+    if (!leaver) throw new Error('Joined player is missing')
+    const left = store.leaveGame(
+      leaver.token,
+      currentVersion(store, created.gameId),
+      'lobby-leave',
+    )
+    expect(left.ok).toBe(true)
+
+    const assigned = store.assignRoles(
+      created.playerSessionToken,
+      currentVersion(store, created.gameId),
+      'assign-after-leave',
+    )
+    expect(assigned.ok).toBe(true)
+
+    // Chỉ 5 người còn tham gia cần ready — người rời không chặn.
+    for (const player of joinedPlayers.slice(1)) {
+      const ready = store.setReady(
+        player.token,
+        currentVersion(store, created.gameId),
+        true,
+        `ready-after-leave-${player.playerId}`,
+      )
+      if (!ready.ok) throw new Error(ready.error.message)
+    }
+    const hostReady = store.setReady(
+      created.playerSessionToken,
+      currentVersion(store, created.gameId),
+      true,
+      'host-ready-after-leave',
+    )
+    if (!hostReady.ok) throw new Error(hostReady.error.message)
+
+    const started = store.startGame(
+      created.playerSessionToken,
+      currentVersion(store, created.gameId),
+      'start-after-leave',
+    )
+    expect(started.ok).toBe(true)
+
+    const snapshot = store.getGame(created.gameId)
+    if (!snapshot.ok) throw new Error(snapshot.error.message)
+    expect(snapshot.value.lobbyPlayers).toHaveLength(6)
+    expect(
+      snapshot.value.lobbyPlayers.find(
+        (player) => player.id === leaver.playerId,
+      ),
+    ).toMatchObject({ role: null, leftAt: expect.anything() })
+    // Domain state chỉ gồm người còn tham gia.
+    expect(snapshot.value.state?.players).toHaveLength(5)
+    expect(
+      snapshot.value.state?.players.find(
+        (player) => player.id === leaver.playerId,
+      ),
+    ).toBeUndefined()
+  })
+
+  it('rematch xóa leftAt — ai rời ván cũ cũng quay lại sảnh bình thường', () => {
+    const { store, created, players } = startSelfGame()
+    const snapshot = store.getGame(created.gameId)
+    if (!snapshot.ok) throw new Error(snapshot.error.message)
+    const seer = snapshot.value.lobbyPlayers.find(
+      (player) => player.role === 'SEER',
+    )
+    if (!seer) throw new Error('Composition is missing a seer')
+    const seerSession = findPlayerSession(players, seer.id)
+    const left = store.leaveGame(
+      seerSession.token,
+      snapshot.value.version,
+      'leave-before-rematch',
+    )
+    if (!left.ok) throw new Error(left.error.message)
+
+    const ended = store.execute({
+      gameId: created.gameId,
+      sessionToken: created.playerSessionToken,
+      idempotencyKey: 'end-for-rematch',
+      expectedVersion: currentVersion(store, created.gameId),
+      command: { type: 'END_GAME', reason: 'Kết thúc để rematch' },
+    })
+    if (!ended.ok) throw new Error(ended.error.message)
+
+    const rematch = store.rematch(
+      created.playerSessionToken,
+      currentVersion(store, created.gameId),
+      'rematch-after-leave',
+    )
+    expect(rematch.ok).toBe(true)
+
+    const after = store.getGame(created.gameId)
+    if (!after.ok) throw new Error(after.error.message)
+    expect(after.value.lobbyPlayers.every((player) => !player.leftAt)).toBe(
+      true,
+    )
+  })
+
+  it('MODERATED không rời game được', () => {
+    const { store, created, players, game } = createStartedGame()
+    const player = players[0]
+    if (!player) throw new Error('Player is missing')
+    const left = store.leaveGame(
+      player.playerSessionToken,
+      game.version,
+      'moderated-leave',
+    )
+    expect(left).toMatchObject({
+      ok: false,
+      error: { code: 'NOT_AUTHORIZED' },
+    })
+    expect(created.mode).toBe('MODERATED')
+    expect(store.getGame(created.gameId).ok).toBe(true)
+  })
+})

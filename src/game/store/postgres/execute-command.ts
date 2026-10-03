@@ -23,6 +23,8 @@ import { failure } from './shared'
 import {
   updateGameAndIncrementVersion,
   findActiveSession,
+  findLeftPlayerIds,
+  isGameController,
   lockGame,
 } from './sessions'
 
@@ -94,6 +96,32 @@ export async function executeGameCommand(
 
     const authorization = authorizeCommand(session, input.command)
     if (!authorization.ok) return authorization
+    // R23: player chỉ được END_GAME khi là chủ phòng ở SELF (game đã lock ở trên).
+    if (input.command.type === 'END_GAME' && session.kind === 'PLAYER') {
+      if (!(await isGameController(transaction, session, game))) {
+        return failure(
+          STORE_ERROR_CODE.NOT_AUTHORIZED,
+          'Only the host can end the game early',
+        )
+      }
+    }
+    // R23: người đã rời không hành động/bỏ phiếu nữa (session cũ chỉ còn xem)
+    // — trừ END_GAME: chủ phòng rời vẫn giữ quyền kết thúc ván. Danh sách
+    // người rời cũng là input của bot clock bên dưới.
+    let leftPlayerIds: string[] = []
+    if (
+      game.mode === 'SELF' &&
+      session.kind === 'PLAYER' &&
+      input.command.type !== 'END_GAME'
+    ) {
+      leftPlayerIds = await findLeftPlayerIds(transaction, game.id)
+      if (session.playerId && leftPlayerIds.includes(session.playerId)) {
+        return failure(
+          STORE_ERROR_CODE.NOT_AUTHORIZED,
+          'Player has left the game',
+        )
+      }
+    }
 
     // Rule engine không biết database; nó chỉ nhận state cũ và trả
     // state + events mới hoặc domain error.
@@ -114,7 +142,7 @@ export async function executeGameCommand(
       // tạo bên trong loop bởi chính bot.
       stampDiscussionDeadline(finalState, now)
       stampWaitingDeadline(finalState, now)
-      const bot = runBotLoop(finalState, { now })
+      const bot = runBotLoop(finalState, { now, leftPlayerIds })
       if (!bot.ok) {
         return failure(STORE_ERROR_CODE.INVALID_GAME_STATE, bot.error.message)
       }
