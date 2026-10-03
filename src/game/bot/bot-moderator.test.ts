@@ -132,6 +132,66 @@ describe('runBotLoop', () => {
     expect(nextBotCommands(state)).toEqual([])
   })
 
+  it('R21: majority consent + đủ mốc thời gian → bot START_VOTE', () => {
+    const state = createFirstNightState(FIVE_PLAYERS)
+    // Đi thẳng tới DAY: mô phỏng đêm đã resolve xong.
+    state.phase = 'DAY'
+    state.voteConsentIds = []
+    state.discussionMinEndsAt = '2026-08-08T00:00:30.000Z'
+
+    // 2/5 consent (thiếu majority 3): bot đứng im dù đã quá mốc.
+    state.voteConsentIds = ['wolf', 'seer']
+    const clockLate = { now: new Date('2026-08-08T00:01:00.000Z') }
+    expect(nextBotCommands(state, clockLate)).toEqual([])
+
+    // Đủ majority nhưng chưa qua mốc 30s: bot vẫn chờ.
+    state.voteConsentIds = ['wolf', 'seer', 'v1']
+    const clockEarly = { now: new Date('2026-08-08T00:00:29.000Z') }
+    expect(nextBotCommands(state, clockEarly)).toEqual([])
+
+    // Đủ majority + quá mốc: mở vote.
+    expect(nextBotCommands(state, clockLate)).toEqual([{ type: 'START_VOTE' }])
+    const bot = runBotLoop(state, clockLate)
+    expect(bot.ok).toBe(true)
+    if (!bot.ok) return
+    expect(bot.steps.map((step) => step.command.type)).toEqual(['START_VOTE'])
+    expect(bot.state.phase).toBe('VOTE')
+    // Sang VOTE: mốc thảo luận của ngày đã hết giá trị.
+    expect(bot.state.discussionMinEndsAt).toBeNull()
+  })
+
+  it('R21: một người không consent không kẹt ván (majority tính trên người sống)', () => {
+    const state = createFirstNightState(FIVE_PLAYERS)
+    state.phase = 'DAY'
+    state.discussionMinEndsAt = null
+    // 4/5 consent — thiếu v3 vẫn đủ majority 3.
+    state.voteConsentIds = ['wolf', 'seer', 'v1', 'v2']
+    expect(nextBotCommands(state, { now: new Date() })).toEqual([
+      { type: 'START_VOTE' },
+    ])
+  })
+
+  it('R21: consent trùng lặp và consent của người chết bị từ chối', () => {
+    let state = createFirstNightState(FIVE_PLAYERS)
+    state.phase = 'DAY'
+
+    const consent = executeCommand(state, {
+      type: 'SUBMIT_VOTE_CONSENT',
+      actorId: 'seer',
+    })
+    if (!consent.ok) throw new Error(consent.error.message)
+    state = consent.value.state
+
+    const duplicate = executeCommand(state, {
+      type: 'SUBMIT_VOTE_CONSENT',
+      actorId: 'seer',
+    })
+    expect(duplicate).toMatchObject({
+      ok: false,
+      error: { code: 'INVALID_ACTION' },
+    })
+  })
+
   it('vote hòa attempt 1: bot confirm xong quay lại VOTE attempt 2, không SKIP_REVOTE', () => {
     let state = createFirstNightState(FIVE_PLAYERS)
     state.phase = 'DAY'

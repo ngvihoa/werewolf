@@ -8,9 +8,9 @@ import { commandReceipts } from '#/db/schema'
 import { and, eq } from 'drizzle-orm'
 
 import { gameMutationResultSchema, storeErrorCodeSchema } from '../schema'
+import { runBotLoop, stampDiscussionDeadline } from '../../bot/bot-moderator'
 import { authorizeCommand } from '../command-authorization'
 import { executeCommand } from '../../orchestration/game-orchestrator'
-import { runBotLoop } from '../../bot/bot-moderator'
 
 import { persistGameAction, syncGamePlayers, syncGameQueue } from './state-sync'
 import { appendGameEvent, getEventTargetPlayerId } from './game-events'
@@ -106,11 +106,15 @@ export async function executeGameCommand(
     // SELF: quản trò bot chạy tới fixpoint trong cùng transaction — người chơi
     // gửi một lệnh, cả chuỗi confirm hệ thống ghi cùng một version.
     if (game.mode === 'SELF') {
-      const bot = runBotLoop(finalState)
+      // Mốc thảo luận gắn cả TRƯỚC lẫn SAU loop: DAY thường được tạo bên trong
+      // loop khi bot confirm night resolution.
+      stampDiscussionDeadline(finalState, now)
+      const bot = runBotLoop(finalState, { now })
       if (!bot.ok) {
         return failure(STORE_ERROR_CODE.INVALID_GAME_STATE, bot.error.message)
       }
       finalState = bot.state
+      stampDiscussionDeadline(finalState, now)
       botEvents = bot.events
       botSteps = bot.steps
     }

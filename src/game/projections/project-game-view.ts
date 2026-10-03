@@ -154,6 +154,7 @@ export function projectGameView(
           : null,
     },
     vote: projectSelfVote(game, lobbyPlayer.id),
+    discussion: projectSelfDiscussion(game, lobbyPlayer.id),
     publicHistory: history.flatMap((entry) =>
       entry.publicEntry ? [entry.publicEntry] : [],
     ),
@@ -191,6 +192,25 @@ function domainAlive(game: LocalGame, playerId: string): boolean {
   return (
     game.state?.players.find((player) => player.id === playerId)?.alive ?? false
   )
+}
+
+// R21: consent kết thúc thảo luận — count + trạng thái của chính mình.
+function projectSelfDiscussion(
+  game: LocalGame,
+  playerId: string,
+): PlayerGameView['discussion'] {
+  const state = game.state
+  if (game.mode !== 'SELF' || state?.phase !== 'DAY') return undefined
+
+  const consentIds = state.voteConsentIds ?? []
+  const aliveCount = state.players.filter((player) => player.alive).length
+  return {
+    canConsent: domainAlive(game, playerId) && !consentIds.includes(playerId),
+    hasConsented: consentIds.includes(playerId),
+    consentCount: consentIds.length,
+    aliveCount,
+    consentNeeded: Math.floor(aliveCount / 2) + 1,
+  }
 }
 
 function projectLover(

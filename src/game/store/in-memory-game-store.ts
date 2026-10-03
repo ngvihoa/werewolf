@@ -19,10 +19,10 @@ import type { Player, Role, RoleCompositionSelection } from '../domain'
 import type { GameEvent } from '../orchestration/events'
 import type { GameView } from '../projections/model'
 
+import { stampDiscussionDeadline, runBotLoop } from '../bot/bot-moderator'
 import { gameCommandSchema } from '../orchestration/schema'
 import { projectGameView } from '../projections/project-game-view'
 import { assignRoles } from '../rules/role-assignment'
-import { runBotLoop } from '../bot/bot-moderator'
 import {
   createFirstNightState,
   executeCommand,
@@ -409,11 +409,16 @@ export class InMemoryGameStore implements GameStore {
     // SELF: sau lệnh người chơi, quản trò bot chạy tới fixpoint trong cùng
     // "transaction" — version chỉ tăng một lần cho cả thay đổi.
     if (game.mode === 'SELF') {
-      const bot = runBotLoop(finalState)
+      const now = this.#now()
+      // Mốc thảo luận có thể cần gắn cả TRƯỚC lẫn SAU loop: DAY thường được
+      // tạo bên trong loop khi bot confirm night resolution.
+      stampDiscussionDeadline(finalState, now)
+      const bot = runBotLoop(finalState, { now })
       if (!bot.ok) {
         return failure('INVALID_GAME_STATE', bot.error.message)
       }
       finalState = bot.state
+      stampDiscussionDeadline(finalState, now)
       botEvents = bot.events
     }
 

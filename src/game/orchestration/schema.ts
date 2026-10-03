@@ -26,6 +26,11 @@ export const gameCommandSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('CONFIRM_NIGHT_RESOLUTION') }),
   z.object({ type: z.literal('START_VOTE') }),
   z.object({
+    // SELF mode (R21): player bấm "Sẵn sàng bỏ phiếu" trong pha DAY.
+    type: z.literal('SUBMIT_VOTE_CONSENT'),
+    actorId: z.string().min(1),
+  }),
+  z.object({
     type: z.literal('SUBMIT_VOTE'),
     // SELF mode: player bỏ phiếu trên thiết bị. targetId NULL = phiếu trắng.
     actorId: z.string().min(1),
@@ -102,6 +107,11 @@ export const gameEventSchema = z.discriminatedUnion('type', [
     type: z.literal('VOTE_CAST'),
     actorId: z.string().min(1),
     targetId: z.string().min(1).nullable(),
+  }),
+  z.object({
+    // SELF mode: audit-only — count consent hiển thị qua projection riêng.
+    type: z.literal('VOTE_CONSENT_CAST'),
+    actorId: z.string().min(1),
   }),
   z.object({
     type: z.literal('VOTE_RESOLVED'),

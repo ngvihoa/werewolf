@@ -170,6 +170,16 @@ export const playerGameViewSchema = z.object({
       voteAttempt: z.union([z.literal(1), z.literal(2)]),
     })
     .optional(),
+  // SELF mode (R21): trạng thái consent kết thúc thảo luận ở pha DAY.
+  discussion: z
+    .object({
+      canConsent: z.boolean(),
+      hasConsented: z.boolean(),
+      consentCount: z.number().int(),
+      aliveCount: z.number().int(),
+      consentNeeded: z.number().int(),
+    })
+    .optional(),
   publicHistory: z.array(publicHistoryEntrySchema),
   privateHistory: z.array(privateHistoryEntrySchema),
 })
@@ -194,6 +204,8 @@ const gameStateSchema = z.object({
   pendingNightResolution: nightResolutionSchema.nullable(),
   voteAttempt: z.union([z.literal(1), z.literal(2)]),
   voteSubmissions: z.record(z.string(), z.string().nullable()).optional(),
+  voteConsentIds: z.array(z.string()).optional(),
+  discussionMinEndsAt: z.string().nullable().optional(),
   pendingVote: z
     .object({
       tied: z.boolean(),

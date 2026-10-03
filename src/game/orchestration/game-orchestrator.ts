@@ -34,6 +34,9 @@ export function createFirstNightState(players: readonly Player[]): GameState {
     voteAttempt: 1,
     pendingVote: null,
     pendingVoteResolution: null,
+    voteSubmissions: {},
+    voteConsentIds: [],
+    discussionMinEndsAt: null,
     pendingHunterShot: null,
     winner: null,
   }
@@ -59,6 +62,8 @@ export function executeCommand(
       return confirmNightResolution(state, events)
     case 'START_VOTE':
       return startVote(state, events)
+    case 'SUBMIT_VOTE_CONSENT':
+      return submitVoteConsent(state, command.actorId, events)
     case 'SUBMIT_VOTE':
       return submitVote(state, command.actorId, command.targetId, events)
     case 'SUBMIT_VOTE_RESULT':
@@ -289,7 +294,32 @@ function startVote(
   if (state.phase !== 'DAY') return invalidPhase('DAY', state.phase)
   // Attempt mới = phiếu mới; bỏ phiếu trắng các attempt cũ không có giá trị.
   state.voteSubmissions = {}
+  // Rời DAY cũng hết hạn mốc thảo luận tối thiểu của ngày đó.
+  state.discussionMinEndsAt = null
   transitionPhase(state, 'VOTE', events)
+  return success(state, events)
+}
+
+// R21: người sống bấm "Sẵn sàng bỏ phiếu" — bot mở vote khi đủ majority.
+// Orchestrator không biết đồng hồ; mốc tối thiểu do bot kiểm qua
+// discussionMinEndsAt mà store gắn khi vào DAY.
+function submitVoteConsent(
+  state: GameState,
+  actorId: string,
+  events: GameEvent[],
+): Result<CommandOutcome> {
+  if (state.phase !== 'DAY') return invalidPhase('DAY', state.phase)
+  const actor = state.players.find((player) => player.id === actorId)
+  if (!actor?.alive) {
+    return failure('ACTOR_DEAD', 'Only a living player can consent')
+  }
+  if (state.voteConsentIds?.includes(actorId)) {
+    return failure('INVALID_ACTION', 'Player has already consented')
+  }
+
+  const voteConsentIds = (state.voteConsentIds ??= [])
+  voteConsentIds.push(actorId)
+  events.push({ type: 'VOTE_CONSENT_CAST', actorId })
   return success(state, events)
 }
 
@@ -554,10 +584,14 @@ function transitionAfterElimination(
     state.voteAttempt = 1
     state.confirmedNightActions = []
     state.voteSubmissions = {}
+    state.voteConsentIds = []
+    state.discussionMinEndsAt = null
     state.queue = createQueue(state.players, state.round)
     transitionPhase(state, 'NIGHT', events)
     activateNextRunnableStep(state.queue, state.players, events)
   } else {
+    // Ngày mới: consent của ngày cũ hết giá trị.
+    state.voteConsentIds = []
     transitionPhase(state, 'DAY', events)
   }
   return success(state, events)

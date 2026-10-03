@@ -10,6 +10,7 @@ const PLAYER_COMMANDS = new Set<GameCommand['type']>([
   'SUBMIT_NIGHT_ACTION',
   'SUBMIT_HUNTER_SHOT',
   'SUBMIT_VOTE',
+  'SUBMIT_VOTE_CONSENT',
 ])
 
 // Authorization là application policy dùng chung cho mọi GameStore.
@@ -29,7 +30,10 @@ export function authorizeCommand(
         command.action.actorId !== session.playerId) ||
       (command.type === 'SUBMIT_HUNTER_SHOT' &&
         command.actorId !== session.playerId) ||
-      (command.type === 'SUBMIT_VOTE' && command.actorId !== session.playerId)
+      (command.type === 'SUBMIT_VOTE' &&
+        command.actorId !== session.playerId) ||
+      (command.type === 'SUBMIT_VOTE_CONSENT' &&
+        command.actorId !== session.playerId)
     ) {
       return failure('Player cannot act for another player')
     }

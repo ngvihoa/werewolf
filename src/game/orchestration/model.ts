@@ -38,6 +38,11 @@ export type GameState = {
   // SELF mode: phiếu bỏ trên thiết bị của attempt hiện tại,
   // map playerId -> targetId (NULL = phiếu trắng). Reset mỗi attempt.
   voteSubmissions?: Record<string, string | null>
+  // R21: ai đã bấm "Sẵn sàng bỏ phiếu" trong pha DAY. Reset mỗi ngày.
+  voteConsentIds?: string[]
+  // R21: mốc thời gian tối thiểu của thảo luận (ISO) — store gắn khi vào DAY,
+  // bot chỉ mở vote khi đã qua mốc. Orchestrator giữ NULL, không biết đồng hồ.
+  discussionMinEndsAt?: string | null
   pendingHunterShot?: {
     hunterId: string
     targetId: string | null

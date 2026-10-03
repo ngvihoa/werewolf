@@ -9,6 +9,7 @@ import { cn } from '#/lib/cn'
 
 import { actionPrompt, playerName, playerWaitingTitle } from './game-copy'
 import { NightActionForm } from './NightActionForm'
+import { SelfVoteConsent } from './SelfVoteConsent'
 import { GameOverResult } from './GameOverResult'
 import { HunterShotForm } from './HunterShotForm'
 import { RoleCardDialog } from './RoleCardDialog'
@@ -108,7 +109,7 @@ export function PlayerGamePanel({
       </h2>
 
       {/* Ban ngày chờ biểu quyết = khoảng lặng có chủ ý: mời thảo luận +
-          nhịp sống làng, không nhồi helper text. */}
+          nhịp sống làng, không nhồi helper text. SELF mode kèm nút consent. */}
       {view.phase === 'DAY' && !canSubmit && view.me.alive ? (
         <div className="flex flex-col items-center gap-2 py-6 text-center">
           <p className="max-w-[36ch] text-pretty text-base/7 text-ink-muted">
@@ -120,6 +121,15 @@ export function PlayerGamePanel({
             {view.players.filter((player) => player.alive).length} người còn
             sống
           </p>
+          {view.gameMode === 'SELF' && view.discussion ? (
+            <div className="mt-3 w-full max-w-sm">
+              <SelfVoteConsent
+                view={view}
+                pending={pending}
+                onCommand={onCommand}
+              />
+            </div>
+          ) : null}
         </div>
       ) : null}
 

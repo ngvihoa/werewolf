@@ -9,15 +9,26 @@ import { executeCommand, tallyVotes } from '../orchestration/game-orchestrator'
 // kích hoạt chính nó lại. Flow dài nhất của game vẫn cách xa con số này.
 export const MAX_BOT_ITERATIONS = 50
 
+// R21: thảo luận tối thiểu kéo dài bao lâu trước khi consent có thể mở vote.
+// Hằng số MVP — về sau nâng thành game setting.
+export const MIN_DISCUSSION_MS = 30_000
+
+export type BotClock = {
+  // Thời điểm hiện tại — store inject deps.now() để bot so mốc deadline.
+  now: Date
+}
+
 /**
  * Quản trò bot (mode SELF): phát đúng các command nhóm "moderator confirmation"
  * hoặc lệnh hệ thống tất định mà Quản trò vẫn làm ở mode MODERATED. Rule
  * engine, event log và bề mặt command không đổi — bot chỉ bấm confirm tự động.
  *
- * Không thuộc trách nhiệm bot: START_VOTE (cần consent người chơi — T4),
- * timeout/AFK (T5).
+ * Không thuộc trách nhiệm bot: timeout/AFK (T5).
  */
-export function nextBotCommands(state: Readonly<GameState>): GameCommand[] {
+export function nextBotCommands(
+  state: Readonly<GameState>,
+  clock?: BotClock,
+): GameCommand[] {
   if (state.winner) return []
 
   switch (state.phase) {
@@ -34,6 +45,10 @@ export function nextBotCommands(state: Readonly<GameState>): GameCommand[] {
       return state.pendingHunterShot?.targetId
         ? [{ type: 'CONFIRM_HUNTER_SHOT' }]
         : []
+    case 'DAY':
+      // R21: đủ majority người sống bấm "Sẵn sàng bỏ phiếu" VÀ đã qua mốc
+      // thảo luận tối thiểu → mở vote. Một người chưa đồng ý không kẹt ván.
+      return canOpenVote(state, clock) ? [{ type: 'START_VOTE' }] : []
     case 'VOTE':
       // R20: khi mọi người sống đã bỏ phiếu, bot tally và phát kết quả —
       // hòa theo R14 (attempt 1 → revote, attempt 2 → không ai bị loại).
@@ -46,6 +61,30 @@ export function nextBotCommands(state: Readonly<GameState>): GameCommand[] {
         : []
     default:
       return []
+  }
+}
+
+function canOpenVote(state: Readonly<GameState>, clock?: BotClock): boolean {
+  const aliveCount = state.players.filter((player) => player.alive).length
+  const majority = Math.floor(aliveCount / 2) + 1
+  const consentCount = state.voteConsentIds?.length ?? 0
+  if (consentCount < majority) return false
+
+  if (!state.discussionMinEndsAt) return true
+  if (!clock) return false
+  return clock.now.getTime() >= Date.parse(state.discussionMinEndsAt)
+}
+
+/**
+ * Store gọi SAU khi lệnh người chơi được chấp nhận và TRƯỚC runBotLoop: nếu
+ * state vừa vào DAY mà chưa có mốc thì gắn mốc thảo luận tối thiểu. Orchestrator
+ * giữ nguyên thuần khiết — chỉ store (biết `now`) mới được gắn mốc thời gian.
+ */
+export function stampDiscussionDeadline(state: GameState, now: Date): void {
+  if (state.phase === 'DAY' && !state.discussionMinEndsAt) {
+    state.discussionMinEndsAt = new Date(
+      now.getTime() + MIN_DISCUSSION_MS,
+    ).toISOString()
   }
 }
 
@@ -75,13 +114,16 @@ export type BotLoopOutcome =
  * Bot command bị rule engine từ chối là lỗi invariant (bot không phát lệnh
  * trái luật), trả failure để toàn transaction rollback thay vì im lặng.
  */
-export function runBotLoop(currentState: GameState): BotLoopOutcome {
+export function runBotLoop(
+  currentState: GameState,
+  clock?: BotClock,
+): BotLoopOutcome {
   let state = structuredClone(currentState)
   const events: GameEvent[] = []
   const steps: BotStep[] = []
 
   for (let iteration = 0; iteration < MAX_BOT_ITERATIONS; iteration += 1) {
-    const [command] = nextBotCommands(state)
+    const [command] = nextBotCommands(state, clock)
     if (!command) break
 
     const previousState = structuredClone(state)
