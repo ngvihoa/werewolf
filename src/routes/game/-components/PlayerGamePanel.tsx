@@ -82,6 +82,21 @@ export function PlayerGamePanel({
       </div>
     )
   }
+  // R23 (SELF): đã rời ván — session cũ chỉ còn xem, mọi form hành động ẩn.
+  if (view.me.left) {
+    return (
+      <div className="flex flex-col gap-4">
+        <h2 className="text-balance text-2xl font-medium tracking-tight text-ink sm:text-3xl">
+          Bạn đã rời ván
+        </h2>
+        <p className="text-pretty text-base/7 text-ink-muted">
+          Bạn vẫn theo dõi diễn biến trên màn hình này cho đến khi ván kết thúc.
+          Lượt và phiếu của bạn được bỏ qua tự động.
+        </p>
+        {error ? <InlineError message={error} /> : null}
+      </div>
+    )
+  }
   const activeStep = view.turn.activeStep
   const canSubmit = view.turn.canAct
   const seerResults = [...view.privateHistory]

@@ -111,6 +111,28 @@ function LobbyPage() {
         if (refreshed.isSuccess && refreshed.data) {
           result = await orpcClient.lobby.startGame({
             sessionToken: activeSessionToken,
+            idempotencyKey,
+            expectedVersion: gameViewVersion(refreshed.data),
+          })
+        }
+      }
+      return result
+    },
+    onSuccess: invalidateView,
+  })
+  // R23 (SELF): rời ván từ sảnh chờ — session cũ giữ nguyên để xem view.
+  const leaveGameMutation = useMutation({
+    mutationFn: async ({ idempotencyKey }: { idempotencyKey: string }) => {
+      let result = await orpcClient.lobby.leaveGame({
+        sessionToken: activeSessionToken,
+        expectedVersion: gameViewVersion(viewQuery.data),
+        idempotencyKey,
+      })
+      if (!result.ok && result.error.code === 'STALE_VERSION') {
+        const refreshed = await viewQuery.refetch()
+        if (refreshed.isSuccess && refreshed.data) {
+          result = await orpcClient.lobby.leaveGame({
+            sessionToken: activeSessionToken,
             expectedVersion: gameViewVersion(refreshed.data),
             idempotencyKey,
           })
@@ -143,7 +165,10 @@ function LobbyPage() {
   const rolesAssigned = isModerator
     ? players.length > 0 && players.every((player) => player.role !== null)
     : view.me.role !== null
-  const allReady = players.length > 0 && players.every((player) => player.ready)
+  // R23: người đã rời không chặn start — ready-check chỉ tính người còn chơi.
+  const activePlayers = players.filter((player) => !player.left)
+  const allReady =
+    activePlayers.length > 0 && activePlayers.every((player) => player.ready)
   const gameStarted = isModerator
     ? view.game.state !== null
     : view.phase !== 'LOBBY'
@@ -163,6 +188,10 @@ function LobbyPage() {
     mutationError = mutationErrorMessage(startMutation.data.error)
   } else if (startMutation.error) {
     mutationError = mutationErrorMessage(startMutation.error)
+  } else if (leaveGameMutation.data?.ok === false) {
+    mutationError = mutationErrorMessage(leaveGameMutation.data.error)
+  } else if (leaveGameMutation.error) {
+    mutationError = mutationErrorMessage(leaveGameMutation.error)
   }
 
   // Lưới người chơi: với Quản trò đặt TRƯỚC khối điều khiển — flow đọc tự
@@ -176,6 +205,7 @@ function LobbyPage() {
             key={player.id}
             displayName={player.displayName}
             index={index}
+            left={player.left === true}
             roleImageSrc={
               isModerator && player.role ? roleArtUrl(player.role) : null
             }
@@ -183,11 +213,13 @@ function LobbyPage() {
               isModerator && player.role ? roleLabel(player.role) : null
             }
             statusText={
-              !rolesAssigned
-                ? 'Đang chờ'
-                : player.ready
-                  ? 'Sẵn sàng'
-                  : 'Xem vai'
+              player.left
+                ? 'Đã rời'
+                : !rolesAssigned
+                  ? 'Đang chờ'
+                  : player.ready
+                    ? 'Sẵn sàng'
+                    : 'Xem vai'
             }
           />
         )}
@@ -217,7 +249,7 @@ function LobbyPage() {
         <>
           {roster}
           <ModeratorControls
-            playerCount={players.length}
+            playerCount={activePlayers.length}
             rolesAssigned={rolesAssigned}
             allReady={allReady}
             assigning={assignMutation.isPending}
@@ -243,6 +275,8 @@ function LobbyPage() {
             mode={gameMode}
             role={view.me.role}
             ready={view.me.ready}
+            left={view.me.left === true}
+            leaving={leaveGameMutation.isPending}
             pending={readyMutation.isPending}
             error={mutationError}
             onReadyChange={(ready) =>
@@ -251,12 +285,20 @@ function LobbyPage() {
                 idempotencyKey: createIdempotencyKey(),
               })
             }
+            onLeaveGame={
+              !isModerator && gameMode === 'SELF' && !view.me.left
+                ? () =>
+                    leaveGameMutation.mutate({
+                      idempotencyKey: createIdempotencyKey(),
+                    })
+                : undefined
+            }
           />
           {roster}
           {isSelfHost ? (
             <div className="border-t border-line pt-5">
               <ModeratorControls
-                playerCount={players.length}
+                playerCount={activePlayers.length}
                 rolesAssigned={rolesAssigned}
                 allReady={allReady}
                 assigning={assignMutation.isPending}
