@@ -1,7 +1,11 @@
 import type { PlayerGameView } from '#/game/projections/model'
 import type { CommandHandler } from './types'
+import type { ReactNode } from 'react'
 
+import { ChevronRight } from 'lucide-react'
 import { InlineError } from '#/components/InlineError'
+import { useState } from 'react'
+import { cn } from '#/lib/cn'
 
 import { actionPrompt, playerName, playerWaitingTitle } from './game-copy'
 import { NightActionForm } from './NightActionForm'
@@ -9,6 +13,42 @@ import { GameOverResult } from './GameOverResult'
 import { HunterShotForm } from './HunterShotForm'
 import { RoleCardDialog } from './RoleCardDialog'
 import { SecretNotice } from './SecretNotice'
+
+/**
+ * Khối lịch sử (soi / dùng bình) — nội dung phụ nên nằm gọn dưới quyết định
+ * hiện tại: mặc định thu gọn, mở khi cần tra lại.
+ */
+function HistoryDisclosure({
+  label,
+  children,
+}: {
+  label: string
+  children: ReactNode
+}) {
+  const [open, setOpen] = useState(false)
+  return (
+    <div className="flex flex-col gap-4">
+      <button
+        aria-expanded={open}
+        className="flex min-h-11 items-center justify-between gap-3 text-left"
+        type="button"
+        onClick={() => setOpen((current) => !current)}
+      >
+        <span className="font-mono text-sm tracking-wide text-accent uppercase">
+          {label}
+        </span>
+        <ChevronRight
+          aria-hidden="true"
+          className={cn(
+            'size-4 shrink-0 text-ink-muted transition-transform',
+            open && 'rotate-90',
+          )}
+        />
+      </button>
+      {open ? children : null}
+    </div>
+  )
+}
 
 export function PlayerGamePanel({
   view,
@@ -45,21 +85,30 @@ export function PlayerGamePanel({
 
   return (
     <div className="flex flex-col gap-8">
-      <div className="flex flex-col gap-3">
-        <h2 className="text-balance text-3xl font-medium tracking-tight text-ink">
-          {canSubmit && activeStep
-            ? actionPrompt(activeStep)
-            : canSubmit
-              ? 'Đến lượt bạn hành động'
-              : !view.me.alive
-                ? 'Bạn đang quan sát'
-                : playerWaitingTitle(view.phase)}
-        </h2>
-        <p className="text-pretty text-base/7 text-ink-muted sm:text-sm/6">
-          Thông tin trên màn hình này chỉ dành cho bạn. Mở thẻ khi cần xem lại
-          vai trò.
-        </p>
-      </div>
+      <h2 className="text-balance text-3xl font-medium tracking-tight text-ink">
+        {canSubmit && activeStep
+          ? actionPrompt(activeStep)
+          : canSubmit
+            ? 'Đến lượt bạn hành động'
+            : !view.me.alive
+              ? 'Bạn đang quan sát'
+              : playerWaitingTitle(view.phase)}
+      </h2>
+
+      {/* Ban ngày chờ biểu quyết = khoảng lặng có chủ ý: mời thảo luận + 
+          nhịp sống làng, không nhồi helper text. */}
+      {view.phase === 'DAY' && !canSubmit && view.me.alive ? (
+        <div className="flex flex-col items-center gap-2 py-6 text-center">
+          <p className="max-w-[36ch] text-pretty text-base/7 text-ink-muted">
+            Hãy bàn bạc với cả làng: ai hành động khả nghi? Quản trò sẽ mở biểu
+            quyết khi bàn chơi sẵn sàng.
+          </p>
+          <p className="font-mono text-sm tabular-nums text-ink-subtle">
+            {view.players.filter((player) => player.alive).length} người còn
+            sống
+          </p>
+        </div>
+      ) : null}
 
       {view.me.role === 'HYBRID_WOLF' &&
       view.me.abilityState !== null &&
@@ -103,16 +152,27 @@ export function PlayerGamePanel({
           value={playerName(view.players, view.turn.hunterShotTargetId)}
         />
       ) : null}
+      {canSubmit && activeStep ? (
+        <NightActionForm
+          view={view}
+          step={activeStep}
+          pending={pending}
+          error={error}
+          onCommand={onCommand}
+        />
+      ) : null}
+      {canSubmit && view.phase === 'HUNTER_SHOT' ? (
+        <HunterShotForm
+          view={view}
+          pending={pending}
+          error={error}
+          onCommand={onCommand}
+        />
+      ) : null}
+      {/* Lịch sử riêng là thông tin phụ — thu gọn dưới quyết định hiện tại,
+          mở khi cần tra lại. */}
       {seerResults.length > 0 ? (
-        <section className="flex flex-col gap-4">
-          <div>
-            <p className="font-mono text-sm tracking-wide text-accent uppercase">
-              Lịch sử soi
-            </p>
-            <p className="pt-2 text-sm/6 text-ink-muted">
-              Kết quả mới nhất hiển thị trước. Mỗi kết quả được giữ kín riêng.
-            </p>
-          </div>
+        <HistoryDisclosure label="Lịch sử soi">
           {seerResults.map((entry, index) =>
             entry.event.type === 'SEER_RESULT_RECORDED' ? (
               <SecretNotice
@@ -127,19 +187,10 @@ export function PlayerGamePanel({
               />
             ) : null,
           )}
-        </section>
+        </HistoryDisclosure>
       ) : null}
       {witchActions.length > 0 ? (
-        <section className="flex flex-col gap-4">
-          <div>
-            <p className="font-mono text-sm tracking-wide text-accent uppercase">
-              Lịch sử dùng bình
-            </p>
-            <p className="pt-2 text-sm/6 text-ink-muted">
-              Chỉ những hành động đã được Quản trò xác nhận mới xuất hiện tại
-              đây.
-            </p>
-          </div>
+        <HistoryDisclosure label="Lịch sử dùng bình">
           {witchActions.map((entry, index) => {
             if (
               entry.event.type !== 'OWN_NIGHT_ACTION_CONFIRMED' ||
@@ -170,27 +221,16 @@ export function PlayerGamePanel({
               />
             )
           })}
-        </section>
+        </HistoryDisclosure>
       ) : null}
-      {canSubmit && activeStep ? (
-        <NightActionForm
-          view={view}
-          step={activeStep}
-          pending={pending}
-          error={error}
-          onCommand={onCommand}
-        />
-      ) : null}
-      {canSubmit && view.phase === 'HUNTER_SHOT' ? (
-        <HunterShotForm
-          view={view}
-          pending={pending}
-          error={error}
-          onCommand={onCommand}
-        />
-      ) : null}
-      {/* Vai đã xem ở sảnh chờ — trong ván chỉ để nút mở lại cho gọn màn hình. */}
-      {view.me.role ? <RoleCardDialog role={view.me.role} /> : null}
+      {/* Vai đã xem ở sảnh chờ — trong ván chỉ để nút mở lại; ghi chú riêng
+          tư đi kèm thay cho helper text đầu trang. */}
+      <div className="flex flex-col gap-2">
+        {view.me.role ? <RoleCardDialog role={view.me.role} /> : null}
+        <p className="text-sm/6 text-ink-subtle">
+          Thông tin trên màn hình này chỉ dành cho bạn.
+        </p>
+      </div>
       {error ? <InlineError message={error} /> : null}
     </div>
   )
