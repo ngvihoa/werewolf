@@ -241,6 +241,24 @@ test('điều phối ván thật và chụp các màn của vòng task UI 2026-1
     await reloadAndWait(mod, 'Bảng Quản trò')
     await shoot(mod, '03-dem-1-hang-doi')
 
+    // 03b — Dialog "Xem vai trò" mở: bằng chứng kích thước thẻ bài theo
+    // viewport (mobile giữ, desktop phóng to).
+    const seerRoleButton = seer.page
+      .getByRole('button', { name: /Xem vai trò/ })
+      .first()
+    await expect(async () => {
+      await seer.page.reload()
+      await expect(seerRoleButton).toBeVisible({ timeout: 4_000 })
+    }).toPass({ timeout: 90_000 })
+    await seerRoleButton.click()
+    const roleDialog = seer.page.locator('dialog[open]')
+    await expect(roleDialog).toBeVisible()
+    await dress(seer.page)
+    await seer.page.waitForTimeout(900)
+    await shoot(seer.page, '03b-xem-vai-tro-dialog')
+    await seer.page.getByRole('button', { name: 'Đóng thẻ vai' }).click()
+    await expect(roleDialog).toBeHidden()
+
     await submitNightAction(hunter, { targetName: villager1.name })
     await confirmSubmittedAction(mod)
     await submitNightAction(protector, { targetName: protector.name })

@@ -26,7 +26,7 @@ function TokenSurface({
 }) {
   return (
     <div
-      className={`relative flex h-full min-h-28 w-full flex-col items-center justify-center gap-2 rounded-2xl px-3 py-4 text-center ring-1 transition-colors group-hover:bg-surface-raised ${className}`}
+      className={`relative flex h-full min-h-28 w-full flex-col items-center justify-center gap-2 rounded-2xl px-3 py-4 text-center ring-1 transition-colors group-hover:bg-surface-raised sm:min-h-24 ${className}`}
     >
       {children}
     </div>
@@ -93,7 +93,7 @@ export function PlayerToken({
         />
       ) : null}
       <span
-        className={`grid size-10 place-items-center overflow-hidden rounded-full font-mono text-sm ring-1 ${
+        className={`grid size-10 place-items-center overflow-hidden rounded-full font-mono text-sm ring-1 sm:size-9 ${
           acting
             ? 'bg-danger/15 text-accent ring-danger/40'
             : 'bg-white/8 text-ink-muted ring-line'

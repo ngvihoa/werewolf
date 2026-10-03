@@ -48,7 +48,11 @@ export function RoleCardDialog({ role }: { role: Role }) {
             className="pointer-events-none absolute top-1/2 left-1/2 size-72 -translate-x-1/2 -translate-y-1/2 rounded-full"
             style={{ background: `${roleAccentColor(role)}26` }}
           />
-          <RoleCard className="max-w-80" defaultRevealed role={role} />
+          <RoleCard
+            className="max-w-80 sm:max-w-96"
+            defaultRevealed
+            role={role}
+          />
         </div>
       </dialog>
     </>

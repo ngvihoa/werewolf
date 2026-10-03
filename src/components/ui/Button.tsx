@@ -18,7 +18,8 @@ const VARIANT_CLASSES: Record<ButtonVariant, string> = {
 
 const SIZE_CLASSES: Record<ButtonSize, string> = {
   md: 'min-h-11 px-4 text-sm',
-  lg: 'min-h-14 px-5 text-base',
+  // Mobile 56px cho ngón tay; desktop gọn 48px khi có con trỏ.
+  lg: 'min-h-14 px-5 text-base sm:min-h-12',
 }
 
 export function Button({

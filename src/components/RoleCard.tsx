@@ -9,7 +9,7 @@ const HOLD_REVEAL_MS = 250
 export function RoleCard({
   role,
   defaultRevealed = false,
-  className = 'max-w-64',
+  className = 'max-w-64 sm:max-w-72',
 }: {
   role: Role
   // Dialog "Xem vai trò" mở là để xem — thẻ hiện mặt sẵn, vẫn lật được.

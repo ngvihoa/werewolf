@@ -113,9 +113,13 @@ export function PhaseIndicator({
   return (
     <div className="flex items-center gap-4">
       <span
-        className={`grid size-12 shrink-0 place-items-center rounded-full ring-1 ${phaseIconTint(phase)}`}
+        className={`grid size-12 shrink-0 place-items-center rounded-full ring-1 sm:size-10 ${phaseIconTint(phase)}`}
       >
-        <Icon aria-hidden="true" className="size-6" strokeWidth={1.5} />
+        <Icon
+          aria-hidden="true"
+          className="size-6 sm:size-5"
+          strokeWidth={1.5}
+        />
       </span>
       <div className="min-w-0">
         <h2 className="text-2xl font-medium tracking-tight text-ink sm:text-3xl">
