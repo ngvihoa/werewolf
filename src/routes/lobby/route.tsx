@@ -162,6 +162,36 @@ function LobbyPage() {
     mutationError = mutationErrorMessage(startMutation.error)
   }
 
+  // Lưới người chơi: với Quản trò đặt TRƯỚC khối điều khiển — flow đọc tự
+  // nhiên là cấu hình → xem bàn → bắt đầu (task 2 / tasks-2026-10-03).
+  const roster = (
+    <div className="border-t border-line pt-5">
+      <PlayerGrid
+        items={players}
+        renderItem={(player, index) => (
+          <PlayerToken
+            key={player.id}
+            displayName={player.displayName}
+            index={index}
+            roleImageSrc={
+              isModerator && player.role ? roleArtUrl(player.role) : null
+            }
+            roleLabelText={
+              isModerator && player.role ? roleLabel(player.role) : null
+            }
+            statusText={
+              !rolesAssigned
+                ? 'Đang chờ'
+                : player.ready
+                  ? 'Sẵn sàng'
+                  : 'Xem vai'
+            }
+          />
+        )}
+      />
+    </div>
+  )
+
   return (
     <GameShell
       phase="LOBBY"
@@ -181,65 +211,46 @@ function LobbyPage() {
         version={version}
       />
       {view.viewer === 'MODERATOR' ? (
-        <ModeratorControls
-          playerCount={players.length}
-          rolesAssigned={rolesAssigned}
-          allReady={allReady}
-          assigning={assignMutation.isPending}
-          starting={startMutation.isPending}
-          error={mutationError}
-          onAssign={(composition) =>
-            assignMutation.mutate({
-              composition,
-              idempotencyKey: createIdempotencyKey(),
-            })
-          }
-          // Start game cũng dùng optimistic locking như các lobby mutation khác.
-          onStart={() =>
-            startMutation.mutate({
-              idempotencyKey: createIdempotencyKey(),
-            })
-          }
-        />
+        <>
+          {roster}
+          <ModeratorControls
+            playerCount={players.length}
+            rolesAssigned={rolesAssigned}
+            allReady={allReady}
+            assigning={assignMutation.isPending}
+            starting={startMutation.isPending}
+            error={mutationError}
+            onAssign={(composition) =>
+              assignMutation.mutate({
+                composition,
+                idempotencyKey: createIdempotencyKey(),
+              })
+            }
+            // Start game cũng dùng optimistic locking như các lobby mutation khác.
+            onStart={() =>
+              startMutation.mutate({
+                idempotencyKey: createIdempotencyKey(),
+              })
+            }
+          />
+        </>
       ) : (
-        <PlayerControls
-          role={view.me.role}
-          ready={view.me.ready}
-          pending={readyMutation.isPending}
-          error={mutationError}
-          onReadyChange={(ready) =>
-            readyMutation.mutate({
-              ready,
-              idempotencyKey: createIdempotencyKey(),
-            })
-          }
-        />
+        <>
+          <PlayerControls
+            role={view.me.role}
+            ready={view.me.ready}
+            pending={readyMutation.isPending}
+            error={mutationError}
+            onReadyChange={(ready) =>
+              readyMutation.mutate({
+                ready,
+                idempotencyKey: createIdempotencyKey(),
+              })
+            }
+          />
+          {roster}
+        </>
       )}
-      <div className="mt-1 border-t border-line pt-5 opacity-70">
-        <PlayerGrid
-          items={players}
-          renderItem={(player, index) => (
-            <PlayerToken
-              key={player.id}
-              displayName={player.displayName}
-              index={index}
-              roleImageSrc={
-                isModerator && player.role ? roleArtUrl(player.role) : null
-              }
-              roleLabelText={
-                isModerator && player.role ? roleLabel(player.role) : null
-              }
-              statusText={
-                !rolesAssigned
-                  ? 'Đang chờ'
-                  : player.ready
-                    ? 'Sẵn sàng'
-                    : 'Xem vai'
-              }
-            />
-          )}
-        />
-      </div>
     </GameShell>
   )
 }
