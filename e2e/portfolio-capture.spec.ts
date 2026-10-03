@@ -10,10 +10,10 @@ import { createTable } from './fixtures/table'
 
 // Kịch bản "đạo diễn": 9 trình duyệt chơi trọn một ván Ma Sói qua UI thật
 // (tương tác y như người chơi, không gọi API trực tiếp) và chụp lại các
-// khoảnh khắc đắt giá vào portfolio-assets/ để dùng làm asset portfolio.
+// khoảnh khắc đắt giá vào captures/portfolio/ để dùng làm asset portfolio.
 // Chạy: pnpm test:capture
 
-const OUT_DIR = join(process.cwd(), 'portfolio-assets')
+const OUT_DIR = join(process.cwd(), 'captures/portfolio')
 
 const PARTY_NAMES = [
   'Mai Phương',
@@ -36,7 +36,7 @@ const CAMERA_CONTEXT = {
   viewport: SHOT_SIZE,
   deviceScaleFactor: 2,
   recordVideo: {
-    dir: 'portfolio-assets/videos',
+    dir: 'captures/portfolio/videos',
     size: { width: 960, height: 600 },
   },
 } as const

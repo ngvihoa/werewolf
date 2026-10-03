@@ -31,7 +31,7 @@ public/role/*.png
 public/role/optimized/
 
 # Ảnh/video portfolio do kịch bản test:capture tạo ra
-portfolio-assets/
+captures/
 
 # Ảnh chụp trước/sau các vòng task UI — chỉ để review local
-screenshots/
+

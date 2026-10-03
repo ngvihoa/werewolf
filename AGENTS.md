@@ -30,6 +30,11 @@ pnpm db:generate / db:migrate / db:studio
     UI; nguyên tắc cứng + toàn bộ vòng quyết định thiết kế nằm ở đó.
   - `docs/rules/` — spec game 8 phần (scope, luật, vai, flow, sự kiện).
   - `docs/ROADMAP.md`, `docs/TECHNICAL_ASSESSMENT.md`.
+- `captures/` — **TOÀN BỘ output chụp test** (ảnh/video portfolio, before/
+  after các vòng UI, audit viewport…) lưu vào đây, gitignore. Spec chụp:
+  `e2e/portfolio-capture*.spec.ts` (`pnpm test:capture`, hoặc bật
+  `UI_TASKS_CAPTURE=1` cho spec task UI). Chi tiết cấu trúc xem
+  `captures/README.md`.
 
 ## Quy ước code
 

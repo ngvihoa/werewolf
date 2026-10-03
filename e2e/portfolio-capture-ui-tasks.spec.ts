@@ -15,15 +15,16 @@ import { createTable } from './fixtures/table'
 // thường vẫn phải skip nó — nên có cổng env).
 //
 // Chạy một lượt:
-//   UI_TASKS_CAPTURE=1 CAPTURE_DIR=screenshots/ui-tasks-2026-10-03/before \
+//   UI_TASKS_CAPTURE=1 CAPTURE_DIR=captures/ui-tasks-2026-10-03/after-390 \
 //   pnpm exec playwright test e2e/portfolio-capture-ui-tasks.spec.ts --project=capture
 //
-// Env: CAPTURE_DIR (mặc định screenshots/ui-tasks-2026-10-03),
+// Env: CAPTURE_DIR (mặc định captures/ui-tasks-2026-10-03),
 // CAPTURE_W/CAPTURE_H/CAPTURE_DPR (mặc định 390×844 @2x — mobile-first).
+// Quy ước: MỌI output chụp test lưu trong captures/ (xem AGENTS.md).
 
 const OUT_DIR = join(
   process.cwd(),
-  process.env.CAPTURE_DIR ?? 'screenshots/ui-tasks-2026-10-03',
+  process.env.CAPTURE_DIR ?? 'captures/ui-tasks-2026-10-03',
 )
 const VIEWPORT = {
   viewport: {
