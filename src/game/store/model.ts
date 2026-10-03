@@ -8,8 +8,8 @@ import type {
   storeErrorCodeSchema,
   storeErrorSchema,
 } from './schema'
+import type { GameMode, Role } from '../domain'
 import type { GameState } from '../orchestration/model'
-import type { Role } from '../domain'
 import type { z } from 'zod'
 
 // Type được infer từ runtime schema để validation và TypeScript luôn đồng bộ.
@@ -50,6 +50,9 @@ export type LocalGame = {
   roomCode: string
   version: number
   moderatorName: string
+  mode: GameMode
+  // SELF mode: id của player chủ phòng (tạo phòng). MODERATED là null.
+  hostPlayerId: string | null
   lobbyPlayers: LobbyPlayer[]
   state: GameState | null
   history: StoredEvent[]

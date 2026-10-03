@@ -6,6 +6,7 @@ import type {
 } from '../model'
 import type { RoleCompositionSelection } from '../../domain'
 import type { PostgresStoreDeps } from './shared'
+import type { CreateGameInput } from '../game-store'
 
 import { and, desc, eq } from 'drizzle-orm'
 import {
@@ -32,6 +33,7 @@ import {
   updateGameAndIncrementVersion,
   validateLobbyMutation,
   findActiveSession,
+  isGameController,
   lockGame,
 } from './sessions'
 import {
@@ -47,7 +49,7 @@ const MAX_ROOM_CODE_ATTEMPTS = 20
 
 export async function createGame(
   deps: PostgresStoreDeps,
-  moderatorName: string,
+  input: CreateGameInput,
 ): Promise<StoreResult<CreatedGame>> {
   const { database } = deps
 
@@ -57,6 +59,10 @@ export async function createGame(
   const rawSessionToken = deps.createSessionToken()
   const hashedSessionToken = deps.hashSessionToken(rawSessionToken)
   const expiresAt = deps.createSessionExpiry(now)
+  const mode = input.mode
+  const ownerName = (
+    mode === 'MODERATED' ? input.moderatorName : input.creatorName
+  ).trim()
 
   // Tạo room code
   let roomCode: string
@@ -72,7 +78,8 @@ export async function createGame(
             .insert(games)
             .values({
               roomCode,
-              moderatorName: moderatorName.trim(),
+              moderatorName: ownerName,
+              mode,
             })
             .returning({
               id: games.id,
@@ -85,45 +92,126 @@ export async function createGame(
             throw new Error('Database did not return the created game')
           }
 
-          // Tạo session token
+          if (mode === 'MODERATED') {
+            // Tạo session token
+            await transaction.insert(gameSessions).values({
+              gameId: game.id,
+              playerId: null,
+              kind: 'MODERATOR',
+              tokenHash: hashedSessionToken,
+              expiresAt,
+              createdAt: now,
+              lastSeenAt: now,
+            })
+
+            // Validate event trước khi tách thành type và JSONB payload.
+            const createdEvent = serializeGameEvent({
+              type: 'GAME_CREATED',
+            })
+
+            // Tạo event đầu tiên
+            await transaction.insert(gameEvents).values({
+              gameId: game.id,
+              round: 0,
+              phase: 'SETUP',
+              sequence: 1,
+              type: createdEvent.type,
+              payload: createdEvent.payload,
+              createdAt: now,
+              createdBy: 'SYSTEM',
+              targetPlayerId: null,
+              actorPlayerId: null,
+            })
+
+            return {
+              // Giữ `true` ở dạng literal để khớp nhánh thành công của StoreResult.
+              ok: true as const,
+              value: {
+                mode,
+                gameId: game.id,
+                roomCode: game.roomCode,
+                moderatorSessionToken: rawSessionToken,
+                version: game.version,
+              } satisfies CreatedGame,
+            }
+          }
+
+          // SELF: chủ phòng là một player thường, được đánh dấu is_host.
+          const [creator] = await transaction
+            .insert(gamePlayers)
+            .values({
+              gameId: game.id,
+              displayName: ownerName,
+              isModerator: false,
+              isHost: true,
+              isReady: false,
+              isAlive: true,
+              joinedAt: now,
+            })
+            .returning({
+              id: gamePlayers.id,
+              displayName: gamePlayers.displayName,
+            })
+
+          if (!creator) {
+            throw new Error(
+              'Database did not return the created creator player',
+            )
+          }
+
           await transaction.insert(gameSessions).values({
             gameId: game.id,
-            playerId: null,
-            kind: 'MODERATOR',
+            playerId: creator.id,
+            kind: 'PLAYER',
             tokenHash: hashedSessionToken,
             expiresAt,
             createdAt: now,
             lastSeenAt: now,
           })
 
-          // Validate event trước khi tách thành type và JSONB payload.
-          const createdEvent = serializeGameEvent({
-            type: 'GAME_CREATED',
+          const createdEvent = serializeGameEvent({ type: 'GAME_CREATED' })
+          const joinedEvent = serializeGameEvent({
+            type: 'PLAYER_JOINED',
+            playerId: creator.id,
+            displayName: creator.displayName,
           })
-
-          // Tạo event đầu tiên
-          await transaction.insert(gameEvents).values({
-            gameId: game.id,
-            round: 0,
-            phase: 'SETUP',
-            sequence: 1,
-            type: createdEvent.type,
-            payload: createdEvent.payload,
-            createdAt: now,
-            createdBy: 'SYSTEM',
-            targetPlayerId: null,
-            actorPlayerId: null,
-          })
+          await transaction.insert(gameEvents).values([
+            {
+              gameId: game.id,
+              round: 0,
+              phase: 'SETUP',
+              sequence: 1,
+              type: createdEvent.type,
+              payload: createdEvent.payload,
+              createdAt: now,
+              createdBy: 'SYSTEM',
+              targetPlayerId: null,
+              actorPlayerId: null,
+            },
+            {
+              gameId: game.id,
+              round: 0,
+              phase: 'SETUP',
+              sequence: 2,
+              type: joinedEvent.type,
+              payload: joinedEvent.payload,
+              createdAt: now,
+              createdBy: 'PLAYER',
+              targetPlayerId: null,
+              actorPlayerId: creator.id,
+            },
+          ])
 
           return {
-            // Giữ `true` ở dạng literal để khớp nhánh thành công của StoreResult.
             ok: true as const,
             value: {
+              mode,
               gameId: game.id,
               roomCode: game.roomCode,
-              moderatorSessionToken: rawSessionToken,
+              playerId: creator.id,
+              playerSessionToken: rawSessionToken,
               version: game.version,
-            },
+            } satisfies CreatedGame,
           }
         },
       )
@@ -392,15 +480,19 @@ export async function assignRoles(
       )
     }
 
-    // Chỉ Moderator mới được quyền phân vai.
-    if (session.kind !== 'MODERATOR') {
+    const lockedGame = await lockGame(transaction, session.gameId)
+
+    // MODERATED: Quản trò. SELF: chủ phòng cũng được phân vai (R24).
+    if (
+      !lockedGame ||
+      !(await isGameController(transaction, session, lockedGame))
+    ) {
       return failure(
         STORE_ERROR_CODE.NOT_AUTHORIZED,
         'Moderator session is required',
       )
     }
 
-    const lockedGame = await lockGame(transaction, session.gameId)
     const requestHash = hashMutationRequest({
       type: 'ASSIGN_ROLES',
       expectedVersion,
@@ -480,8 +572,8 @@ export async function assignRoles(
 
     await appendGameEvent(transaction, {
       game,
-      createdBy: 'MODERATOR',
-      actorPlayerId: null,
+      createdBy: session.kind,
+      actorPlayerId: session.playerId,
       createdAt: now,
       event: { type: 'ROLES_ASSIGNED' },
     })
@@ -533,15 +625,19 @@ export async function startGame(
       )
     }
 
-    // Chỉ Moderator mới được quyền phân vai.
-    if (session.kind !== 'MODERATOR') {
+    const lockedGame = await lockGame(transaction, session.gameId)
+
+    // MODERATED: Quản trò. SELF: chủ phòng cũng được bắt đầu ván.
+    if (
+      !lockedGame ||
+      !(await isGameController(transaction, session, lockedGame))
+    ) {
       return failure(
         STORE_ERROR_CODE.NOT_AUTHORIZED,
         'Moderator session is required',
       )
     }
 
-    const lockedGame = await lockGame(transaction, session.gameId)
     const requestHash = hashMutationRequest({
       type: 'START_GAME',
       expectedVersion,
@@ -648,8 +744,8 @@ export async function startGame(
         phase: state.phase,
         round: state.round,
       },
-      createdBy: 'MODERATOR',
-      actorPlayerId: null,
+      createdBy: session.kind,
+      actorPlayerId: session.playerId,
       createdAt: now,
       event: { type: 'GAME_STARTED' },
     })
@@ -693,14 +789,16 @@ export async function rematch(
         'Session does not exist or is no longer active',
       )
     }
-    if (session.kind !== 'MODERATOR') {
+    const game = await lockGame(transaction, session.gameId)
+
+    // MODERATED: Quản trò. SELF: chủ phòng cũng được rematch.
+    if (!game || !(await isGameController(transaction, session, game))) {
       return failure(
         STORE_ERROR_CODE.NOT_AUTHORIZED,
         'Moderator session is required',
       )
     }
 
-    const game = await lockGame(transaction, session.gameId)
     const requestHash = hashMutationRequest({
       type: 'REMATCH',
       expectedVersion,
@@ -731,8 +829,8 @@ export async function rematch(
       .where(eq(gamePlayers.gameId, game.id))
     await appendGameEvent(transaction, {
       game: { id: game.id, phase: 'SETUP', round: 0 },
-      createdBy: 'MODERATOR',
-      actorPlayerId: null,
+      createdBy: session.kind,
+      actorPlayerId: session.playerId,
       createdAt: now,
       event: { type: 'MATCH_RESET' },
     })

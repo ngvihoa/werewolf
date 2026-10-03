@@ -41,6 +41,11 @@ export const GAME_PHASE_VALUES = [
   'GAME_OVER',
 ] as const
 
+// MODERATED: có Quản trò điều phối (mode mặc định).
+// SELF: không có Quản trò — bot tự confirm, vote trên thiết bị (R20–R24).
+export const GAME_MODE_VALUES = ['MODERATED', 'SELF'] as const
+export const gameModeSchema = z.enum(GAME_MODE_VALUES)
+
 export const QUEUE_STEP_VALUES = [
   'HUNTER_MARK',
   'PROTECTOR_PROTECT',

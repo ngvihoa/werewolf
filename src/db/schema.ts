@@ -30,6 +30,7 @@ import {
 import {
   GAME_PHASE_VALUES,
   QUEUE_STEP_VALUES,
+  GAME_MODE_VALUES,
   ROLE_VALUES,
 } from '#/game/schema'
 
@@ -40,6 +41,8 @@ export const gameStatus = pgEnum('game_status', [
 ])
 
 export const gamePhase = pgEnum('game_phase', GAME_PHASE_VALUES)
+
+export const gameMode = pgEnum('game_mode', GAME_MODE_VALUES)
 
 export const role = pgEnum('role', ROLE_VALUES)
 
@@ -76,6 +79,7 @@ export const games = pgTable(
     id: uuid('id').defaultRandom().primaryKey(),
     roomCode: text('room_code').notNull().unique(),
     moderatorName: text('moderator_name').notNull(),
+    mode: gameMode('mode').notNull().default('MODERATED'),
     status: gameStatus('status').notNull().default('LOBBY'),
     phase: gamePhase('phase').notNull().default('SETUP'),
     round: integer('round').notNull().default(0),
@@ -124,6 +128,9 @@ export const gamePlayers = pgTable(
       | WhiteWolfResources
     >(),
     isModerator: boolean('is_moderator').notNull().default(false),
+    // SELF mode: player tạo phòng giữ vai trò chủ phòng (cấu hình vai, start,
+    // rematch) mà không cần session moderator riêng.
+    isHost: boolean('is_host').notNull().default(false),
     isReady: boolean('is_ready').notNull().default(false),
     isAlive: boolean('is_alive').notNull().default(true),
     joinedAt: timestamp('joined_at', { withTimezone: true })

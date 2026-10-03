@@ -5,30 +5,35 @@ import { RoleCard } from '#/components/RoleCard'
 import { Button } from '#/components/ui/Button'
 
 export function PlayerControls({
+  mode = 'MODERATED',
   role,
   ready,
   pending,
   error,
   onReadyChange,
 }: {
+  // SELF mode: không có Quản trò — người phân vai là chủ phòng.
+  mode?: 'MODERATED' | 'SELF'
   role: Role | null
   ready: boolean
   pending: boolean
   error: string | null
   onReadyChange: (ready: boolean) => void
 }) {
+  const isSelf = mode === 'SELF'
   if (!role) {
     return (
       <div className="flex flex-col gap-4">
         <p className="font-mono text-sm tracking-wide text-accent uppercase">
-          Đang chờ Quản trò
+          {isSelf ? 'Đang chờ chủ phòng' : 'Đang chờ Quản trò'}
         </p>
         <h2 className="text-balance text-2xl font-medium tracking-tight text-ink sm:text-3xl">
           Vai trò chưa được phân
         </h2>
         <p className="text-pretty text-base/7 text-ink-muted sm:text-sm/6">
-          Giữ tab này mở. Vai của bạn sẽ xuất hiện riêng tại đây sau khi Quản
-          trò xáo vai.
+          {isSelf
+            ? 'Giữ tab này mở. Vai của bạn sẽ xuất hiện riêng tại đây sau khi chủ phòng xáo vai.'
+            : 'Giữ tab này mở. Vai của bạn sẽ xuất hiện riêng tại đây sau khi Quản trò xáo vai.'}
         </p>
       </div>
     )
@@ -53,8 +58,9 @@ export function PlayerControls({
           Bảo mật vai
         </p>
         <p className="pt-3 text-pretty text-base/7 text-ink sm:text-sm/6">
-          Chỉ màn hình của bạn và Quản trò nhận được thông tin này. Đừng chuyền
-          thiết bị khi vai đang hiển thị.
+          {isSelf
+            ? 'Chỉ màn hình của bạn nhận được thông tin này. Đừng chuyền thiết bị khi vai đang hiển thị.'
+            : 'Chỉ màn hình của bạn và Quản trò nhận được thông tin này. Đừng chuyền thiết bị khi vai đang hiển thị.'}
         </p>
       </div>
       <Button

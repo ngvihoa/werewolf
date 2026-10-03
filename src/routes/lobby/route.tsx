@@ -132,6 +132,9 @@ function LobbyPage() {
 
   const view = viewQuery.data
   const isModerator = view.viewer === 'MODERATOR'
+  const gameMode = isModerator ? 'MODERATED' : (view.gameMode ?? 'MODERATED')
+  // SELF mode: player tạo phòng điều khiển sảnh thay Quản trò (R24).
+  const isSelfHost = !isModerator && gameMode === 'SELF' && view.isHost === true
   const roomCode = isModerator ? view.game.roomCode : view.roomCode
   const version = isModerator ? view.game.version : view.version
   const players = isModerator
@@ -237,6 +240,7 @@ function LobbyPage() {
       ) : (
         <>
           <PlayerControls
+            mode={gameMode}
             role={view.me.role}
             ready={view.me.ready}
             pending={readyMutation.isPending}
@@ -249,6 +253,29 @@ function LobbyPage() {
             }
           />
           {roster}
+          {isSelfHost ? (
+            <div className="border-t border-line pt-5">
+              <ModeratorControls
+                playerCount={players.length}
+                rolesAssigned={rolesAssigned}
+                allReady={allReady}
+                assigning={assignMutation.isPending}
+                starting={startMutation.isPending}
+                error={mutationError}
+                onAssign={(composition) =>
+                  assignMutation.mutate({
+                    composition,
+                    idempotencyKey: createIdempotencyKey(),
+                  })
+                }
+                onStart={() =>
+                  startMutation.mutate({
+                    idempotencyKey: createIdempotencyKey(),
+                  })
+                }
+              />
+            </div>
+          ) : null}
         </>
       )}
     </GameShell>

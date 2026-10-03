@@ -60,6 +60,8 @@ export function projectGameView(
     gameId: game.id,
     roomCode: game.roomCode,
     version: game.version,
+    gameMode: game.mode,
+    isHost: game.hostPlayerId !== null && game.hostPlayerId === viewer.playerId,
     phase: game.state?.phase ?? 'LOBBY',
     round: game.state?.round ?? 0,
     winner: game.state?.winner ?? null,

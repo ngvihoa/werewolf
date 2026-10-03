@@ -75,6 +75,8 @@ function createGame(): LocalGame {
     roomCode: 'ABC123',
     version: 10,
     moderatorName: 'Moderator',
+    mode: 'MODERATED',
+    hostPlayerId: null,
     lobbyPlayers: [
       { id: 'seer', displayName: 'Seer', ready: true, role: 'SEER' },
       { id: 'wolf', displayName: 'Wolf', ready: true, role: 'WEREWOLF' },

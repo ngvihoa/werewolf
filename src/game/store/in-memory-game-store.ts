@@ -10,8 +10,12 @@ import type {
   StoreErrorCode,
   StoreResult,
 } from './model'
+import type {
+  CreateGameInput,
+  ExecuteGameCommandInput,
+  GameStore,
+} from './game-store'
 import type { Player, Role, RoleCompositionSelection } from '../domain'
-import type { ExecuteGameCommandInput, GameStore } from './game-store'
 import type { GameEvent } from '../orchestration/events'
 import type { GameView } from '../projections/model'
 
@@ -52,32 +56,73 @@ export class InMemoryGameStore implements GameStore {
     this.#randomIndex = dependencies.randomIndex
   }
 
-  createGame(moderatorName: string): StoreResult<CreatedGame> {
+  createGame(input: CreateGameInput): StoreResult<CreatedGame> {
     const gameId = this.#createId()
     const token = this.#createId()
+    const mode = input.mode
+    const ownerName = (
+      mode === 'MODERATED' ? input.moderatorName : input.creatorName
+    ).trim()
     const game: LocalGame = {
       id: gameId,
       roomCode: this.#uniqueRoomCode(),
       version: 1,
-      moderatorName: moderatorName.trim(),
+      moderatorName: ownerName,
+      mode,
+      hostPlayerId: null,
       lobbyPlayers: [],
       state: null,
       history: [],
     }
     this.#games.set(gameId, game)
+
+    if (mode === 'MODERATED') {
+      this.#sessions.set(token, {
+        token,
+        gameId,
+        kind: 'MODERATOR',
+        playerId: null,
+      })
+      this.#appendEvents(game, 'SYSTEM', null, [{ type: 'GAME_CREATED' }])
+      return {
+        ok: true,
+        value: {
+          mode,
+          gameId,
+          roomCode: game.roomCode,
+          moderatorSessionToken: token,
+          version: game.version,
+        },
+      }
+    }
+
+    // SELF: người tạo phòng là một player thường, được đánh dấu chủ phòng.
+    const creatorId = this.#createId()
+    game.lobbyPlayers.push({
+      id: creatorId,
+      displayName: ownerName,
+      ready: false,
+      role: null,
+    })
+    game.hostPlayerId = creatorId
     this.#sessions.set(token, {
       token,
       gameId,
-      kind: 'MODERATOR',
-      playerId: null,
+      kind: 'PLAYER',
+      playerId: creatorId,
     })
-    this.#appendEvents(game, 'SYSTEM', null, [{ type: 'GAME_CREATED' }])
+    this.#appendEvents(game, 'SYSTEM', null, [
+      { type: 'GAME_CREATED' },
+      { type: 'PLAYER_JOINED', playerId: creatorId, displayName: ownerName },
+    ])
     return {
       ok: true,
       value: {
+        mode,
         gameId,
         roomCode: game.roomCode,
-        moderatorSessionToken: token,
+        playerId: creatorId,
+        playerSessionToken: token,
         version: game.version,
       },
     }
@@ -191,9 +236,9 @@ export class InMemoryGameStore implements GameStore {
     idempotencyKey: string,
     composition: RoleCompositionSelection = { mode: 'DEFAULT' },
   ): StoreResult<GameMutationResult> {
-    const resolved = this.#resolveModerator(sessionToken)
+    const resolved = this.#resolveGameController(sessionToken)
     if (!resolved.ok) return resolved
-    const game = resolved.value
+    const { game, session } = resolved.value
     const receiptKey = `${sessionToken}:${idempotencyKey}`
     const request = JSON.stringify({
       type: 'ASSIGN_ROLES',
@@ -225,7 +270,9 @@ export class InMemoryGameStore implements GameStore {
       player.ready = false
     }
     game.version += 1
-    this.#appendEvents(game, 'MODERATOR', null, [{ type: 'ROLES_ASSIGNED' }])
+    this.#appendEvents(game, session.kind, session.playerId, [
+      { type: 'ROLES_ASSIGNED' },
+    ])
     const result = { gameId: game.id, version: game.version }
     this.#commandReceipts.set(receiptKey, { request, result })
     return success(result)
@@ -236,9 +283,9 @@ export class InMemoryGameStore implements GameStore {
     expectedVersion: number,
     idempotencyKey: string,
   ): StoreResult<GameMutationResult> {
-    const resolved = this.#resolveModerator(sessionToken)
+    const resolved = this.#resolveGameController(sessionToken)
     if (!resolved.ok) return resolved
-    const game = resolved.value
+    const { game, session } = resolved.value
     const receiptKey = `${sessionToken}:${idempotencyKey}`
     const request = JSON.stringify({ type: 'START_GAME', expectedVersion })
     const receipt = this.#commandReceipts.get(receiptKey)
@@ -274,7 +321,9 @@ export class InMemoryGameStore implements GameStore {
     }
     game.state = createFirstNightState(players)
     game.version += 1
-    this.#appendEvents(game, 'MODERATOR', null, [{ type: 'GAME_STARTED' }])
+    this.#appendEvents(game, session.kind, session.playerId, [
+      { type: 'GAME_STARTED' },
+    ])
     const result = { gameId: game.id, version: game.version }
     this.#commandReceipts.set(receiptKey, { request, result })
     return success(result)
@@ -285,9 +334,9 @@ export class InMemoryGameStore implements GameStore {
     expectedVersion: number,
     idempotencyKey: string,
   ): StoreResult<GameMutationResult> {
-    const resolved = this.#resolveModerator(sessionToken)
+    const resolved = this.#resolveGameController(sessionToken)
     if (!resolved.ok) return resolved
-    const game = resolved.value
+    const { game, session } = resolved.value
     const receiptKey = `${sessionToken}:${idempotencyKey}`
     const request = JSON.stringify({ type: 'REMATCH', expectedVersion })
     const receipt = this.#commandReceipts.get(receiptKey)
@@ -306,7 +355,9 @@ export class InMemoryGameStore implements GameStore {
       player.ready = false
     }
     game.version += 1
-    this.#appendEvents(game, 'MODERATOR', null, [{ type: 'MATCH_RESET' }])
+    this.#appendEvents(game, session.kind, session.playerId, [
+      { type: 'MATCH_RESET' },
+    ])
     const result = { gameId: game.id, version: game.version }
     this.#commandReceipts.set(receiptKey, { request, result })
     return success(result)
@@ -413,13 +464,24 @@ export class InMemoryGameStore implements GameStore {
     return success({ game, session })
   }
 
-  #resolveModerator(token: string): StoreResult<LocalGame> {
+  // MODERATED: chỉ Quản trò điều khiển sảnh. SELF: chủ phòng (player tạo
+  // phòng) điều khiển. Mọi lệnh cấu hình/start/rematch đi qua đây.
+  #resolveGameController(
+    token: string,
+  ): StoreResult<{ game: LocalGame; session: LocalSession }> {
     const resolved = this.#resolveSession(token)
     if (!resolved.ok) return resolved
-    if (resolved.value.session.kind !== 'MODERATOR') {
-      return failure('NOT_AUTHORIZED', 'Moderator session is required')
+    const { game, session } = resolved.value
+    if (session.kind === 'MODERATOR') return success({ game, session })
+    if (
+      game.mode === 'SELF' &&
+      session.kind === 'PLAYER' &&
+      session.playerId !== null &&
+      session.playerId === game.hostPlayerId
+    ) {
+      return success({ game, session })
     }
-    return success(resolved.value.game)
+    return failure('NOT_AUTHORIZED', 'Moderator session is required')
   }
 
   #uniqueRoomCode(): string {

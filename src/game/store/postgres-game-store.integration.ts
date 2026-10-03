@@ -1,3 +1,5 @@
+import type { CreatedGame } from './model'
+
 import { randomUUID } from 'node:crypto'
 
 import { afterEach, describe, expect, it } from 'vitest'
@@ -16,6 +18,15 @@ import {
 import { createSessionExpiry, hashSessionToken } from '../auth/session-token'
 
 import { PostgresGameStore } from './postgres-game-store'
+
+// CreatedGame là discriminated union theo mode; fixture MODERATED lấy token
+// qua helper này để TypeScript narrow đúng nhánh.
+function moderatorToken(value: CreatedGame): string {
+  if (value.mode !== 'MODERATED') {
+    throw new Error('Expected a MODERATED game')
+  }
+  return value.moderatorSessionToken
+}
 
 const createdRoomCodes: string[] = []
 
@@ -40,7 +51,10 @@ describe('PostgresGameStore.createGame', () => {
       now: () => now,
     })
 
-    const result = await store.createGame('  Test Moderator  ')
+    const result = await store.createGame({
+      mode: 'MODERATED',
+      moderatorName: '  Test Moderator  ',
+    })
 
     expect(result).toMatchObject({
       ok: true,
@@ -119,7 +133,9 @@ describe('PostgresGameStore.createGame', () => {
       hashSessionToken: () => 'invalid-hash',
     })
 
-    await expect(store.createGame('Test Moderator')).rejects.toMatchObject({
+    await expect(
+      store.createGame({ mode: 'MODERATED', moderatorName: 'Test Moderator' }),
+    ).rejects.toMatchObject({
       // Drizzle bọc PostgresError trong thuộc tính cause.
       cause: { code: '23514' },
     })
@@ -152,7 +168,10 @@ describe('PostgresGameStore.createGame', () => {
       },
     })
 
-    const result = await store.createGame('New Moderator')
+    const result = await store.createGame({
+      mode: 'MODERATED',
+      moderatorName: 'New Moderator',
+    })
 
     expect(result).toMatchObject({
       ok: true,
@@ -168,7 +187,10 @@ describe('PostgresGameStore.joinGame', () => {
     createdRoomCodes.push(roomCode)
 
     const store = new PostgresGameStore({ createRoomCode: () => roomCode })
-    const created = await store.createGame('Test Moderator')
+    const created = await store.createGame({
+      mode: 'MODERATED',
+      moderatorName: 'Test Moderator',
+    })
     if (!created.ok) throw new Error('Expected createGame to succeed')
 
     // Chạy đồng thời để kiểm tra FOR UPDATE thực sự tuần tự hóa mutation của cùng game.
@@ -254,7 +276,10 @@ describe('PostgresGameStore.joinGame', () => {
     createdRoomCodes.push(roomCode)
 
     const store = new PostgresGameStore({ createRoomCode: () => roomCode })
-    const created = await store.createGame('Test Moderator')
+    const created = await store.createGame({
+      mode: 'MODERATED',
+      moderatorName: 'Test Moderator',
+    })
     if (!created.ok) throw new Error('Expected createGame to succeed')
 
     // Mô phỏng game đã bắt đầu trước khi player gửi request join.
@@ -286,7 +311,10 @@ describe('PostgresGameStore.joinGame', () => {
     createdRoomCodes.push(roomCode)
 
     const store = new PostgresGameStore({ createRoomCode: () => roomCode })
-    const created = await store.createGame('Test Moderator')
+    const created = await store.createGame({
+      mode: 'MODERATED',
+      moderatorName: 'Test Moderator',
+    })
     if (!created.ok) throw new Error('Expected createGame to succeed')
 
     // Unique index dùng lower(btrim(display_name)), nên khoảng trắng và hoa thường vẫn trùng.
@@ -320,7 +348,10 @@ describe('PostgresGameStore.setReady', () => {
     createdRoomCodes.push(roomCode)
 
     const store = new PostgresGameStore({ createRoomCode: () => roomCode })
-    const created = await store.createGame('Test Moderator')
+    const created = await store.createGame({
+      mode: 'MODERATED',
+      moderatorName: 'Test Moderator',
+    })
     if (!created.ok) throw new Error('Expected createGame to succeed')
 
     const joined = await store.joinGame(roomCode, 'An')
@@ -390,7 +421,10 @@ describe('PostgresGameStore.setReady', () => {
     createdRoomCodes.push(roomCode)
 
     const store = new PostgresGameStore({ createRoomCode: () => roomCode })
-    const created = await store.createGame('Test Moderator')
+    const created = await store.createGame({
+      mode: 'MODERATED',
+      moderatorName: 'Test Moderator',
+    })
     if (!created.ok) throw new Error('Expected createGame to succeed')
 
     const joined = await store.joinGame(roomCode, 'An')
@@ -430,11 +464,14 @@ describe('PostgresGameStore.setReady', () => {
     createdRoomCodes.push(roomCode)
 
     const store = new PostgresGameStore({ createRoomCode: () => roomCode })
-    const created = await store.createGame('Test Moderator')
+    const created = await store.createGame({
+      mode: 'MODERATED',
+      moderatorName: 'Test Moderator',
+    })
     if (!created.ok) throw new Error('Expected createGame to succeed')
 
     const result = await store.setReady(
-      created.value.moderatorSessionToken,
+      moderatorToken(created.value),
       1,
       true,
       'unauthorized-ready',
@@ -456,7 +493,10 @@ describe('PostgresGameStore.assignRoles', () => {
     createdRoomCodes.push(roomCode)
 
     const store = new PostgresGameStore({ createRoomCode: () => roomCode })
-    const created = await store.createGame('Test Moderator')
+    const created = await store.createGame({
+      mode: 'MODERATED',
+      moderatorName: 'Test Moderator',
+    })
     if (!created.ok) throw new Error('Expected createGame to succeed')
 
     // Tám lượt join đưa game từ version 1 lên version 9 và bao phủ các role mới.
@@ -475,7 +515,7 @@ describe('PostgresGameStore.assignRoles', () => {
     }
 
     const result = await store.assignRoles(
-      created.value.moderatorSessionToken,
+      moderatorToken(created.value),
       9,
       'assign-roles',
     )
@@ -485,11 +525,7 @@ describe('PostgresGameStore.assignRoles', () => {
       value: { gameId: created.value.gameId, version: 10 },
     })
     expect(
-      await store.assignRoles(
-        created.value.moderatorSessionToken,
-        9,
-        'assign-roles',
-      ),
+      await store.assignRoles(moderatorToken(created.value), 9, 'assign-roles'),
     ).toEqual(result)
 
     const storedPlayers = await db
@@ -556,7 +592,10 @@ describe('PostgresGameStore.startGame', () => {
       createRoomCode: () => roomCode,
       now: () => now,
     })
-    const created = await store.createGame('Test Moderator')
+    const created = await store.createGame({
+      mode: 'MODERATED',
+      moderatorName: 'Test Moderator',
+    })
     if (!created.ok) throw new Error('Expected createGame to succeed')
 
     const playerSeeds = [
@@ -581,7 +620,7 @@ describe('PostgresGameStore.startGame', () => {
     )
 
     const result = await store.startGame(
-      created.value.moderatorSessionToken,
+      moderatorToken(created.value),
       1,
       'start-game',
     )
@@ -591,11 +630,7 @@ describe('PostgresGameStore.startGame', () => {
       value: { gameId: created.value.gameId, version: 2 },
     })
     expect(
-      await store.startGame(
-        created.value.moderatorSessionToken,
-        1,
-        'start-game',
-      ),
+      await store.startGame(moderatorToken(created.value), 1, 'start-game'),
     ).toEqual(result)
 
     const [storedGame] = await db
@@ -664,7 +699,10 @@ describe('PostgresGameStore.rematch', () => {
     const roomCode = createTestRoomCode()
     createdRoomCodes.push(roomCode)
     const store = new PostgresGameStore({ createRoomCode: () => roomCode })
-    const created = await store.createGame('Test Moderator')
+    const created = await store.createGame({
+      mode: 'MODERATED',
+      moderatorName: 'Test Moderator',
+    })
     if (!created.ok) throw new Error('Expected createGame to succeed')
 
     await db.insert(gamePlayers).values(
@@ -682,7 +720,7 @@ describe('PostgresGameStore.rematch', () => {
       })),
     )
     const started = await store.startGame(
-      created.value.moderatorSessionToken,
+      moderatorToken(created.value),
       1,
       'rematch-fixture-start',
     )
@@ -707,7 +745,7 @@ describe('PostgresGameStore.rematch', () => {
       .where(eq(gameSessions.gameId, created.value.gameId))
 
     const result = await store.rematch(
-      created.value.moderatorSessionToken,
+      moderatorToken(created.value),
       2,
       'rematch-once',
     )
@@ -716,11 +754,7 @@ describe('PostgresGameStore.rematch', () => {
       value: { gameId: created.value.gameId, version: 3 },
     })
     expect(
-      await store.rematch(
-        created.value.moderatorSessionToken,
-        2,
-        'rematch-once',
-      ),
+      await store.rematch(moderatorToken(created.value), 2, 'rematch-once'),
     ).toEqual(result)
 
     const [resetGame] = await db
@@ -744,7 +778,7 @@ describe('PostgresGameStore.rematch', () => {
       .from(gameEvents)
       .where(eq(gameEvents.gameId, created.value.gameId))
       .orderBy(asc(gameEvents.sequence))
-    const view = await store.getGameView(created.value.moderatorSessionToken)
+    const view = await store.getGameView(moderatorToken(created.value))
 
     expect(resetGame).toMatchObject({
       roomCode,
@@ -798,7 +832,10 @@ describe('PostgresGameStore.getGameView', () => {
     createdRoomCodes.push(roomCode)
 
     const store = new PostgresGameStore({ createRoomCode: () => roomCode })
-    const created = await store.createGame('Test Moderator')
+    const created = await store.createGame({
+      mode: 'MODERATED',
+      moderatorName: 'Test Moderator',
+    })
     if (!created.ok) throw new Error('Expected createGame to succeed')
 
     const firstPlayer = await store.joinGame(roomCode, 'An')
@@ -821,7 +858,7 @@ describe('PostgresGameStore.getGameView', () => {
       firstPlayer.value.playerSessionToken,
     )
     const moderatorResult = await store.getGameView(
-      created.value.moderatorSessionToken,
+      moderatorToken(created.value),
     )
 
     if (!playerResult.ok || playerResult.value.viewer !== 'PLAYER') {
@@ -861,7 +898,10 @@ describe('PostgresGameStore.execute', () => {
     createdRoomCodes.push(roomCode)
 
     const store = new PostgresGameStore({ createRoomCode: () => roomCode })
-    const created = await store.createGame('Test Moderator')
+    const created = await store.createGame({
+      mode: 'MODERATED',
+      moderatorName: 'Test Moderator',
+    })
     if (!created.ok) throw new Error('Expected createGame to succeed')
 
     const joinedPlayers: Array<{
@@ -898,7 +938,7 @@ describe('PostgresGameStore.execute', () => {
     if (!lobbyGame) throw new Error('Expected game to exist')
 
     const started = await store.startGame(
-      created.value.moderatorSessionToken,
+      moderatorToken(created.value),
       lobbyGame.version,
       'start-command-game',
     )
@@ -920,7 +960,7 @@ describe('PostgresGameStore.execute', () => {
     // Moderator không thể giả danh Player dù command payload chứa actor hợp lệ.
     const unauthorized = await store.execute({
       gameId: created.value.gameId,
-      sessionToken: created.value.moderatorSessionToken,
+      sessionToken: moderatorToken(created.value),
       idempotencyKey: 'unauthorized-seer-action',
       expectedVersion: started.value.version,
       command,
@@ -981,7 +1021,7 @@ describe('PostgresGameStore.execute', () => {
 
     const rejected = await store.execute({
       gameId: created.value.gameId,
-      sessionToken: created.value.moderatorSessionToken,
+      sessionToken: moderatorToken(created.value),
       idempotencyKey: 'reject-seer-action',
       expectedVersion: submitted.value.version,
       command: { type: 'REJECT_STEP', reason: 'Please choose again' },
@@ -1001,7 +1041,7 @@ describe('PostgresGameStore.execute', () => {
 
     const confirmed = await store.execute({
       gameId: created.value.gameId,
-      sessionToken: created.value.moderatorSessionToken,
+      sessionToken: moderatorToken(created.value),
       idempotencyKey: 'confirm-seer-action',
       expectedVersion: resubmitted.value.version,
       command: { type: 'CONFIRM_STEP' },
@@ -1080,7 +1120,7 @@ describe('PostgresGameStore.execute', () => {
 
     const skippedRevote = await store.execute({
       gameId: created.value.gameId,
-      sessionToken: created.value.moderatorSessionToken,
+      sessionToken: moderatorToken(created.value),
       idempotencyKey: 'skip-second-vote',
       expectedVersion: storedGame.version,
       command: { type: 'SKIP_REVOTE' },

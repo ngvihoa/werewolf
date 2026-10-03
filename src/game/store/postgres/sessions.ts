@@ -1,7 +1,7 @@
 import type { DatabaseTransaction, GameRow, GameVersionChanges } from './shared'
 import type { StoreResult } from '../model'
 
-import { gameSessions, games } from '#/db/schema'
+import { gameSessions, gamePlayers, games } from '#/db/schema'
 import { and, eq, gt, isNull } from 'drizzle-orm'
 
 import { storeErrorCodeSchema } from '../schema'
@@ -50,6 +50,33 @@ export async function lockGame(
     .for('update')
 
   return game ?? null
+}
+
+// Ai được điều khiển sảnh (phân vai, start, rematch):
+// - MODERATED: session Moderator.
+// - SELF: chủ phòng — player tạo phòng (game_players.is_host).
+// Game row phải được lock trước khi gọi để tránh đếnh hạng theo dữ liệu cũ.
+export async function isGameController(
+  transaction: DatabaseTransaction,
+  session: { kind: 'MODERATOR' | 'PLAYER'; playerId: string | null },
+  game: GameRow,
+): Promise<boolean> {
+  if (session.kind === 'MODERATOR') return true
+  if (session.kind !== 'PLAYER' || !session.playerId) return false
+  if (game.mode !== 'SELF') return false
+
+  const [player] = await transaction
+    .select({ isHost: gamePlayers.isHost })
+    .from(gamePlayers)
+    .where(
+      and(
+        eq(gamePlayers.gameId, game.id),
+        eq(gamePlayers.id, session.playerId),
+      ),
+    )
+    .limit(1)
+
+  return player?.isHost ?? false
 }
 
 export function validateLobbyMutation(

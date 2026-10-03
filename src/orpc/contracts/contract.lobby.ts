@@ -18,7 +18,18 @@ import { oc } from './base'
 // Nó không định nghĩa lại StoreResult hay GameCommand.
 export const lobbyContract = {
   createGame: oc
-    .input(z.object({ moderatorName: z.string().trim().min(1).max(30) }))
+    .input(
+      z.discriminatedUnion('mode', [
+        z.object({
+          mode: z.literal('MODERATED'),
+          moderatorName: z.string().trim().min(1).max(30),
+        }),
+        z.object({
+          mode: z.literal('SELF'),
+          creatorName: z.string().trim().min(1).max(30),
+        }),
+      ]),
+    )
     .output(createGameResultSchema),
   joinGame: oc
     .input(

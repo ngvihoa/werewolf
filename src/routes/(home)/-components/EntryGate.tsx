@@ -1,6 +1,6 @@
 import type { FormEvent, InputHTMLAttributes, ReactNode } from 'react'
 
-import { ChevronLeft, ChevronRight, Crown, Users } from 'lucide-react'
+import { Bot, ChevronLeft, ChevronRight, Crown, Users } from 'lucide-react'
 import { Navigate, Link, useNavigate } from '@tanstack/react-router'
 import { useLocalSession } from '#/hooks/useLocalSession'
 import { useMutation } from '@tanstack/react-query'
@@ -12,7 +12,11 @@ import { cn } from '#/lib/cn'
 // Mã phòng sinh từ ROOM_CODE_ALPHABET (A-Z không I,O + 2-9 không 0,1).
 const ROOM_CODE_PATTERN = /^[A-Z0-9]{6}$/
 
-type EntryPath = 'MENU' | 'CREATE' | 'JOIN'
+type EntryPath = 'MENU' | 'CREATE' | 'CREATE_SELF' | 'JOIN'
+
+type CreateGameApiInput =
+  | { mode: 'MODERATED'; moderatorName: string }
+  | { mode: 'SELF'; creatorName: string }
 
 /**
  * "Cổng vào đêm": trang entry là một card trung tâm duy nhất trên tranh nền.
@@ -28,11 +32,16 @@ export function EntryGate({ joinCode }: { joinCode?: string }) {
     joinCode !== undefined ? 'JOIN' : 'MENU',
   )
   const createMutation = useMutation({
-    mutationFn: (moderatorName: string) =>
-      orpcClient.lobby.createGame({ moderatorName }),
+    mutationFn: (input: CreateGameApiInput) =>
+      orpcClient.lobby.createGame(input),
     onSuccess(result) {
-      if (result.ok) handleSessionCreated(result.value.moderatorSessionToken)
-      else setError(result.error.message)
+      if (result.ok) {
+        handleSessionCreated(
+          result.value.mode === 'MODERATED'
+            ? result.value.moderatorSessionToken
+            : result.value.playerSessionToken,
+        )
+      } else setError(result.error.message)
     },
     onError: () => setError('Không thể kết nối máy chủ. Hãy thử lại.'),
   })
@@ -67,9 +76,16 @@ export function EntryGate({ joinCode }: { joinCode?: string }) {
   function submitCreate(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setError(null)
+    const isSelf = path === 'CREATE_SELF'
     const form = new FormData(event.currentTarget)
+    const rawName = isSelf ? form.get('creatorName') : form.get('moderatorName')
     // eslint-disable-next-line @typescript-eslint/no-base-to-string
-    createMutation.mutate(String(form.get('moderatorName') ?? '').trim())
+    const name = String(rawName ?? '').trim()
+    createMutation.mutate(
+      isSelf
+        ? { mode: 'SELF', creatorName: name }
+        : { mode: 'MODERATED', moderatorName: name },
+    )
   }
 
   function submitJoin(event: FormEvent<HTMLFormElement>) {
@@ -164,6 +180,19 @@ export function EntryGate({ joinCode }: { joinCode?: string }) {
                   variant="host"
                 />
                 <PathTile
+                  description="Cả bàn tự chơi, hệ thống điều phối vòng chơi."
+                  icon={
+                    <Bot
+                      aria-hidden="true"
+                      className="size-5"
+                      fill="currentColor"
+                    />
+                  }
+                  onClick={() => selectPath('CREATE_SELF')}
+                  title="Không quản trò"
+                  variant="self"
+                />
+                <PathTile
                   description="Vào phòng bằng mã mời."
                   icon={
                     <Users
@@ -184,16 +213,26 @@ export function EntryGate({ joinCode }: { joinCode?: string }) {
           ) : (
             <>
               <h1 className="text-center text-2xl font-medium tracking-tight text-ink">
-                {path === 'CREATE' ? 'Mở phòng mới' : 'Vào phòng đang chờ'}
+                {path === 'JOIN'
+                  ? 'Vào phòng đang chờ'
+                  : path === 'CREATE_SELF'
+                    ? 'Mở phòng tự chơi'
+                    : 'Mở phòng mới'}
               </h1>
               <section className="ink-panel flex flex-col gap-5 rounded-3xl px-5 py-7 sm:px-7 sm:py-8">
-                {path === 'CREATE' ? (
+                {path !== 'JOIN' ? (
                   <div className="flex flex-col gap-4">
                     <BackToMenuButton onClick={backToMenu} />
                     <div className="flex flex-col gap-1">
-                      <h2 className="text-lg font-medium text-ink">Quản trò</h2>
+                      <h2 className="text-lg font-medium text-ink">
+                        {path === 'CREATE_SELF'
+                          ? 'Chơi không cần quản trò'
+                          : 'Quản trò'}
+                      </h2>
                       <p className="text-sm/6 text-ink-muted">
-                        Mở phòng và nhận mã mời cho cả bàn.
+                        {path === 'CREATE_SELF'
+                          ? 'Mở phòng cho cả bàn — hệ thống tự điều phối vòng chơi.'
+                          : 'Mở phòng và nhận mã mời cho cả bàn.'}
                       </p>
                     </div>
                     <form
@@ -202,10 +241,18 @@ export function EntryGate({ joinCode }: { joinCode?: string }) {
                     >
                       <EntryField
                         autoComplete="name"
-                        id="moderator-name"
+                        id={
+                          path === 'CREATE_SELF'
+                            ? 'creator-name'
+                            : 'moderator-name'
+                        }
                         label="Tên của bạn"
                         maxLength={30}
-                        name="moderatorName"
+                        name={
+                          path === 'CREATE_SELF'
+                            ? 'creatorName'
+                            : 'moderatorName'
+                        }
                         placeholder="Ví dụ: Hoa"
                       />
                       <Button
@@ -214,7 +261,9 @@ export function EntryGate({ joinCode }: { joinCode?: string }) {
                         type="submit"
                         variant="primary"
                       >
-                        Mở phòng mới
+                        {path === 'CREATE_SELF'
+                          ? 'Mở phòng tự chơi'
+                          : 'Mở phòng mới'}
                       </Button>
                     </form>
                   </div>
@@ -287,6 +336,15 @@ const TILE_VARIANTS = {
     text: 'text-[#f6ecd2]',
     desc: 'text-[#f6ecd2]/65',
     chevron: 'text-[#d98a94]/80',
+  },
+  // Tím trăng mờ + huy hiệu oải hương — lối Không quản trò (bot điều phối).
+  self: {
+    mainColor: 'bg-[#b3a5d6]',
+    tile: 'bg-[#2f2a45] hover:bg-[#3a3354] ring-black/25',
+    badge: 'bg-[#b3a5d6]/15 ring-[#b3a5d6]/45 text-[#2f2a45]',
+    text: 'text-[#f6ecd2]',
+    desc: 'text-[#f6ecd2]/65',
+    chevron: 'text-[#b3a5d6]/80',
   },
 } as const
 

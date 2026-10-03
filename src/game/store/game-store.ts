@@ -10,6 +10,12 @@ import type { GameView } from '../projections/model'
 
 export type Awaitable<T> = T | Promise<T>
 
+// MODERATED: người tạo là Quản trò và nhận moderator session.
+// SELF: người tạo là chủ phòng — một player thường được quyền cấu hình.
+export type CreateGameInput =
+  | { mode: 'MODERATED'; moderatorName: string }
+  | { mode: 'SELF'; creatorName: string }
+
 /**
  * Định nghĩa schema cho một lệnh thực thi trong game
  */
@@ -28,11 +34,10 @@ export type ExecuteGameCommandInput = {
 export interface GameStore {
   /**
    * Tạo một game mới
-   * Moderator mode
-   * @param moderatorName Tên quản trò
+   * @param input Mode và tên người tạo phòng
    * @returns Kết quả tạo game
    */
-  createGame(moderatorName: string): Awaitable<StoreResult<CreatedGame>>
+  createGame(input: CreateGameInput): Awaitable<StoreResult<CreatedGame>>
 
   /**
    * Tham gia một game

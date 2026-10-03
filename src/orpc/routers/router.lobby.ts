@@ -13,7 +13,7 @@ function toOperationResult<T>(result: StoreResult<T>) {
 
 export const lobbyRouter = baseRouter.lobby.router({
   createGame: baseRouter.lobby.createGame.handler(async ({ input }) => {
-    const result = await localGameStore.createGame(input.moderatorName)
+    const result = await localGameStore.createGame(input)
     if (result.ok) {
       await publishGameInvalidation({
         gameId: result.value.gameId,

@@ -8,6 +8,7 @@ import {
   witchResourcesSchema,
   gamePhaseSchema,
   queueStepSchema,
+  gameModeSchema,
   playerSchema,
   winnerSchema,
   roleSchema,
@@ -128,6 +129,10 @@ export const playerGameViewSchema = z.object({
   gameId: z.string(),
   roomCode: z.string(),
   version: z.number(),
+  // Optional để client/server lệch phiên không vỡ output validation
+  // (trường mới thêm theo bẫy đã ghi trong AGENTS.md).
+  gameMode: gameModeSchema.optional(),
+  isHost: z.boolean().optional(),
   phase: z.union([gamePhaseSchema, z.literal('LOBBY')]),
   round: z.number(),
   winner: winnerSchema.nullable(),
@@ -198,6 +203,8 @@ const localGameSchema = z.object({
   roomCode: z.string(),
   version: z.number(),
   moderatorName: z.string(),
+  mode: gameModeSchema.optional(),
+  hostPlayerId: z.string().nullable().optional(),
   lobbyPlayers: z.array(
     z.object({
       id: z.string(),

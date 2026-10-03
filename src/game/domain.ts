@@ -1,6 +1,7 @@
 import type {
   domainErrorCodeSchema,
   domainErrorSchema,
+  gameModeSchema,
   gamePhaseSchema,
   playerSchema,
   queueStepSchema,
@@ -25,6 +26,7 @@ export type RoleCompositionSelection = z.infer<
 export type Team = z.infer<typeof teamSchema>
 export type Winner = z.infer<typeof winnerSchema>
 export type GamePhase = z.infer<typeof gamePhaseSchema>
+export type GameMode = z.infer<typeof gameModeSchema>
 export type QueueStep = z.infer<typeof queueStepSchema>
 export type WitchResources = z.infer<typeof witchResourcesSchema>
 export type AlphaWerewolfResources = z.infer<

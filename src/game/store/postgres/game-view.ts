@@ -67,6 +67,7 @@ export async function getGameView(
           isReady: gamePlayers.isReady,
           displayName: gamePlayers.displayName,
           isModerator: gamePlayers.isModerator,
+          isHost: gamePlayers.isHost,
           abilityState: gamePlayers.abilityState,
         })
         .from(gamePlayers)
@@ -98,6 +99,9 @@ export async function getGameView(
         roomCode: game.roomCode,
         version: game.version,
         moderatorName: game.moderatorName,
+        mode: game.mode,
+        hostPlayerId:
+          players.find((p) => p.isHost && !p.isModerator)?.id ?? null,
         lobbyPlayers: players.map((p) => ({
           id: p.id,
           role: p.role,

@@ -159,7 +159,10 @@ describe('purgeStaleGames', () => {
       now: () => new Date(),
     })
 
-    const result = await store.createGame('Quản trò Purge')
+    const result = await store.createGame({
+      mode: 'MODERATED',
+      moderatorName: 'Quản trò Purge',
+    })
     expect(result.ok).toBe(true)
   })
 })

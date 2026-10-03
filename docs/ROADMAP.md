@@ -262,3 +262,31 @@ Exit criteria:
 - CI passes static checks, unit tests, integration tests and E2E tests.
 - No known hidden-information leak exists.
 - At least three complete playtests finish without manual database repair.
+
+## Phase 9 - Bot moderator mode (chế độ không quản trò)
+
+Goal: let a group play without a human moderator — the system automates every
+moderator confirmation and players vote on their own devices. Detailed plan:
+`docs/bot-moderator-mode.md`. Before coding, finalize decisions R20–R24 in
+`docs/rules/08-mvp-rule-decisions.md`.
+
+Can start after Phase 6; independent of Phase 7 (moderator overrides do not
+apply to the new `SELF` mode).
+
+- [ ] T1 Domain + SELF game mode in creation flow (creator becomes a player)
+- [ ] T2 Bot actor: auto-confirm night loop via existing command surface
+- [ ] T3 In-device voting with bot tally (R14 tie behavior)
+- [ ] T4 Discussion consent + minimum timer to open the vote
+- [ ] T5 Lazy timers + `game.tick` (AFK auto-skip / abstain)
+- [ ] T6 Player leaving mid-game in SELF mode
+- [ ] T7 Game over + rematch in SELF mode
+- [ ] T8 Sync rule docs (02/03/04/05/07), 08 decisions, revamp-ui-ux.md
+- [ ] T9 Multi-context e2e for a full SELF game + MODERATED regression
+
+Exit criteria:
+
+- A five-to-six-player SELF game runs from lobby to game over with zero
+  moderator actions.
+- An AFK player never deadlocks the game (timeout skip/abstain per R22).
+- MODERATED mode behavior is unchanged (regression suite green).
+- No new hidden-information leak; existing negative tests stay green.

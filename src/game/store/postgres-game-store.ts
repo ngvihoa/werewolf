@@ -4,7 +4,11 @@ import type {
   JoinedGame,
   StoreResult,
 } from './model'
-import type { ExecuteGameCommandInput, GameStore } from './game-store'
+import type {
+  ExecuteGameCommandInput,
+  CreateGameInput,
+  GameStore,
+} from './game-store'
 import type { RoleCompositionSelection } from '../domain'
 import type { PostgresStoreDeps } from './postgres/shared'
 import type { GameView } from '../projections/model'
@@ -60,8 +64,8 @@ export class PostgresGameStore implements GameStore {
     }
   }
 
-  createGame(moderatorName: string): Promise<StoreResult<CreatedGame>> {
-    return createGameCommand(this.#deps, moderatorName).then((result) => {
+  createGame(input: CreateGameInput): Promise<StoreResult<CreatedGame>> {
+    return createGameCommand(this.#deps, input).then((result) => {
       // Dọn các ván đã quá vòng đời dịp có ghi mới; không chặn và không làm
       // hỏng lượt tạo phòng.
       if (result.ok) scheduleStaleGamePurge(this.#deps)

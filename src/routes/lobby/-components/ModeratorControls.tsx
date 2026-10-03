@@ -89,7 +89,7 @@ export function ModeratorControls({
         {[
           ['DEFAULT', 'Mặc định'],
           ['NO_VILLAGER', 'Không Dân thường'],
-          ['CUSTOM', 'Moderator tự chọn'],
+          ['CUSTOM', 'Tự chọn vai'],
         ].map(([value, label]) => (
           <label
             className="flex items-center gap-3 text-sm text-stone-300"

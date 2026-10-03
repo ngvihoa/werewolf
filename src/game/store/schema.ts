@@ -72,12 +72,24 @@ export const storeErrorSchema = z.object({
 
 // Raw session token chỉ được trả cho client khi session vừa được tạo.
 // Database implementation sau này chỉ lưu hash của token này.
-export const createdGameSchema = z.object({
-  gameId: z.string(),
-  roomCode: z.string().length(6),
-  moderatorSessionToken: sessionTokenSchema,
-  version: expectedVersionSchema,
-})
+// MODERATED trả token quản trò; SELF trả token player của chủ phòng.
+export const createdGameSchema = z.discriminatedUnion('mode', [
+  z.object({
+    mode: z.literal('MODERATED'),
+    gameId: z.string(),
+    roomCode: z.string().length(6),
+    moderatorSessionToken: sessionTokenSchema,
+    version: expectedVersionSchema,
+  }),
+  z.object({
+    mode: z.literal('SELF'),
+    gameId: z.string(),
+    roomCode: z.string().length(6),
+    playerId: z.string(),
+    playerSessionToken: sessionTokenSchema,
+    version: expectedVersionSchema,
+  }),
+])
 
 export const joinedGameSchema = z.object({
   gameId: z.string(),

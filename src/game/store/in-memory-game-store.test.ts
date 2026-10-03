@@ -1,6 +1,24 @@
+import type { CreatedGame } from './model'
+
 import { describe, expect, it } from 'vitest'
 
 import { InMemoryGameStore } from './in-memory-game-store'
+
+// CreatedGame là discriminated union theo mode; fixture MODERATED lấy token
+// qua helper này để TypeScript narrow đúng nhánh.
+function moderatorToken(value: CreatedGame): string {
+  if (value.mode !== 'MODERATED') {
+    throw new Error('Expected a MODERATED game')
+  }
+  return value.moderatorSessionToken
+}
+
+function selfGame(value: CreatedGame): Extract<CreatedGame, { mode: 'SELF' }> {
+  if (value.mode !== 'SELF') {
+    throw new Error('Expected a SELF game')
+  }
+  return value
+}
 
 function createStore() {
   let id = 0
@@ -14,7 +32,10 @@ function createStore() {
 
 function createStartedGame() {
   const store = createStore()
-  const created = store.createGame('Moderator')
+  const created = store.createGame({
+    mode: 'MODERATED',
+    moderatorName: 'Moderator',
+  })
   if (!created.ok) throw new Error(created.error.message)
 
   const players = ['An', 'Binh', 'Cuong', 'Dung', 'Hoa'].map((name) => {
@@ -23,7 +44,7 @@ function createStartedGame() {
     return joined.value
   })
   const assigned = store.assignRoles(
-    created.value.moderatorSessionToken,
+    moderatorToken(created.value),
     6,
     'fixture-assign',
   )
@@ -46,7 +67,7 @@ function createStartedGame() {
   if (!beforeStart.ok) throw new Error(beforeStart.error.message)
 
   const started = store.startGame(
-    created.value.moderatorSessionToken,
+    moderatorToken(created.value),
     beforeStart.value.version,
     'fixture-start',
   )
@@ -61,7 +82,10 @@ function createStartedGame() {
 describe('InMemoryGameStore lobby', () => {
   it('creates a room and joins players with fake sessions', () => {
     const store = createStore()
-    const created = store.createGame('Moderator')
+    const created = store.createGame({
+      mode: 'MODERATED',
+      moderatorName: 'Moderator',
+    })
     expect(created.ok).toBe(true)
     if (!created.ok) return
 
@@ -87,7 +111,10 @@ describe('InMemoryGameStore lobby', () => {
 
   it('rejects duplicate display names case-insensitively', () => {
     const store = createStore()
-    const created = store.createGame('Moderator')
+    const created = store.createGame({
+      mode: 'MODERATED',
+      moderatorName: 'Moderator',
+    })
     if (!created.ok) throw new Error(created.error.message)
     store.joinGame(created.value.roomCode, 'An')
     const duplicate = store.joinGame(created.value.roomCode, 'an')
@@ -99,7 +126,10 @@ describe('InMemoryGameStore lobby', () => {
 
   it('rejects a stale ready mutation without changing the player', () => {
     const store = createStore()
-    const created = store.createGame('Moderator')
+    const created = store.createGame({
+      mode: 'MODERATED',
+      moderatorName: 'Moderator',
+    })
     if (!created.ok) throw new Error(created.error.message)
 
     const joined = store.joinGame(created.value.roomCode, 'An')
@@ -125,7 +155,10 @@ describe('InMemoryGameStore lobby', () => {
 
   it('rejects stale role assignment without changing the game', () => {
     const store = createStore()
-    const created = store.createGame('Moderator')
+    const created = store.createGame({
+      mode: 'MODERATED',
+      moderatorName: 'Moderator',
+    })
     if (!created.ok) throw new Error(created.error.message)
 
     for (const name of ['An', 'Binh', 'Cuong', 'Dung', 'Hoa']) {
@@ -135,7 +168,7 @@ describe('InMemoryGameStore lobby', () => {
     // Sau năm lượt join, version hiện tại là 6 nên version 5 đã stale.
     const beforeAssignment = store.getGame(created.value.gameId)
     const result = store.assignRoles(
-      created.value.moderatorSessionToken,
+      moderatorToken(created.value),
       5,
       'stale-assign',
     )
@@ -150,14 +183,17 @@ describe('InMemoryGameStore lobby', () => {
 
   it('assigns a custom composition and includes it in idempotency identity', () => {
     const store = createStore()
-    const created = store.createGame('Moderator')
+    const created = store.createGame({
+      mode: 'MODERATED',
+      moderatorName: 'Moderator',
+    })
     if (!created.ok) throw new Error(created.error.message)
     for (const name of ['An', 'Binh', 'Cuong', 'Dung', 'Hoa']) {
       store.joinGame(created.value.roomCode, name)
     }
 
     const assigned = store.assignRoles(
-      created.value.moderatorSessionToken,
+      moderatorToken(created.value),
       6,
       'custom-assign',
       { mode: 'CUSTOM', roles: ['WEREWOLF', 'SEER', 'WITCH'] },
@@ -171,7 +207,7 @@ describe('InMemoryGameStore lobby', () => {
     )
 
     const reused = store.assignRoles(
-      created.value.moderatorSessionToken,
+      moderatorToken(created.value),
       6,
       'custom-assign',
       { mode: 'DEFAULT' },
@@ -184,14 +220,17 @@ describe('InMemoryGameStore lobby', () => {
 
   it('requires assignment and every player to be ready before start', () => {
     const store = createStore()
-    const created = store.createGame('Moderator')
+    const created = store.createGame({
+      mode: 'MODERATED',
+      moderatorName: 'Moderator',
+    })
     if (!created.ok) throw new Error(created.error.message)
     for (const name of ['An', 'Binh', 'Cuong', 'Dung', 'Hoa']) {
       store.joinGame(created.value.roomCode, name)
     }
 
     const beforeAssignment = store.startGame(
-      created.value.moderatorSessionToken,
+      moderatorToken(created.value),
       6,
       'start-before-assign',
     )
@@ -200,9 +239,9 @@ describe('InMemoryGameStore lobby', () => {
       expect(beforeAssignment.error.code).toBe('ROLES_NOT_ASSIGNED')
     }
 
-    store.assignRoles(created.value.moderatorSessionToken, 6, 'assign-roles')
+    store.assignRoles(moderatorToken(created.value), 6, 'assign-roles')
     const beforeReady = store.startGame(
-      created.value.moderatorSessionToken,
+      moderatorToken(created.value),
       7,
       'start-before-ready',
     )
@@ -214,7 +253,10 @@ describe('InMemoryGameStore lobby', () => {
 
   it('replays successful lobby mutations without applying them twice', () => {
     const store = createStore()
-    const created = store.createGame('Moderator')
+    const created = store.createGame({
+      mode: 'MODERATED',
+      moderatorName: 'Moderator',
+    })
     if (!created.ok) throw new Error(created.error.message)
     const joined = store.joinGame(created.value.roomCode, 'An')
     if (!joined.ok) throw new Error(joined.error.message)
@@ -234,7 +276,7 @@ describe('InMemoryGameStore lobby', () => {
     const beforeAssign = store.getGame(created.value.gameId)
     if (!beforeAssign.ok) throw new Error(beforeAssign.error.message)
     const assignInput = [
-      created.value.moderatorSessionToken,
+      moderatorToken(created.value),
       beforeAssign.value.version,
       'assign-once',
     ] as const
@@ -258,7 +300,7 @@ describe('InMemoryGameStore lobby', () => {
   it('replays startGame and rejects a reused key with another payload', () => {
     const { store, created, game } = createStartedGame()
     const retried = store.startGame(
-      created.moderatorSessionToken,
+      moderatorToken(created),
       game.version - 1,
       'fixture-start',
     )
@@ -268,7 +310,7 @@ describe('InMemoryGameStore lobby', () => {
     })
 
     const reused = store.startGame(
-      created.moderatorSessionToken,
+      moderatorToken(created),
       game.version,
       'fixture-start',
     )
@@ -282,7 +324,7 @@ describe('InMemoryGameStore lobby', () => {
     const { store, created, game } = createStartedGame()
     const before = store.getGame(game.id)
     const result = store.rematch(
-      created.moderatorSessionToken,
+      moderatorToken(created),
       game.version,
       'rematch-too-early',
     )
@@ -307,7 +349,7 @@ describe('InMemoryGameStore commands', () => {
   it('resolves permission-aware views from fake sessions', () => {
     const { store, created, players, game } = createStartedGame()
     const playerView = store.getGameView(players[0].playerSessionToken)
-    const moderatorView = store.getGameView(created.moderatorSessionToken)
+    const moderatorView = store.getGameView(moderatorToken(created))
 
     expect(playerView.ok).toBe(true)
     if (playerView.ok && playerView.value.viewer === 'PLAYER') {
@@ -389,7 +431,7 @@ describe('InMemoryGameStore commands', () => {
     const { store, created, game } = createStartedGame()
     const input = {
       gameId: game.id,
-      sessionToken: created.moderatorSessionToken,
+      sessionToken: moderatorToken(created),
       idempotencyKey: 'skip-seer-once',
       expectedVersion: game.version,
       command: { type: 'SKIP_STEP' as const, reason: 'No action' },
@@ -415,7 +457,7 @@ describe('InMemoryGameStore commands', () => {
     const { store, created, game } = createStartedGame()
     const base = {
       gameId: game.id,
-      sessionToken: created.moderatorSessionToken,
+      sessionToken: moderatorToken(created),
       idempotencyKey: 'one-command-only',
       expectedVersion: game.version,
     }
@@ -442,7 +484,7 @@ describe('InMemoryGameStore commands', () => {
     const before = store.getGame(game.id)
     const stale = store.execute({
       gameId: game.id,
-      sessionToken: created.moderatorSessionToken,
+      sessionToken: moderatorToken(created),
       idempotencyKey: 'stale-skip',
       expectedVersion: game.version - 1,
       command: { type: 'SKIP_STEP', reason: 'Local test' },
@@ -464,5 +506,169 @@ describe('InMemoryGameStore commands', () => {
         'Changed outside store',
       )
     }
+  })
+})
+
+describe('InMemoryGameStore self mode (không quản trò)', () => {
+  function createSelfGame() {
+    const store = createStore()
+    const created = store.createGame({ mode: 'SELF', creatorName: 'Hoa' })
+    if (!created.ok) throw new Error(created.error.message)
+    return { store, created: selfGame(created.value) }
+  }
+
+  function currentVersion(store: InMemoryGameStore, gameId: string): number {
+    const snapshot = store.getGame(gameId)
+    if (!snapshot.ok) throw new Error(snapshot.error.message)
+    return snapshot.value.version
+  }
+
+  function startSelfGame() {
+    const { store, created } = createSelfGame()
+    const tokens = [created.playerSessionToken]
+    for (const name of ['An', 'Binh', 'Cuong', 'Dung']) {
+      const joined = store.joinGame(created.roomCode, name)
+      if (!joined.ok) throw new Error(joined.error.message)
+      tokens.push(joined.value.playerSessionToken)
+    }
+
+    // Chủ phòng phân vai bằng player session của chính mình (R24).
+    const assigned = store.assignRoles(
+      created.playerSessionToken,
+      currentVersion(store, created.gameId),
+      'self-assign',
+    )
+    if (!assigned.ok) throw new Error(assigned.error.message)
+
+    for (const token of tokens) {
+      const ready = store.setReady(
+        token,
+        currentVersion(store, created.gameId),
+        true,
+        `self-ready-${token}`,
+      )
+      if (!ready.ok) throw new Error(ready.error.message)
+    }
+
+    const started = store.startGame(
+      created.playerSessionToken,
+      currentVersion(store, created.gameId),
+      'self-start',
+    )
+    if (!started.ok) throw new Error(started.error.message)
+    return { store, created }
+  }
+
+  it('tạo phòng SELF: chủ phòng là player thường và nhận player session', () => {
+    const { store, created } = createSelfGame()
+
+    expect(created.mode).toBe('SELF')
+    const snapshot = store.getGame(created.gameId)
+    expect(snapshot.ok).toBe(true)
+    if (!snapshot.ok) return
+    expect(snapshot.value.mode).toBe('SELF')
+    expect(snapshot.value.hostPlayerId).toBe(created.playerId)
+    expect(snapshot.value.lobbyPlayers).toEqual([
+      {
+        id: created.playerId,
+        displayName: 'Hoa',
+        ready: false,
+        role: null,
+      },
+    ])
+    expect(snapshot.value.history.map((entry) => entry.event.type)).toEqual([
+      'GAME_CREATED',
+      'PLAYER_JOINED',
+    ])
+  })
+
+  it('player thường (không phải chủ phòng) không được phân vai hay start', () => {
+    const { store, created } = createSelfGame()
+    const joined = store.joinGame(created.roomCode, 'An')
+    if (!joined.ok) throw new Error(joined.error.message)
+    const version = currentVersion(store, created.gameId)
+
+    const assigned = store.assignRoles(
+      joined.value.playerSessionToken,
+      version,
+      'not-host',
+    )
+    expect(assigned).toMatchObject({
+      ok: false,
+      error: { code: 'NOT_AUTHORIZED' },
+    })
+
+    const started = store.startGame(
+      joined.value.playerSessionToken,
+      currentVersion(store, created.gameId),
+      'not-host-start',
+    )
+    expect(started).toMatchObject({
+      ok: false,
+      error: { code: 'NOT_AUTHORIZED' },
+    })
+  })
+
+  it('chủ phòng tự setReady như một player bình thường', () => {
+    const { store, created } = createSelfGame()
+    const ready = store.setReady(
+      created.playerSessionToken,
+      currentVersion(store, created.gameId),
+      true,
+      'host-ready',
+    )
+    expect(ready.ok).toBe(true)
+  })
+
+  it('chạy full flow SELF: phân vai → sẵn sàng → start vào đêm đầu', () => {
+    const { store, created } = startSelfGame()
+
+    const snapshot = store.getGame(created.gameId)
+    expect(snapshot.ok).toBe(true)
+    if (!snapshot.ok) return
+    expect(snapshot.value.state?.phase).toBe('NIGHT')
+    expect(
+      snapshot.value.lobbyPlayers.every((player) => player.role !== null),
+    ).toBe(true)
+    // Event start do PLAYER (chủ phòng) thực hiện, không phải MODERATOR.
+    const startedEvent = snapshot.value.history.find(
+      (entry) => entry.event.type === 'GAME_STARTED',
+    )
+    expect(startedEvent?.actor).toBe('PLAYER')
+    expect(startedEvent?.actorPlayerId).toBe(created.playerId)
+  })
+
+  it('startGame vẫn chặn khi một player (kể cả chủ phòng) chưa sẵn sàng', () => {
+    const { store, created } = createSelfGame()
+    for (const name of ['An', 'Binh', 'Cuong', 'Dung']) {
+      const joined = store.joinGame(created.roomCode, name)
+      if (!joined.ok) throw new Error(joined.error.message)
+    }
+
+    const assigned = store.assignRoles(
+      created.playerSessionToken,
+      currentVersion(store, created.gameId),
+      'self-assign',
+    )
+    if (!assigned.ok) throw new Error(assigned.error.message)
+
+    // Chỉ chủ phòng ready — 4 player còn lại chưa.
+    const hostReady = store.setReady(
+      created.playerSessionToken,
+      currentVersion(store, created.gameId),
+      true,
+      'host-ready',
+    )
+    if (!hostReady.ok) throw new Error(hostReady.error.message)
+
+    const started = store.startGame(
+      created.playerSessionToken,
+      currentVersion(store, created.gameId),
+      'self-start-incomplete',
+    )
+    expect(started).toMatchObject({
+      ok: false,
+      error: { code: 'NOT_ALL_PLAYERS_READY' },
+    })
   })
 })
