@@ -8,7 +8,7 @@ import { commandReceipts } from '#/db/schema'
 import { and, eq } from 'drizzle-orm'
 
 import { gameMutationResultSchema, storeErrorCodeSchema } from '../schema'
-import { authorizeCommand } from '../command-authorization'
+import { authorizeCommand, stampEnteredBy } from '../command-authorization'
 import { executeCommand } from '../../orchestration/game-orchestrator'
 import {
   stampDiscussionDeadline,
@@ -131,7 +131,11 @@ export async function executeGameCommand(
     }
 
     let finalState = outcome.value.state
-    const humanEvents = outcome.value.events
+    // M4: nguồn nhập của event audit — session nào khởi phát lệnh thì action
+    // mang nguồn đó (bot confirm cùng transaction kế thừa).
+    const enteredBy: 'PLAYER' | 'MODERATOR' =
+      session.kind === 'MODERATOR' ? 'MODERATOR' : 'PLAYER'
+    const humanEvents = stampEnteredBy(outcome.value.events, enteredBy)
     let botEvents: GameEvent[] = []
     let botSteps: BotStep[] = []
 
@@ -149,7 +153,7 @@ export async function executeGameCommand(
       finalState = bot.state
       stampDiscussionDeadline(finalState, now)
       stampWaitingDeadline(finalState, now)
-      botEvents = bot.events
+      botEvents = stampEnteredBy(bot.events, enteredBy)
       botSteps = bot.steps
     }
 

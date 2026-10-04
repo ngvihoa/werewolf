@@ -1,5 +1,7 @@
 import type { SessionKind, StoreResult } from './model'
 import type { GameCommand } from '../orchestration/commands'
+import type { GameEvent } from '../orchestration/events'
+import type { EnteredBy } from '../orchestration/schema'
 
 type CommandSession = {
   kind: SessionKind
@@ -61,4 +63,21 @@ export function authorizeCommand(
 
 function failure(message: string): StoreResult<never> {
   return { ok: false, error: { code: 'NOT_AUTHORIZED', message } }
+}
+
+// Revamp MODERATED (M4): gắn nguồn nhập vào event audit để thiết bị người
+// chơi biết hành động nào do quản trò nhập thay. Store gọi sau khi command
+// được chấp nhận; bot confirm trong cùng transaction kế thừa nguồn của lệnh
+// khởi phát (action được confirm luôn do chính lệnh đó submit).
+export function stampEnteredBy(
+  events: GameEvent[],
+  enteredBy: EnteredBy,
+): GameEvent[] {
+  return events.map((event) =>
+    event.type === 'NIGHT_ACTION_SUBMITTED' ||
+    event.type === 'NIGHT_ACTION_CONFIRMED' ||
+    event.type === 'HUNTER_SHOT_SUBMITTED'
+      ? { ...event, enteredBy }
+      : event,
+  )
 }

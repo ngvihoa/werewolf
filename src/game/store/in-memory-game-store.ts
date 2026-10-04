@@ -34,7 +34,7 @@ import {
   executeCommand,
 } from '../orchestration/game-orchestrator'
 
-import { authorizeCommand } from './command-authorization'
+import { authorizeCommand, stampEnteredBy } from './command-authorization'
 import { createRoomCode } from './utils.room-code'
 
 type StoreDependencies = {
@@ -531,7 +531,11 @@ export class InMemoryGameStore implements GameStore {
     }
 
     let finalState = outcome.value.state
-    const humanEvents = outcome.value.events
+    // M4: nguồn nhập của event audit — session nào khởi phát lệnh thì action
+    // mang nguồn đó (bot confirm cùng "transaction" kế thừa).
+    const enteredBy: 'PLAYER' | 'MODERATOR' =
+      session.kind === 'MODERATOR' ? 'MODERATOR' : 'PLAYER'
+    const humanEvents = stampEnteredBy(outcome.value.events, enteredBy)
     let botEvents: GameEvent[] = []
 
     // SELF: sau lệnh người chơi, quản trò bot chạy tới fixpoint trong cùng
@@ -552,7 +556,7 @@ export class InMemoryGameStore implements GameStore {
       finalState = bot.state
       stampDiscussionDeadline(finalState, now)
       stampWaitingDeadline(finalState, now)
-      botEvents = bot.events
+      botEvents = stampEnteredBy(bot.events, enteredBy)
     }
 
     game.state = finalState
@@ -607,8 +611,15 @@ export class InMemoryGameStore implements GameStore {
 
     game.state = finalState
     game.version += 1
+    // Tick chỉ tồn tại ở SELF: action được bot confirm luôn do một người chơi
+    // submit ở transaction trước — nguồn nhập là PLAYER.
     if (bot.events.length > 0) {
-      this.#appendEvents(game, 'SYSTEM', null, bot.events)
+      this.#appendEvents(
+        game,
+        'SYSTEM',
+        null,
+        stampEnteredBy(bot.events, 'PLAYER'),
+      )
     }
     return success({ gameId: game.id, version: game.version })
   }
