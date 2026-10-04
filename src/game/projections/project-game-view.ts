@@ -2,12 +2,15 @@ import type {
   EventProjection,
   GameView,
   PlayerGameView,
+  PrivateHistoryEntry,
   PrivateHistoryEvent,
   ProjectionViewer,
+  PublicHistoryEntry,
   PublicHistoryEvent,
   PublicPlayerView,
   StoredEventInput,
 } from './model'
+import type { NightAction } from '../rules/night-actions'
 import type { LocalGame } from '../store/model'
 
 import { isWerewolfPlayer } from '../domain'
@@ -44,7 +47,9 @@ export function projectGameView(
       : null
 
   let confirmedWerewolfTargetId: string | null = null
-  const history = game.history.map((entry) => {
+  const publicEntries: PublicHistoryEntry[] = []
+  const privateEntries: PrivateHistoryEntry[] = []
+  for (const entry of game.history) {
     if (entry.event.type === 'PHASE_CHANGED' && entry.event.to === 'NIGHT') {
       confirmedWerewolfTargetId = null
     }
@@ -54,8 +59,36 @@ export function projectGameView(
     ) {
       confirmedWerewolfTargetId = entry.event.action.targetId
     }
-    return projectEvent(entry, viewer.playerId, confirmedWerewolfTargetId)
-  })
+    const projected = projectEvent(
+      entry,
+      viewer.playerId,
+      confirmedWerewolfTargetId,
+    )
+    if (projected.publicEntry) publicEntries.push(projected.publicEntry)
+    if (projected.privateEntry) privateEntries.push(projected.privateEntry)
+    // Revamp MODERATED (M9): hoàn tác là bù trừ trên history riêng — xóa các
+    // entry của action bị hoàn tác rồi ghi nhận việc hoàn tác, để thiết bị
+    // người chơi không hiển thị hành động đã bị rút lại. WEREWOLF_ATTACK bị
+    // hoàn tác cũng reset tracker để Witch sau đó không thấy mục tiêu cũ.
+    if (
+      entry.event.type === 'STEP_UNDONE' &&
+      entry.event.action.actorId === viewer.playerId
+    ) {
+      removeLastOwnAction(privateEntries, entry.event.action)
+      if (entry.event.action.type === 'WEREWOLF_ATTACK') {
+        confirmedWerewolfTargetId = null
+      }
+      privateEntries.push({
+        sequence: entry.sequence,
+        createdAt: entry.createdAt,
+        event: {
+          type: 'OWN_NIGHT_ACTION_UNDONE',
+          action: structuredClone(entry.event.action),
+          reason: entry.event.reason,
+        },
+      })
+    }
+  }
   const view: PlayerGameView = {
     viewer: 'PLAYER',
     gameId: game.id,
@@ -96,95 +129,147 @@ export function projectGameView(
     },
     isCharmed: game.state?.charmedPlayerIds?.includes(lobbyPlayer.id) ?? false,
     lover: projectLover(game, lobbyPlayer.id),
+    // M1/M13: player MODERATED không cần trạng thái bàn — đêm thuộc quản trò.
+    // Chỉ giữ prompt phát bắn ban ngày (Thợ săn tự bấm trên thiết bị).
     queue:
-      game.state?.queue.map((item) => ({
-        step: item.step,
-        status: item.status,
-      })) ?? [],
-    turn: {
-      canAct:
-        (Boolean(domainPlayer?.alive) &&
-          activeStep !== null &&
-          (activeStep === 'WEREWOLF_ATTACK'
-            ? isWerewolfPlayer(domainPlayer)
-            : domainPlayer?.role === STEP_ROLE[activeStep])) ||
-        (game.state?.phase === 'HUNTER_SHOT' &&
-          domainPlayer?.role === 'HUNTER' &&
-          game.state.pendingHunterShot?.hunterId === domainPlayer.id &&
-          game.state.pendingHunterShot.targetId === null),
-      activeStep,
-      werewolfTargetId,
-      werewolfAttackEnhanced: isWerewolfPlayer(domainPlayer)
-        ? (visibleWerewolfAction?.enhanced ?? false)
-        : null,
-      enhancedAttackAvailable:
-        domainPlayer?.role === 'ALPHA_WEREWOLF'
-          ? domainPlayer.abilityState.enhancedAttackAvailable
-          : null,
-      werewolfTeammates: isWerewolfPlayer(domainPlayer)
-        ? game
-            .state!.players.filter(
-              (player) =>
-                isWerewolfPlayer(player) && player.id !== domainPlayer!.id,
-            )
-            .map((player) => ({
-              id: player.id,
-              displayName:
-                game.lobbyPlayers.find((item) => item.id === player.id)
-                  ?.displayName ?? '',
-              ready:
-                game.lobbyPlayers.find((item) => item.id === player.id)
-                  ?.ready ?? false,
-              alive: player.alive,
-            }))
-        : [],
-      lastProtectedTargetId:
-        domainPlayer?.role === 'PROTECTOR'
-          ? (game.state?.lastProtectedTargetId ?? null)
-          : null,
-      hunterShotTargetId:
-        game.state?.phase === 'HUNTER_SHOT' &&
-        domainPlayer?.role === 'HUNTER' &&
-        game.state.pendingHunterShot?.hunterId === domainPlayer.id
-          ? game.state.pendingHunterShot.targetId
-          : null,
-      charmedPlayerIds:
-        domainPlayer?.role === 'PIPER'
-          ? (game.state?.charmedPlayerIds ?? [])
-          : [],
-      lastCourtesanTargetId:
-        domainPlayer?.role === 'COURTESAN'
-          ? (game.state?.lastCourtesanTargetId ?? null)
-          : null,
-    },
+      game.mode === 'MODERATED'
+        ? []
+        : (game.state?.queue.map((item) => ({
+            step: item.step,
+            status: item.status,
+          })) ?? []),
+    turn:
+      game.mode === 'MODERATED'
+        ? projectModeratedTurn(game, viewer.playerId)
+        : {
+            canAct:
+              (Boolean(domainPlayer?.alive) &&
+                activeStep !== null &&
+                (activeStep === 'WEREWOLF_ATTACK'
+                  ? isWerewolfPlayer(domainPlayer)
+                  : domainPlayer?.role === STEP_ROLE[activeStep])) ||
+              (game.state?.phase === 'HUNTER_SHOT' &&
+                domainPlayer?.role === 'HUNTER' &&
+                game.state.pendingHunterShot?.hunterId === domainPlayer.id &&
+                game.state.pendingHunterShot.targetId === null),
+            activeStep,
+            werewolfTargetId,
+            werewolfAttackEnhanced: isWerewolfPlayer(domainPlayer)
+              ? (visibleWerewolfAction?.enhanced ?? false)
+              : null,
+            enhancedAttackAvailable:
+              domainPlayer?.role === 'ALPHA_WEREWOLF'
+                ? domainPlayer.abilityState.enhancedAttackAvailable
+                : null,
+            werewolfTeammates: isWerewolfPlayer(domainPlayer)
+              ? game
+                  .state!.players.filter(
+                    (player) =>
+                      isWerewolfPlayer(player) &&
+                      player.id !== domainPlayer!.id,
+                  )
+                  .map((player) => ({
+                    id: player.id,
+                    displayName:
+                      game.lobbyPlayers.find((item) => item.id === player.id)
+                        ?.displayName ?? '',
+                    ready:
+                      game.lobbyPlayers.find((item) => item.id === player.id)
+                        ?.ready ?? false,
+                    alive: player.alive,
+                  }))
+              : [],
+            lastProtectedTargetId:
+              domainPlayer?.role === 'PROTECTOR'
+                ? (game.state?.lastProtectedTargetId ?? null)
+                : null,
+            hunterShotTargetId:
+              game.state?.phase === 'HUNTER_SHOT' &&
+              domainPlayer?.role === 'HUNTER' &&
+              game.state.pendingHunterShot?.hunterId === domainPlayer.id
+                ? game.state.pendingHunterShot.targetId
+                : null,
+            charmedPlayerIds:
+              domainPlayer?.role === 'PIPER'
+                ? (game.state?.charmedPlayerIds ?? [])
+                : [],
+            lastCourtesanTargetId:
+              domainPlayer?.role === 'COURTESAN'
+                ? (game.state?.lastCourtesanTargetId ?? null)
+                : null,
+          },
     vote: projectSelfVote(game, lobbyPlayer.id),
     discussion: projectSelfDiscussion(game, lobbyPlayer.id),
     waiting: projectSelfWaiting(game),
-    publicHistory: history.flatMap((entry) =>
-      entry.publicEntry ? [entry.publicEntry] : [],
-    ),
-    privateHistory: history.flatMap((entry) =>
-      entry.privateEntry ? [entry.privateEntry] : [],
-    ),
+    publicHistory: publicEntries,
+    privateHistory: privateEntries,
   }
   return view
 }
 
-// R20: phiếu chỉ hiện count + phiếu của chính mình — không lộ ai bỏ ai trước
-// resolution để tránh bandwagon khi cả bàn ngồi cạnh nhau. Người đã rời (R23)
-// không đếm vào aliveCount và không thể bỏ phiếu thêm.
+// M9: xóa entry riêng của action vừa bị hoàn tác (OWN_SUBMITTED →
+// OWN_CONFIRMED, kèm kết quả soi nếu là Seer) — khớp theo deep-equal action
+// và luôn là lần xảy ra GẦN NHẤT vì undo chỉ áp step cuối của đêm. Trong log
+// các entry riêng của một lần confirm nằm liền nhau: SUBMITTED, CONFIRMED,
+// SEER_RESULT (nếu có) — nhưng giữa attempt bị từ chối và attempt được nhận
+// có thể chèn entry REJECTED, nên quét ngược tối đa tới ranh giới entry khác.
+function removeLastOwnAction(
+  entries: PrivateHistoryEntry[],
+  action: NightAction,
+): void {
+  const signature = JSON.stringify(action)
+  for (let index = entries.length - 1; index >= 0; index -= 1) {
+    const event = entries[index].event
+    const isOwn =
+      (event.type === 'OWN_NIGHT_ACTION_CONFIRMED' ||
+        event.type === 'OWN_NIGHT_ACTION_SUBMITTED') &&
+      JSON.stringify(event.action) === signature
+    if (!isOwn) continue
+
+    let start = index
+    for (let scan = index - 1; scan >= 0; scan -= 1) {
+      const candidate = entries[scan].event
+      const candidateIsOwn =
+        (candidate.type === 'OWN_NIGHT_ACTION_CONFIRMED' ||
+          candidate.type === 'OWN_NIGHT_ACTION_SUBMITTED') &&
+        JSON.stringify(candidate.action) === signature
+      if (!candidateIsOwn) break
+      start = scan
+    }
+    // SEER_RESULT nằm ngay sau CONFIRMED trong log riêng của cùng lần confirm.
+    const seerResultAfter =
+      action.type === 'SEER_INSPECT' &&
+      entries[index + 1]?.event.type === 'SEER_RESULT_RECORDED'
+        ? 1
+        : 0
+    entries.splice(start, index + seerResultAfter - start + 1)
+    return
+  }
+}
+
+// R20/M6: phiếu chỉ hiện count + phiếu của chính mình — không lộ ai bỏ ai
+// trước resolution để tránh bandwagon. Ban ngày ở MODERATED còn counts theo
+// ứng viên (candidateCounts); SELF giữ nguyên R20 (chỉ tổng). Người đã rời
+// (R23) không đếm vào aliveCount và không thể bỏ phiếu thêm.
 function projectSelfVote(
   game: LocalGame,
   playerId: string,
 ): PlayerGameView['vote'] {
   const state = game.state
-  if (game.mode !== 'SELF' || state?.phase !== 'VOTE') return undefined
+  if (state?.phase !== 'VOTE') return undefined
 
   const submissions = state.voteSubmissions ?? {}
   const leftIds = leftPlayerIdSet(game)
   const alivePlayers = state.players.filter(
     (player) => player.alive && !leftIds.has(player.id),
   )
+  const candidateCounts: Record<string, number> = {}
+  for (const [voterId, targetId] of Object.entries(submissions)) {
+    if (!targetId) continue
+    const voter = state.players.find((player) => player.id === voterId)
+    if (!voter?.alive || leftIds.has(voterId)) continue
+    candidateCounts[targetId] = (candidateCounts[targetId] ?? 0) + 1
+  }
   return {
     canVote:
       domainAlive(game, playerId) &&
@@ -197,6 +282,9 @@ function projectSelfVote(
     ).length,
     aliveCount: alivePlayers.length,
     voteAttempt: state.voteAttempt,
+    // M6: counts theo ứng viên chỉ ở MODERATED (ban ngày, ai cũng mở mắt);
+    // SELF không đếm công khai ứng viên (R20).
+    ...(game.mode === 'MODERATED' ? { candidateCounts } : {}),
   }
 }
 
@@ -210,6 +298,34 @@ function projectSelfWaiting(game: LocalGame): PlayerGameView['waiting'] {
     kind: context.kind,
     key: context.key,
     deadlineAt: state.waitingDeadlineAt,
+  }
+}
+
+// M13: ở MODERATED, turn của player rỗng trừ một ngoại lệ — Thợ săn bị loại
+// ban ngày tự bấm phát bắn trên thiết bị (ban ngày, mắt mở, không tell).
+function projectModeratedTurn(
+  game: LocalGame,
+  playerId: string,
+): PlayerGameView['turn'] {
+  const state = game.state
+  const isPendingHunter =
+    state?.phase === 'HUNTER_SHOT' &&
+    state.pendingHunterShot?.hunterId === playerId
+  return {
+    canAct: Boolean(
+      isPendingHunter && state.pendingHunterShot?.targetId === null,
+    ),
+    activeStep: null,
+    werewolfTargetId: null,
+    werewolfAttackEnhanced: null,
+    enhancedAttackAvailable: null,
+    werewolfTeammates: [],
+    lastProtectedTargetId: null,
+    hunterShotTargetId: isPendingHunter
+      ? (state.pendingHunterShot?.targetId ?? null)
+      : null,
+    charmedPlayerIds: [],
+    lastCourtesanTargetId: null,
   }
 }
 
@@ -351,6 +467,11 @@ function projectEvent(
       publicEntry: publicEvent ? { ...metadata, event: publicEvent } : null,
       privateEntry: {
         ...metadata,
+        // M4: nguồn nhập đi kèm entry để UI gắn nhãn "do quản trò nhập" —
+        // parity dữ liệu khi chính chủ role không hề chạm thiết bị.
+        ...(event.type !== 'NIGHT_ACTION_REJECTED' && event.enteredBy
+          ? { enteredBy: event.enteredBy }
+          : {}),
         event: privateEvent,
       },
     }

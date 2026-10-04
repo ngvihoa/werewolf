@@ -77,7 +77,10 @@ function createGame(): LocalGame {
     roomCode: 'ABC123',
     version: 10,
     moderatorName: 'Moderator',
-    mode: 'MODERATED',
+    // Fixture mặc định SELF: các test dưới đây kiểm hành vi trên thiết bị
+    // người chơi (turn, countdown, consent) — đặc trưng của SELF. Test riêng
+    // cho MODERATED tự set mode trong từng case.
+    mode: 'SELF',
     hostPlayerId: null,
     settings: MVP_SETTINGS,
     lobbyPlayers: [
@@ -475,16 +478,36 @@ describe('self mode vote projection', () => {
     })
   })
 
-  it('không có block vote ở mode MODERATED và ngoài phase VOTE', () => {
+  it('M6: MODERATED có block vote với candidateCounts; ngoài phase VOTE thì không', () => {
     const game = createGame()
     game.mode = 'MODERATED'
     game.state!.phase = 'VOTE'
+    game.state!.voteSubmissions = { seer: 'wolf', wolf: 'seer', alpha: null }
     const moderated = projectGameView(game, {
       kind: 'PLAYER',
       playerId: 'seer',
     })
     if (moderated?.viewer !== 'PLAYER') return
-    expect(moderated.vote).toBeUndefined()
+    expect(moderated.vote).toMatchObject({
+      hasVoted: true,
+      myTargetId: 'wolf',
+      votedCount: 3,
+      aliveCount: 5,
+      voteAttempt: 1,
+      // M6: counts theo ứng viên chỉ ở MODERATED; phiếu trắng không vào đây.
+      candidateCounts: { seer: 1, wolf: 1 },
+    })
+    expect(moderated.vote?.canVote).toBe(false)
+
+    // Người chưa vote thấy nút bấm và counts như nhau.
+    const fresh = projectGameView(game, { kind: 'PLAYER', playerId: 'witch' })
+    if (fresh?.viewer !== 'PLAYER') return
+    expect(fresh.vote).toMatchObject({
+      canVote: true,
+      hasVoted: false,
+      myTargetId: null,
+      candidateCounts: { seer: 1, wolf: 1 },
+    })
 
     const selfDay = createGame()
     selfDay.mode = 'SELF'
@@ -495,6 +518,36 @@ describe('self mode vote projection', () => {
     })
     if (dayView?.viewer !== 'PLAYER') return
     expect(dayView.vote).toBeUndefined()
+  })
+
+  it('M1/M13: player MODERATED không thấy queue/turn — trừ prompt hunter shot', () => {
+    const game = createGame()
+    game.mode = 'MODERATED'
+    const night = projectGameView(game, { kind: 'PLAYER', playerId: 'seer' })
+    if (night?.viewer !== 'PLAYER') return
+    expect(night.queue).toEqual([])
+    expect(night.turn.canAct).toBe(false)
+    expect(night.turn.activeStep).toBeNull()
+    expect(night.turn.werewolfTargetId).toBeNull()
+    expect(night.turn.werewolfTeammates).toEqual([])
+
+    // Ngoại lệ duy nhất: Thợ săn bị loại ban ngày tự bấm phát bắn.
+    const hunterGame = structuredClone(game)
+    hunterGame.state!.phase = 'HUNTER_SHOT'
+    hunterGame.state!.pendingHunterShot = { hunterId: 'seer', targetId: null }
+    const hunterView = projectGameView(hunterGame, {
+      kind: 'PLAYER',
+      playerId: 'seer',
+    })
+    if (hunterView?.viewer !== 'PLAYER') return
+    expect(hunterView.turn.canAct).toBe(true)
+
+    const bystanderView = projectGameView(hunterGame, {
+      kind: 'PLAYER',
+      playerId: 'wolf',
+    })
+    if (bystanderView?.viewer !== 'PLAYER') return
+    expect(bystanderView.turn.canAct).toBe(false)
   })
 })
 
@@ -634,5 +687,146 @@ describe('rời game projection (R23)', () => {
       canConsent: false,
       hasConsented: false,
     })
+  })
+})
+
+describe('M4 parity: proxy input vẫn về đúng chủ role', () => {
+  it('action do quản trò nhập vẫn hiện trong privateHistory của chủ role kèm nhãn MODERATOR', () => {
+    const game = createGame()
+    game.history.push(
+      stored(10, {
+        type: 'NIGHT_ACTION_SUBMITTED',
+        action: { type: 'SEER_INSPECT', actorId: 'seer', targetId: 'wolf' },
+        enteredBy: 'MODERATOR',
+      }),
+      stored(11, {
+        type: 'NIGHT_ACTION_CONFIRMED',
+        action: { type: 'SEER_INSPECT', actorId: 'seer', targetId: 'wolf' },
+        enteredBy: 'MODERATOR',
+      }),
+      stored(12, {
+        type: 'SEER_RESULT_RECORDED',
+        seerPlayerId: 'seer',
+        targetPlayerId: 'wolf',
+        result: 'WEREWOLF',
+      }),
+    )
+    const seerView = projectGameView(game, { kind: 'PLAYER', playerId: 'seer' })
+    if (seerView?.viewer !== 'PLAYER') return
+
+    const own = seerView.privateHistory.filter((entry) =>
+      ['OWN_NIGHT_ACTION_SUBMITTED', 'OWN_NIGHT_ACTION_CONFIRMED'].includes(
+        entry.event.type,
+      ),
+    )
+    expect(own).toHaveLength(2)
+    // Parity: hành động do quản trò nhập vẫn đổ về thiết bị của Seer.
+    expect(own.every((entry) => entry.enteredBy === 'MODERATOR')).toBe(true)
+  })
+
+  it('event cũ không có enteredBy vẫn parse — entry không gắn nhãn', () => {
+    const seerView = projectGameView(createGame(), {
+      kind: 'PLAYER',
+      playerId: 'seer',
+    })
+    if (seerView?.viewer !== 'PLAYER') return
+    expect(seerView.privateHistory[0]?.enteredBy).toBeUndefined()
+  })
+
+  it('UNDO_STEP bù trừ: entry riêng của action bị rút khỏi history, thay bằng mục hoàn tác', () => {
+    const game = createGame()
+    game.history.push(
+      stored(10, {
+        type: 'NIGHT_ACTION_SUBMITTED',
+        action: { type: 'SEER_INSPECT', actorId: 'seer', targetId: 'wolf' },
+        enteredBy: 'MODERATOR',
+      }),
+      stored(11, {
+        type: 'NIGHT_ACTION_CONFIRMED',
+        action: { type: 'SEER_INSPECT', actorId: 'seer', targetId: 'wolf' },
+        enteredBy: 'MODERATOR',
+      }),
+      stored(12, {
+        type: 'SEER_RESULT_RECORDED',
+        seerPlayerId: 'seer',
+        targetPlayerId: 'wolf',
+        result: 'WEREWOLF',
+      }),
+      stored(13, {
+        type: 'STEP_UNDONE',
+        step: 'SEER_INSPECT',
+        action: { type: 'SEER_INSPECT', actorId: 'seer', targetId: 'wolf' },
+        reason: 'Quản trò chọn nhầm mục tiêu',
+      }),
+    )
+    const seerView = projectGameView(game, { kind: 'PLAYER', playerId: 'seer' })
+    if (seerView?.viewer !== 'PLAYER') return
+
+    expect(
+      seerView.privateHistory.some((entry) =>
+        ['OWN_NIGHT_ACTION_SUBMITTED', 'OWN_NIGHT_ACTION_CONFIRMED'].includes(
+          entry.event.type,
+        ),
+      ),
+    ).toBe(false)
+    // Chỉ kết quả soi của LẦN bị hoàn tác bị rút; kết quả của đêm trước
+    // (có sẵn trong fixture, sequence 2) phải còn nguyên.
+    expect(
+      seerView.privateHistory
+        .filter((entry) => entry.event.type === 'SEER_RESULT_RECORDED')
+        .map((entry) => entry.sequence),
+    ).toEqual([2])
+    expect(seerView.privateHistory.at(-1)?.event).toEqual({
+      type: 'OWN_NIGHT_ACTION_UNDONE',
+      action: { type: 'SEER_INSPECT', actorId: 'seer', targetId: 'wolf' },
+      reason: 'Quản trò chọn nhầm mục tiêu',
+    })
+
+    // Người khác không thấy gì — bù trừ chỉ áp cho chủ role.
+    const wolfView = projectGameView(game, { kind: 'PLAYER', playerId: 'wolf' })
+    if (wolfView?.viewer !== 'PLAYER') return
+    expect(
+      wolfView.privateHistory.some(
+        (entry) => entry.event.type === 'OWN_NIGHT_ACTION_UNDONE',
+      ),
+    ).toBe(false)
+  })
+
+  it('Witch bị hoàn tác potion: entry nhật ký đêm bị rút khỏi history', () => {
+    const game = createGame()
+    const witchAction = {
+      type: 'WITCH_ACTION',
+      actorId: 'witch',
+      heal: true,
+      poisonTargetId: null,
+    } as const
+    game.history.push(
+      stored(10, {
+        type: 'NIGHT_ACTION_CONFIRMED',
+        action: witchAction,
+      }),
+    )
+    const before = projectGameView(game, { kind: 'PLAYER', playerId: 'witch' })
+    if (before?.viewer !== 'PLAYER') return
+    expect(before.privateHistory).toHaveLength(1)
+
+    game.history.push(
+      stored(11, {
+        type: 'STEP_UNDONE',
+        step: 'WITCH_ACTION',
+        action: witchAction,
+        reason: 'Sói chưa chọn xong',
+      }),
+    )
+    const after = projectGameView(game, { kind: 'PLAYER', playerId: 'witch' })
+    if (after?.viewer !== 'PLAYER') return
+    expect(
+      after.privateHistory.some(
+        (entry) => entry.event.type === 'OWN_NIGHT_ACTION_CONFIRMED',
+      ),
+    ).toBe(false)
+    expect(after.privateHistory.at(-1)?.event.type).toBe(
+      'OWN_NIGHT_ACTION_UNDONE',
+    )
   })
 })
