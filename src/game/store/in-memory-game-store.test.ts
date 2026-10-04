@@ -363,16 +363,17 @@ describe('InMemoryGameStore commands', () => {
     }
   })
 
-  it('authorizes the role owner and appends orchestration events', () => {
-    const { store, players, game } = createStartedGame()
+  it('authorizes the moderator proxy submit and appends orchestration events', () => {
+    const { store, created, game } = createStartedGame()
     const seer = game.lobbyPlayers.find((player) => player.role === 'SEER')
     const wolf = game.lobbyPlayers.find((player) => player.role === 'WEREWOLF')
-    const seerSession = players.find((player) => player.playerId === seer?.id)
-    if (!seer || !wolf || !seerSession) throw new Error('Fixture roles missing')
+    if (!seer || !wolf) throw new Error('Fixture roles missing')
 
+    // Revamp MODERATED (M2): đêm thuộc quản trò — proxy submit với actorId
+    // của chủ role là đường chính, event audit mang enteredBy MODERATOR.
     const executed = store.execute({
       gameId: game.id,
-      sessionToken: seerSession.playerSessionToken,
+      sessionToken: moderatorToken(created),
       idempotencyKey: 'submit-seer-action',
       expectedVersion: game.version,
       command: {
@@ -395,12 +396,15 @@ describe('InMemoryGameStore commands', () => {
       throw new Error('Expected updated game to exist')
     }
 
-    expect(updatedGame.value.history.at(-1)?.event.type).toBe(
-      'NIGHT_ACTION_SUBMITTED',
-    )
+    const submittedEntry = updatedGame.value.history.at(-1)
+    expect(submittedEntry?.event.type).toBe('NIGHT_ACTION_SUBMITTED')
+    expect(submittedEntry?.actor).toBe('MODERATOR')
+    if (submittedEntry?.event.type === 'NIGHT_ACTION_SUBMITTED') {
+      expect(submittedEntry.event.enteredBy).toBe('MODERATOR')
+    }
   })
 
-  it('prevents a player from acting for another player', () => {
+  it('MODERATED: player không tự submit action đêm — kể cả chủ role', () => {
     const { store, players, game } = createStartedGame()
     const seer = game.lobbyPlayers.find((player) => player.role === 'SEER')
     const anotherSession = players.find(

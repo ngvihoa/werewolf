@@ -94,7 +94,7 @@ export async function executeGameCommand(
       )
     }
 
-    const authorization = authorizeCommand(session, input.command)
+    const authorization = authorizeCommand(session, input.command, game.mode)
     if (!authorization.ok) return authorization
     // R23: player chỉ được END_GAME khi là chủ phòng ở SELF (game đã lock ở trên).
     if (input.command.type === 'END_GAME' && session.kind === 'PLAYER') {

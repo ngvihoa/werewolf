@@ -970,10 +970,11 @@ describe('PostgresGameStore.execute', () => {
       },
     }
 
-    // Moderator không thể giả danh Player dù command payload chứa actor hợp lệ.
+    // Revamp MODERATED (M2): player không tự submit action đêm — kể cả chủ
+    // role; đêm thuộc quản trò nên session player bị chặn toàn bộ.
     const unauthorized = await store.execute({
       gameId: created.value.gameId,
-      sessionToken: moderatorToken(created.value),
+      sessionToken: seer.playerSessionToken,
       idempotencyKey: 'unauthorized-seer-action',
       expectedVersion: started.value.version,
       command,
@@ -983,9 +984,10 @@ describe('PostgresGameStore.execute', () => {
       error: { code: 'NOT_AUTHORIZED' },
     })
 
+    // Quản trò nhập thay Seer (proxy input) — đường chính của chế độ mới.
     const submitted = await store.execute({
       gameId: created.value.gameId,
-      sessionToken: seer.playerSessionToken,
+      sessionToken: moderatorToken(created.value),
       idempotencyKey: 'submit-seer-action',
       expectedVersion: started.value.version,
       command,
@@ -1001,7 +1003,7 @@ describe('PostgresGameStore.execute', () => {
 
     const retried = await store.execute({
       gameId: created.value.gameId,
-      sessionToken: seer.playerSessionToken,
+      sessionToken: moderatorToken(created.value),
       idempotencyKey: 'submit-seer-action',
       expectedVersion: started.value.version,
       command,
@@ -1022,7 +1024,7 @@ describe('PostgresGameStore.execute', () => {
     // Cùng expectedVersion cũ phải bị từ chối trước khi rule engine chạy lại.
     const stale = await store.execute({
       gameId: created.value.gameId,
-      sessionToken: seer.playerSessionToken,
+      sessionToken: moderatorToken(created.value),
       idempotencyKey: 'stale-seer-action',
       expectedVersion: started.value.version,
       command,
@@ -1045,7 +1047,7 @@ describe('PostgresGameStore.execute', () => {
     // có thể nhận attempt tiếp theo.
     const resubmitted = await store.execute({
       gameId: created.value.gameId,
-      sessionToken: seer.playerSessionToken,
+      sessionToken: moderatorToken(created.value),
       idempotencyKey: 'resubmit-seer-action',
       expectedVersion: rejected.value.version,
       command,
@@ -1112,9 +1114,9 @@ describe('PostgresGameStore.execute', () => {
       },
     ])
     expect(commandEvents.slice(-6)).toEqual([
-      { type: 'NIGHT_ACTION_SUBMITTED', createdBy: 'PLAYER' },
+      { type: 'NIGHT_ACTION_SUBMITTED', createdBy: 'MODERATOR' },
       { type: 'NIGHT_ACTION_REJECTED', createdBy: 'MODERATOR' },
-      { type: 'NIGHT_ACTION_SUBMITTED', createdBy: 'PLAYER' },
+      { type: 'NIGHT_ACTION_SUBMITTED', createdBy: 'MODERATOR' },
       { type: 'NIGHT_ACTION_CONFIRMED', createdBy: 'MODERATOR' },
       { type: 'SEER_RESULT_RECORDED', createdBy: 'MODERATOR' },
       { type: 'QUEUE_STEP_ACTIVATED', createdBy: 'MODERATOR' },

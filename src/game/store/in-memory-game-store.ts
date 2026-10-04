@@ -502,7 +502,7 @@ export class InMemoryGameStore implements GameStore {
       return failure('INVALID_GAME_STATE', 'Game has not started')
     }
 
-    const authorization = authorizeCommand(session, input.command)
+    const authorization = authorizeCommand(session, input.command, game.mode)
     if (!authorization.ok) return authorization
     // R23: player chỉ được END_GAME khi là chủ phòng ở SELF.
     if (input.command.type === 'END_GAME' && session.kind === 'PLAYER') {
