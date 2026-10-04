@@ -317,9 +317,11 @@ export const gameActions = pgTable(
       foreignColumns: [gameSessions.gameId, gameSessions.id],
     }),
     check('game_actions_attempt_positive_check', sql`${table.attempt} > 0`),
+    // CONFIRMED cho phép decided_by_session_id NULL — quyết định của quản trò
+    // bot ở SELF (R20) không thuộc session nào.
     check(
       'game_actions_decision_check',
-      sql`(${table.status} = 'SUBMITTED' AND ${table.decidedAt} IS NULL AND ${table.decidedBySessionId} IS NULL AND ${table.rejectionReason} IS NULL) OR (${table.status} = 'CONFIRMED' AND ${table.decidedAt} IS NOT NULL AND ${table.decidedBySessionId} IS NOT NULL AND ${table.rejectionReason} IS NULL) OR (${table.status} IN ('REJECTED', 'CANCELLED') AND ${table.decidedAt} IS NOT NULL AND ${table.decidedBySessionId} IS NOT NULL AND length(btrim(${table.rejectionReason})) > 0)`,
+      sql`(${table.status} = 'SUBMITTED' AND ${table.decidedAt} IS NULL AND ${table.decidedBySessionId} IS NULL AND ${table.rejectionReason} IS NULL) OR (${table.status} = 'CONFIRMED' AND ${table.decidedAt} IS NOT NULL AND ${table.rejectionReason} IS NULL) OR (${table.status} IN ('REJECTED', 'CANCELLED') AND ${table.decidedAt} IS NOT NULL AND ${table.decidedBySessionId} IS NOT NULL AND length(btrim(${table.rejectionReason})) > 0)`,
     ),
   ],
 )
