@@ -7,14 +7,21 @@ import type {
 import type { RoleCompositionSelection } from '../domain'
 import type { GameCommand } from '../orchestration/commands'
 import type { GameView } from '../projections/model'
+import type { VoteTie } from '../rules/mvp-settings'
 
 export type Awaitable<T> = T | Promise<T>
 
+export type TickInput = {
+  gameId: string
+  sessionToken: string
+}
+
 // MODERATED: người tạo là Quản trò và nhận moderator session.
 // SELF: người tạo là chủ phòng — một player thường được quyền cấu hình.
+// voteTie: luật hòa biểu quyết (R14), mặc định REVOTE_ONCE.
 export type CreateGameInput =
-  | { mode: 'MODERATED'; moderatorName: string }
-  | { mode: 'SELF'; creatorName: string }
+  | { mode: 'MODERATED'; moderatorName: string; voteTie?: VoteTie }
+  | { mode: 'SELF'; creatorName: string; voteTie?: VoteTie }
 
 /**
  * Định nghĩa schema cho một lệnh thực thi trong game
@@ -104,6 +111,17 @@ export interface GameStore {
   ): Awaitable<StoreResult<GameMutationResult>>
 
   /**
+   * R23 (SELF) — player rời game giữa ván: không mark dead, vẫn xem được view
+   * qua session cũ; action/vote còn thiếu do bot tự skip/abstain. Ở lobby,
+   * người rời bị loại khỏi phân vai và ready-check.
+   */
+  leaveGame(
+    sessionToken: string,
+    expectedVersion: number,
+    idempotencyKey: string,
+  ): Awaitable<StoreResult<GameMutationResult>>
+
+  /**
    * Thực thi một lệnh bất kỳ xảy ra trong một đêm
    * @param input Thông tin lệnh
    * @returns Kết quả thực thi lệnh
@@ -111,4 +129,11 @@ export interface GameStore {
   execute(
     input: ExecuteGameCommandInput,
   ): Awaitable<StoreResult<GameMutationResult>>
+
+  /**
+   * R22 — lazy tick: client gọi khi countdown về 0; store dùng đồng hồ server
+   * để chạy bot timeout (skip step / abstain / mất phát bắn hunter). Idempotent:
+   * tick khi không có gì hết giờ chỉ trả về version hiện tại.
+   */
+  tick(input: TickInput): Awaitable<StoreResult<GameMutationResult>>
 }

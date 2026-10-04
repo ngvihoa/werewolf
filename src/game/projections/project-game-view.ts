@@ -11,6 +11,7 @@ import type {
 import type { LocalGame } from '../store/model'
 
 import { isWerewolfPlayer } from '../domain'
+import { waitingContext } from '../bot/bot-moderator'
 import { STEP_ROLE } from '../rules/transitions'
 
 export function projectGameView(
@@ -74,6 +75,8 @@ export function projectGameView(
           ?.alive ?? true,
       // Hết ván thì mọi vai được lộ ra — dữ liệu công khai của màn kết quả.
       role: game.state?.phase === 'GAME_OVER' ? player.role : null,
+      // R23 (SELF): chỉ xuất hiện khi player đã rời — payload giữ hình dạng cũ.
+      ...(player.leftAt ? { left: true as const } : {}),
     })),
     me: {
       id: lobbyPlayer.id,
@@ -81,6 +84,7 @@ export function projectGameView(
       ready: lobbyPlayer.ready,
       alive: domainPlayer?.alive ?? true,
       role: lobbyPlayer.role,
+      ...(lobbyPlayer.leftAt ? { left: true as const } : {}),
       abilityState:
         domainPlayer?.role === 'WITCH' ||
         domainPlayer?.role === 'ALPHA_WEREWOLF' ||
@@ -155,6 +159,7 @@ export function projectGameView(
     },
     vote: projectSelfVote(game, lobbyPlayer.id),
     discussion: projectSelfDiscussion(game, lobbyPlayer.id),
+    waiting: projectSelfWaiting(game),
     publicHistory: history.flatMap((entry) =>
       entry.publicEntry ? [entry.publicEntry] : [],
     ),
@@ -166,7 +171,8 @@ export function projectGameView(
 }
 
 // R20: phiếu chỉ hiện count + phiếu của chính mình — không lộ ai bỏ ai trước
-// resolution để tránh bandwagon khi cả bàn ngồi cạnh nhau.
+// resolution để tránh bandwagon khi cả bàn ngồi cạnh nhau. Người đã rời (R23)
+// không đếm vào aliveCount và không thể bỏ phiếu thêm.
 function projectSelfVote(
   game: LocalGame,
   playerId: string,
@@ -175,9 +181,15 @@ function projectSelfVote(
   if (game.mode !== 'SELF' || state?.phase !== 'VOTE') return undefined
 
   const submissions = state.voteSubmissions ?? {}
-  const alivePlayers = state.players.filter((player) => player.alive)
+  const leftIds = leftPlayerIdSet(game)
+  const alivePlayers = state.players.filter(
+    (player) => player.alive && !leftIds.has(player.id),
+  )
   return {
-    canVote: domainAlive(game, playerId) && submissions[playerId] === undefined,
+    canVote:
+      domainAlive(game, playerId) &&
+      !leftIds.has(playerId) &&
+      submissions[playerId] === undefined,
     hasVoted: submissions[playerId] !== undefined,
     myTargetId: submissions[playerId] ?? null,
     votedCount: alivePlayers.filter(
@@ -188,13 +200,27 @@ function projectSelfVote(
   }
 }
 
+// R22: ngữ cảnh chờ hiện tại + mốc hết giờ — mọi người cùng thấy countdown.
+function projectSelfWaiting(game: LocalGame): PlayerGameView['waiting'] {
+  const state = game.state
+  if (game.mode !== 'SELF' || !state) return undefined
+  const context = waitingContext(state)
+  if (!context || !state.waitingDeadlineAt) return undefined
+  return {
+    kind: context.kind,
+    key: context.key,
+    deadlineAt: state.waitingDeadlineAt,
+  }
+}
+
 function domainAlive(game: LocalGame, playerId: string): boolean {
   return (
     game.state?.players.find((player) => player.id === playerId)?.alive ?? false
   )
 }
 
-// R21: consent kết thúc thảo luận — count + trạng thái của chính mình.
+// R21: consent kết thúc thảo luận — count + trạng thái của chính mình. Người
+// đã rời (R23) không đếm vào majority và không consent thêm được.
 function projectSelfDiscussion(
   game: LocalGame,
   playerId: string,
@@ -203,14 +229,29 @@ function projectSelfDiscussion(
   if (game.mode !== 'SELF' || state?.phase !== 'DAY') return undefined
 
   const consentIds = state.voteConsentIds ?? []
-  const aliveCount = state.players.filter((player) => player.alive).length
+  const leftIds = leftPlayerIdSet(game)
+  const aliveCount = state.players.filter(
+    (player) => player.alive && !leftIds.has(player.id),
+  ).length
   return {
-    canConsent: domainAlive(game, playerId) && !consentIds.includes(playerId),
+    canConsent:
+      domainAlive(game, playerId) &&
+      !leftIds.has(playerId) &&
+      !consentIds.includes(playerId),
     hasConsented: consentIds.includes(playerId),
     consentCount: consentIds.length,
     aliveCount,
     consentNeeded: Math.floor(aliveCount / 2) + 1,
   }
+}
+
+// R23: id các player đã rời — từ lobbyPlayers (leftAt do store ghi).
+function leftPlayerIdSet(game: LocalGame): Set<string> {
+  return new Set(
+    game.lobbyPlayers
+      .filter((player) => player.leftAt)
+      .map((player) => player.id),
+  )
 }
 
 function projectLover(

@@ -1,14 +1,15 @@
 import type {
+  ExecuteGameCommandInput,
+  CreateGameInput,
+  GameStore,
+  TickInput,
+} from './game-store'
+import type {
   CreatedGame,
   GameMutationResult,
   JoinedGame,
   StoreResult,
 } from './model'
-import type {
-  ExecuteGameCommandInput,
-  CreateGameInput,
-  GameStore,
-} from './game-store'
 import type { RoleCompositionSelection } from '../domain'
 import type { PostgresStoreDeps } from './postgres/shared'
 import type { GameView } from '../projections/model'
@@ -25,10 +26,12 @@ import { getGameView as getGameViewCommand } from './postgres/game-view'
 import { scheduleStaleGamePurge } from './postgres/maintenance'
 import { executeGameCommand } from './postgres/execute-command'
 import { createRoomCode } from './utils.room-code'
+import { tickGame } from './postgres/tick'
 import {
   assignRoles as assignRolesCommand,
   createGame as createGameCommand,
   startGame as startGameCommand,
+  leaveGame as leaveGameCommand,
   joinGame as joinGameCommand,
   setReady as setReadyCommand,
   rematch as rematchCommand,
@@ -136,6 +139,20 @@ export class PostgresGameStore implements GameStore {
     )
   }
 
+  // R23 (SELF): rời game giữa ván — không mark dead, bot tự skip/abstain.
+  leaveGame(
+    sessionToken: string,
+    expectedVersion: number,
+    idempotencyKey: string,
+  ): Promise<StoreResult<GameMutationResult>> {
+    return leaveGameCommand(
+      this.#deps,
+      sessionToken,
+      expectedVersion,
+      idempotencyKey,
+    )
+  }
+
   getGameView(sessionToken: string): Promise<StoreResult<GameView>> {
     return getGameViewCommand(this.#deps, sessionToken)
   }
@@ -144,5 +161,9 @@ export class PostgresGameStore implements GameStore {
     input: ExecuteGameCommandInput,
   ): Promise<StoreResult<GameMutationResult>> {
     return executeGameCommand(this.#deps, input)
+  }
+
+  tick(input: TickInput): Promise<StoreResult<GameMutationResult>> {
+    return tickGame(this.#deps, input)
   }
 }

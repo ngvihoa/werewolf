@@ -28,6 +28,17 @@ function moderatorToken(value: CreatedGame): string {
   return value.moderatorSessionToken
 }
 
+// SELF: người tạo là player thường — helper narrow union để token/playerId
+// có kiểu string chính xác.
+function selfCreator(
+  value: CreatedGame,
+): Extract<CreatedGame, { mode: 'SELF' }> {
+  if (value.mode !== 'SELF') {
+    throw new Error('Expected a SELF game')
+  }
+  return value
+}
+
 const createdRoomCodes: string[] = []
 
 afterEach(async () => {
@@ -869,9 +880,11 @@ describe('PostgresGameStore.getGameView', () => {
       role: 'SEER',
     })
 
-    // Public player list không được chứa role của bất kỳ người chơi nào.
+    // Public player list không được lộ vai của bất kỳ người chơi nào.
+    // (Từ 9a9c2ca projection luôn có key role nhưng chỉ là null khi chưa
+    // GAME_OVER — vai chỉ được mở ở màn kết quả.)
     for (const player of playerResult.value.players) {
-      expect(player).not.toHaveProperty('role')
+      expect(player.role).toBeNull()
     }
     expect(JSON.stringify(playerResult.value)).not.toContain('WEREWOLF')
 
@@ -1151,3 +1164,179 @@ function createTestRoomCode(): string {
   // UUID chỉ chứa ký tự hexadecimal; lấy 6 ký tự đầu vẫn khớp DB constraint A-Z0-9.
   return randomUUID().replaceAll('-', '').slice(0, 6).toUpperCase()
 }
+
+describe('PostgresGameStore.leaveGame (R23 SELF)', () => {
+  it('rời ván giữa đêm: left_at được ghi, event PLAYER_LEFT_GAME lưu, bot skip step người rời', async () => {
+    const roomCode = createTestRoomCode()
+    createdRoomCodes.push(roomCode)
+
+    const store = new PostgresGameStore({ createRoomCode: () => roomCode })
+    const createdResult = await store.createGame({
+      mode: 'SELF',
+      creatorName: 'Hoa',
+    })
+    if (!createdResult.ok) {
+      throw new Error('Expected createGame to succeed')
+    }
+    const created = selfCreator(createdResult.value)
+
+    const joined = await Promise.all(
+      ['An', 'Binh', 'Cuong', 'Dung'].map((name) =>
+        store.joinGame(roomCode, name),
+      ),
+    )
+    if (joined.some((result) => !result.ok)) {
+      throw new Error('Expected all players to join')
+    }
+    const players = [
+      { playerId: created.playerId, token: created.playerSessionToken },
+      ...joined.map((result) => ({
+        playerId: result.ok ? result.value.playerId : '',
+        token: result.ok ? result.value.playerSessionToken : '',
+      })),
+    ]
+
+    const currentVersion = async (): Promise<number> => {
+      const snapshot = await store.getGameView(created.playerSessionToken)
+      if (!snapshot.ok || snapshot.value.viewer !== 'PLAYER') {
+        throw new Error('Expected a player view')
+      }
+      return snapshot.value.version
+    }
+
+    const assigned = await store.assignRoles(
+      created.playerSessionToken,
+      await currentVersion(),
+      'self-assign',
+    )
+    if (!assigned.ok) throw new Error(assigned.error.message)
+    for (const player of players) {
+      const ready = await store.setReady(
+        player.token,
+        await currentVersion(),
+        true,
+        `ready-${player.playerId}`,
+      )
+      if (!ready.ok) throw new Error(ready.error.message)
+    }
+    const started = await store.startGame(
+      created.playerSessionToken,
+      await currentVersion(),
+      'self-start',
+    )
+    if (!started.ok) throw new Error(started.error.message)
+
+    // Xác định seer (chủ step ACTIVE đầu tiên) qua vai lưu trong DB.
+    const seerRows = await db
+      .select({ id: gamePlayers.id })
+      .from(gamePlayers)
+      .where(
+        and(
+          eq(gamePlayers.gameId, created.gameId),
+          eq(gamePlayers.role, 'SEER'),
+        ),
+      )
+      .limit(1)
+    const seerId = seerRows[0]?.id
+    if (!seerId) throw new Error('Composition is missing a seer')
+    const seer = players.find((player) => player.playerId === seerId)
+    if (!seer) throw new Error('Seer session is missing')
+
+    const left = await store.leaveGame(
+      seer.token,
+      await currentVersion(),
+      'leave-mid-night',
+    )
+    expect(left.ok).toBe(true)
+
+    // Cột left_at được ghi trong game_players.
+    const [leftRow] = await db
+      .select({ leftAt: gamePlayers.leftAt })
+      .from(gamePlayers)
+      .where(eq(gamePlayers.id, seerId))
+      .limit(1)
+    expect(leftRow?.leftAt).not.toBeNull()
+
+    // Event PLAYER_LEFT_GAME actor PLAYER + bot skip step với reason PLAYER_LEFT.
+    const events = await db
+      .select({ type: gameEvents.type, createdBy: gameEvents.createdBy })
+      .from(gameEvents)
+      .where(eq(gameEvents.gameId, created.gameId))
+      .orderBy(asc(gameEvents.sequence))
+    const eventTypes = events.map((event) => event.type)
+    expect(eventTypes).toContain('PLAYER_LEFT_GAME')
+    expect(eventTypes).toContain('QUEUE_STEP_SKIPPED')
+
+    const [skippedStep] = await db
+      .select({
+        status: gameQueueSteps.status,
+        skipReason: gameQueueSteps.skipReason,
+      })
+      .from(gameQueueSteps)
+      .where(
+        and(
+          eq(gameQueueSteps.gameId, created.gameId),
+          eq(gameQueueSteps.step, 'SEER_INSPECT'),
+        ),
+      )
+      .limit(1)
+    expect(skippedStep).toMatchObject({
+      status: 'SKIPPED',
+      skipReason: 'PLAYER_LEFT',
+    })
+
+    // Receipt idempotency lưu cho LEAVE_GAME.
+    const [receipt] = await db
+      .select({ commandType: commandReceipts.commandType })
+      .from(commandReceipts)
+      .where(eq(commandReceipts.gameId, created.gameId))
+      .orderBy(desc(commandReceipts.createdAt))
+      .limit(1)
+    expect(receipt?.commandType).toBe('LEAVE_GAME')
+
+    // Session cũ vẫn xem được view với cờ left — reconnect chỉ xem.
+    const view = await store.getGameView(seer.token)
+    if (!view.ok || view.value.viewer !== 'PLAYER') {
+      throw new Error('Expected the leaver view to keep working')
+    }
+    expect(view.value.me.left).toBe(true)
+    expect(
+      view.value.players.find((player) => player.id === seerId)?.left,
+    ).toBe(true)
+
+    // T7: host kết thúc ván rồi rematch — giữ lobby + mode, người rời được
+    // đưa trở lại sảnh bình thường (leftAt xóa).
+    const ended = await store.execute({
+      gameId: created.gameId,
+      sessionToken: created.playerSessionToken,
+      idempotencyKey: 't7-end',
+      expectedVersion: await currentVersion(),
+      command: { type: 'END_GAME', reason: 'Kết thúc để chơi ván mới' },
+    })
+    if (!ended.ok) throw new Error(ended.error.message)
+
+    const rematch = await store.rematch(
+      created.playerSessionToken,
+      await currentVersion(),
+      't7-rematch',
+    )
+    expect(rematch.ok).toBe(true)
+
+    const [resetGame] = await db
+      .select({ status: games.status, mode: games.mode, state: games.state })
+      .from(games)
+      .where(eq(games.id, created.gameId))
+      .limit(1)
+    expect(resetGame).toMatchObject({
+      status: 'LOBBY',
+      mode: 'SELF',
+      state: null,
+    })
+    const [leaverRow] = await db
+      .select({ leftAt: gamePlayers.leftAt })
+      .from(gamePlayers)
+      .where(eq(gamePlayers.id, seerId))
+      .limit(1)
+    expect(leaverRow?.leftAt).toBeNull()
+  })
+})

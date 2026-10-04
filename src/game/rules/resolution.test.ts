@@ -359,4 +359,20 @@ describe('vote resolution', () => {
       playerId: 'a',
     })
   })
+
+  it('ends the vote without elimination right away when NO_REVOTE is set', () => {
+    expect(resolveVote(true, null, 1, 'NO_REVOTE')).toEqual({
+      outcome: 'NO_ELIMINATION',
+    })
+    expect(resolveVote(true, null, 2, 'NO_REVOTE')).toEqual({
+      outcome: 'NO_ELIMINATION',
+    })
+  })
+
+  it('keeps the revote behavior by default when the setting is absent', () => {
+    expect(resolveVote(true, null, 1, undefined)).toEqual({
+      outcome: 'REVOTE',
+      nextAttempt: 2,
+    })
+  })
 })

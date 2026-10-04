@@ -16,6 +16,11 @@ export const setupEventSchema = z.discriminatedUnion('type', [
     playerId: z.string().min(1),
     ready: z.boolean(),
   }),
+  // R23: player rời game giữa ván — thông tin hiển thị, không đổi gameplay.
+  z.object({
+    type: z.literal('PLAYER_LEFT_GAME'),
+    playerId: z.string().min(1),
+  }),
   z.object({ type: z.literal('ROLES_ASSIGNED') }),
   z.object({ type: z.literal('GAME_STARTED') }),
   z.object({ type: z.literal('MATCH_RESET') }),

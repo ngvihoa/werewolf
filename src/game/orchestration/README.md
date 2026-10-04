@@ -18,6 +18,9 @@ Orchestration không truy cập Supabase, database, UI hoặc global state.
 - Moderator confirm, reject hoặc skip queue step.
 - Moderator confirm night resolution.
 - Bắt đầu vote, submit và confirm vote result.
+- Player submit vote (`SUBMIT_VOTE`) và consent (`SUBMIT_VOTE_CONSENT`) ở SELF.
+- Skip hunter shot (R22), `END_GAME` kết thúc ván sớm (R23 — Quản trò ở
+  MODERATED, chủ phòng ở SELF; reason bắt buộc).
 
 Authentication và authorization layer phải đảm bảo đúng actor được gửi từng command trước khi gọi orchestrator.
 

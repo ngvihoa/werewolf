@@ -4,6 +4,8 @@ import type { GameState } from '../orchestration/model'
 
 import { describe, expect, it } from 'vitest'
 
+import { MVP_SETTINGS } from '../rules/mvp-settings'
+
 import { getGameViewResultSchema } from './schema'
 import { projectGameView } from './project-game-view'
 
@@ -77,6 +79,7 @@ function createGame(): LocalGame {
     moderatorName: 'Moderator',
     mode: 'MODERATED',
     hostPlayerId: null,
+    settings: MVP_SETTINGS,
     lobbyPlayers: [
       { id: 'seer', displayName: 'Seer', ready: true, role: 'SEER' },
       { id: 'wolf', displayName: 'Wolf', ready: true, role: 'WEREWOLF' },
@@ -552,5 +555,84 @@ describe('getGameView runtime output', () => {
     expect(after.players.every((player) => player.role !== null)).toBe(true)
     const wolfEntry = after.players.find((player) => player.id === 'wolf')
     expect(wolfEntry?.role).toBe('WEREWOLF')
+  })
+})
+
+describe('rời game projection (R23)', () => {
+  it('cờ left trên players + me; đếm vote/consent loại trừ người đã rời', () => {
+    const game = createGame()
+    game.mode = 'SELF'
+    game.hostPlayerId = null
+    game.lobbyPlayers = game.lobbyPlayers.map((player) =>
+      player.id === 'alpha'
+        ? { ...player, leftAt: '2026-08-08T00:00:00.000Z' }
+        : player,
+    )
+    const state = game.state!
+    state.phase = 'VOTE'
+    // alpha (đã rời) chưa bỏ phiếu; seer, wolf, witch đã bỏ.
+    state.voteSubmissions = { seer: 'wolf', wolf: 'seer', witch: 'wolf' }
+
+    const seerView = projectGameView(game, { kind: 'PLAYER', playerId: 'seer' })
+    if (seerView?.viewer !== 'PLAYER') return
+    // aliveCount chỉ tính người sống còn ở lại (alpha rời, villager chết);
+    // alpha chưa vote không chặn hiển thị count.
+    expect(seerView.vote).toEqual({
+      canVote: false,
+      hasVoted: true,
+      myTargetId: 'wolf',
+      votedCount: 3,
+      aliveCount: 4,
+      voteAttempt: 1,
+    })
+    expect(seerView.players.find((player) => player.id === 'alpha')?.left).toBe(
+      true,
+    )
+    expect(
+      seerView.players.find((player) => player.id === 'elder')?.left,
+    ).toBeUndefined()
+
+    const alphaView = projectGameView(game, {
+      kind: 'PLAYER',
+      playerId: 'alpha',
+    })
+    if (alphaView?.viewer !== 'PLAYER') return
+    expect(alphaView.me.left).toBe(true)
+    // Người đã rời không thể bỏ phiếu thêm qua UI.
+    expect(alphaView.vote).toMatchObject({ canVote: false, hasVoted: false })
+  })
+
+  it('DAY consent: canConsent false cho người đã rời, aliveCount loại trừ họ', () => {
+    const game = createGame()
+    game.mode = 'SELF'
+    game.hostPlayerId = null
+    game.lobbyPlayers = game.lobbyPlayers.map((player) =>
+      player.id === 'alpha'
+        ? { ...player, leftAt: '2026-08-08T00:00:00.000Z' }
+        : player,
+    )
+    const state = game.state!
+    state.phase = 'DAY'
+    state.voteConsentIds = ['seer', 'wolf']
+
+    const seerView = projectGameView(game, { kind: 'PLAYER', playerId: 'seer' })
+    if (seerView?.viewer !== 'PLAYER') return
+    expect(seerView.discussion).toEqual({
+      canConsent: false,
+      hasConsented: true,
+      consentCount: 2,
+      aliveCount: 4,
+      consentNeeded: 3,
+    })
+
+    const alphaView = projectGameView(game, {
+      kind: 'PLAYER',
+      playerId: 'alpha',
+    })
+    if (alphaView?.viewer !== 'PLAYER') return
+    expect(alphaView.discussion).toMatchObject({
+      canConsent: false,
+      hasConsented: false,
+    })
   })
 })

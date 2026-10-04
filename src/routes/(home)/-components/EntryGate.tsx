@@ -15,8 +15,12 @@ const ROOM_CODE_PATTERN = /^[A-Z0-9]{6}$/
 type EntryPath = 'MENU' | 'CREATE' | 'CREATE_SELF' | 'JOIN'
 
 type CreateGameApiInput =
-  | { mode: 'MODERATED'; moderatorName: string }
-  | { mode: 'SELF'; creatorName: string }
+  | {
+      mode: 'MODERATED'
+      moderatorName: string
+      voteTie?: 'REVOTE_ONCE' | 'NO_REVOTE'
+    }
+  | { mode: 'SELF'; creatorName: string; voteTie?: 'REVOTE_ONCE' | 'NO_REVOTE' }
 
 /**
  * "Cổng vào đêm": trang entry là một card trung tâm duy nhất trên tranh nền.
@@ -81,10 +85,12 @@ export function EntryGate({ joinCode }: { joinCode?: string }) {
     const rawName = isSelf ? form.get('creatorName') : form.get('moderatorName')
     // eslint-disable-next-line @typescript-eslint/no-base-to-string
     const name = String(rawName ?? '').trim()
+    const voteTie =
+      form.get('voteTie') === 'NO_REVOTE' ? 'NO_REVOTE' : 'REVOTE_ONCE'
     createMutation.mutate(
       isSelf
-        ? { mode: 'SELF', creatorName: name }
-        : { mode: 'MODERATED', moderatorName: name },
+        ? { mode: 'SELF', creatorName: name, voteTie }
+        : { mode: 'MODERATED', moderatorName: name, voteTie },
     )
   }
 
@@ -160,7 +166,7 @@ export function EntryGate({ joinCode }: { joinCode?: string }) {
                 src="/logo-with-name.webp"
               />
               <h1 className="text-center text-3xl font-bold leading-tight tracking-tight text-[#1d2a45] sm:text-4xl">
-                Bạn sẽ tham gia với vai trò nào?
+                Bạn sẽ tham gia với <br /> vai trò nào?
               </h1>
               <p className="mt-1 text-center text-sm/6 text-[#5a5142]">
                 Chọn cách bạn muốn bước vào Moonveil.
@@ -180,7 +186,7 @@ export function EntryGate({ joinCode }: { joinCode?: string }) {
                   variant="host"
                 />
                 <PathTile
-                  description="Cả bàn tự chơi, hệ thống điều phối vòng chơi."
+                  description="Cả bàn tự chơi, hệ thống điều phối."
                   icon={
                     <Bot
                       aria-hidden="true"
@@ -255,6 +261,44 @@ export function EntryGate({ joinCode }: { joinCode?: string }) {
                         }
                         placeholder="Ví dụ: Hoa"
                       />
+                      {/* Luật hòa biểu quyết (R14) — chọn lúc tạo, áp dụng cả
+                          ván; bot (SELF) và kết quả tally đều theo option này. */}
+                      <fieldset className="flex flex-col gap-2.5">
+                        <legend className="mb-1 text-sm font-medium text-ink">
+                          Luật hòa khi biểu quyết
+                        </legend>
+                        <label className="flex items-start gap-3 text-sm/6 text-ink-muted">
+                          <input
+                            className="mt-1 size-4 shrink-0 accent-danger"
+                            defaultChecked
+                            name="voteTie"
+                            type="radio"
+                            value="REVOTE_ONCE"
+                          />
+                          <span>
+                            <span className="font-medium text-ink">
+                              Bỏ phiếu lại một lần
+                            </span>
+                            {
+                              ' — hòa thì cả bàn biểu quyết lại; hòa lần hai thì không ai bị loại.'
+                            }
+                          </span>
+                        </label>
+                        <label className="flex items-start gap-3 text-sm/6 text-ink-muted">
+                          <input
+                            className="mt-1 size-4 shrink-0 accent-danger"
+                            name="voteTie"
+                            type="radio"
+                            value="NO_REVOTE"
+                          />
+                          <span>
+                            <span className="font-medium text-ink">
+                              Một lần duy nhất
+                            </span>
+                            {' — hòa ngay thì không ai bị loại, ván sang đêm.'}
+                          </span>
+                        </label>
+                      </fieldset>
                       <Button
                         pending={isPending}
                         pendingLabel="Đang mở phòng..."

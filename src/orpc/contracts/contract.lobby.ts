@@ -23,10 +23,13 @@ export const lobbyContract = {
         z.object({
           mode: z.literal('MODERATED'),
           moderatorName: z.string().trim().min(1).max(30),
+          // Luật hòa biểu quyết (R14); vắng = REVOTE_ONCE.
+          voteTie: z.enum(['REVOTE_ONCE', 'NO_REVOTE']).optional(),
         }),
         z.object({
           mode: z.literal('SELF'),
           creatorName: z.string().trim().min(1).max(30),
+          voteTie: z.enum(['REVOTE_ONCE', 'NO_REVOTE']).optional(),
         }),
       ]),
     )
@@ -64,6 +67,10 @@ export const lobbyContract = {
     .input(versionedSessionInputSchema)
     .output(operationResultSchema),
   rematch: oc.input(versionedSessionInputSchema).output(operationResultSchema),
+  // R23 (SELF): player rời game giữa ván — không mark dead, bot tự skip/abstain.
+  leaveGame: oc
+    .input(versionedSessionInputSchema)
+    .output(operationResultSchema),
   executeGameCommand: oc
     .input(
       z.object({
@@ -72,6 +79,16 @@ export const lobbyContract = {
         idempotencyKey: idempotencyKeySchema,
         expectedVersion: expectedVersionSchema,
         command: gameCommandSchema,
+      }),
+    )
+    .output(operationResultSchema),
+  // R22: lazy tick chống AFK — client gọi khi countdown về 0; server dùng
+  // đồng hồ của mình nên input không có expectedVersion/idempotencyKey.
+  tick: oc
+    .input(
+      z.object({
+        gameId: z.string().min(1),
+        sessionToken: sessionTokenSchema,
       }),
     )
     .output(operationResultSchema),

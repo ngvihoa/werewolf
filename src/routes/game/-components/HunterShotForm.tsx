@@ -38,10 +38,17 @@ export function HunterShotForm({
   }
 
   if (submitted && !error) {
+    const isSelf = view.gameMode === 'SELF'
     return (
       <WaitingState
-        title="Đã báo mục tiêu cho Quản trò"
-        description="Phát súng sẽ được xác nhận ngay khi Quản trò kịp xử lý."
+        title={
+          isSelf ? 'Đã gửi mục tiêu phát súng' : 'Đã báo mục tiêu cho Quản trò'
+        }
+        description={
+          isSelf
+            ? 'Phát súng được xác nhận tự động.'
+            : 'Phát súng sẽ được xác nhận ngay khi Quản trò kịp xử lý.'
+        }
       />
     )
   }
@@ -71,7 +78,9 @@ export function HunterShotForm({
           type="submit"
           disabled={!targetId}
         >
-          Gửi mục tiêu cho Quản trò
+          {view.gameMode === 'SELF'
+            ? 'Gửi mục tiêu'
+            : 'Gửi mục tiêu cho Quản trò'}
         </CommandButton>
       </div>
     </form>

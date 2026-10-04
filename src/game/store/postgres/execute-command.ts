@@ -8,9 +8,13 @@ import { commandReceipts } from '#/db/schema'
 import { and, eq } from 'drizzle-orm'
 
 import { gameMutationResultSchema, storeErrorCodeSchema } from '../schema'
-import { runBotLoop, stampDiscussionDeadline } from '../../bot/bot-moderator'
 import { authorizeCommand } from '../command-authorization'
 import { executeCommand } from '../../orchestration/game-orchestrator'
+import {
+  stampDiscussionDeadline,
+  stampWaitingDeadline,
+  runBotLoop,
+} from '../../bot/bot-moderator'
 
 import { persistGameAction, syncGamePlayers, syncGameQueue } from './state-sync'
 import { appendGameEvent, getEventTargetPlayerId } from './game-events'
@@ -19,6 +23,8 @@ import { failure } from './shared'
 import {
   updateGameAndIncrementVersion,
   findActiveSession,
+  findLeftPlayerIds,
+  isGameController,
   lockGame,
 } from './sessions'
 
@@ -90,6 +96,32 @@ export async function executeGameCommand(
 
     const authorization = authorizeCommand(session, input.command)
     if (!authorization.ok) return authorization
+    // R23: player chỉ được END_GAME khi là chủ phòng ở SELF (game đã lock ở trên).
+    if (input.command.type === 'END_GAME' && session.kind === 'PLAYER') {
+      if (!(await isGameController(transaction, session, game))) {
+        return failure(
+          STORE_ERROR_CODE.NOT_AUTHORIZED,
+          'Only the host can end the game early',
+        )
+      }
+    }
+    // R23: người đã rời không hành động/bỏ phiếu nữa (session cũ chỉ còn xem)
+    // — trừ END_GAME: chủ phòng rời vẫn giữ quyền kết thúc ván. Danh sách
+    // người rời cũng là input của bot clock bên dưới.
+    let leftPlayerIds: string[] = []
+    if (
+      game.mode === 'SELF' &&
+      session.kind === 'PLAYER' &&
+      input.command.type !== 'END_GAME'
+    ) {
+      leftPlayerIds = await findLeftPlayerIds(transaction, game.id)
+      if (session.playerId && leftPlayerIds.includes(session.playerId)) {
+        return failure(
+          STORE_ERROR_CODE.NOT_AUTHORIZED,
+          'Player has left the game',
+        )
+      }
+    }
 
     // Rule engine không biết database; nó chỉ nhận state cũ và trả
     // state + events mới hoặc domain error.
@@ -106,15 +138,17 @@ export async function executeGameCommand(
     // SELF: quản trò bot chạy tới fixpoint trong cùng transaction — người chơi
     // gửi một lệnh, cả chuỗi confirm hệ thống ghi cùng một version.
     if (game.mode === 'SELF') {
-      // Mốc thảo luận gắn cả TRƯỚC lẫn SAU loop: DAY thường được tạo bên trong
-      // loop khi bot confirm night resolution.
+      // Mốc thời gian gắn cả TRƯỚC lẫn SAU loop: DAY và step mới thường được
+      // tạo bên trong loop bởi chính bot.
       stampDiscussionDeadline(finalState, now)
-      const bot = runBotLoop(finalState, { now })
+      stampWaitingDeadline(finalState, now)
+      const bot = runBotLoop(finalState, { now, leftPlayerIds })
       if (!bot.ok) {
         return failure(STORE_ERROR_CODE.INVALID_GAME_STATE, bot.error.message)
       }
       finalState = bot.state
       stampDiscussionDeadline(finalState, now)
+      stampWaitingDeadline(finalState, now)
       botEvents = bot.events
       botSteps = bot.steps
     }

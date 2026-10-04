@@ -35,7 +35,8 @@ export async function createTable(
   )
   await moderator.page.goto('/play')
   await moderator.page.waitForLoadState('networkidle')
-  await moderator.page.getByRole('button', { name: 'Quản trò' }).click()
+  // Neo đầu chuỗi: 'Quản trò' trơn giờ trúng cả nút "Không quản trò" của SELF.
+  await moderator.page.getByRole('button', { name: /^Quản trò/ }).click()
   await moderator.page.getByLabel('Tên của bạn').fill(moderator.name)
   await moderator.page.getByRole('button', { name: 'Mở phòng mới' }).click()
 
@@ -144,4 +145,109 @@ async function openParticipant(
 ): Promise<TablePlayer> {
   const context = await browser.newContext(contextOptions)
   return { context, name, page: await context.newPage() }
+}
+
+// ===== SELF (không quản trò, R20–R24) =====
+
+export type SelfTable = {
+  host: TablePlayer
+  players: TablePlayer[]
+  roomCode: string
+  close: () => Promise<void>
+}
+
+// SELF: người tạo phòng là một player thường kiêm chủ phòng — không có
+// session Quản trò. playerCount tính cả host.
+export async function createSelfTable(
+  browser: Browser,
+  playerCount = 5,
+  names: { hostName?: string; playerNames?: string[] } = {},
+  contextOptions: Parameters<Browser['newContext']>[0] = {},
+): Promise<SelfTable> {
+  if (playerCount < 5 || playerCount > 15) {
+    throw new Error('A table requires 5-15 players')
+  }
+
+  const host = await openParticipant(
+    browser,
+    names.hostName ?? 'Chủ phòng',
+    contextOptions,
+  )
+  await host.page.goto('/play')
+  await host.page.waitForLoadState('networkidle')
+  await host.page.getByRole('button', { name: /Không quản trò/ }).click()
+  await host.page.getByLabel('Tên của bạn').fill(host.name)
+  await host.page.getByRole('button', { name: 'Mở phòng tự chơi' }).click()
+
+  const roomHeading = host.page.getByRole('heading', { name: /Phòng/ })
+  await expect(roomHeading).toBeVisible()
+  const heading = await roomHeading.textContent()
+  const roomCode = heading?.match(/[A-Z0-9]{6}/)?.[0]
+  if (!roomCode) throw new Error(`Could not read room code from "${heading}"`)
+
+  const players = await Promise.all(
+    Array.from({ length: playerCount - 1 }, async (_, index) => {
+      const player = await openParticipant(
+        browser,
+        names.playerNames?.[index] ?? `Player ${index + 1}`,
+        contextOptions,
+      )
+      await player.page.goto('/play')
+      await player.page.waitForLoadState('networkidle')
+      await player.page.getByRole('button', { name: 'Người chơi' }).click()
+      await player.page.getByLabel('Mã phòng').fill(roomCode)
+      await player.page.getByLabel('Tên hiển thị').fill(player.name)
+      await player.page.getByRole('button', { name: 'Vào phòng' }).click()
+      await expect(player.page.getByText('Đang chờ chủ phòng')).toBeVisible()
+      return player
+    }),
+  )
+
+  await expect(host.page.getByText(`${playerCount} / 15`)).toBeVisible()
+
+  return {
+    host,
+    players,
+    roomCode,
+    close: async () => {
+      await Promise.all([
+        host.context.close(),
+        ...players.map((player) => player.context.close()),
+      ])
+    },
+  }
+}
+
+export async function startSelfTable(table: SelfTable): Promise<void> {
+  await table.host.page.getByRole('button', { name: 'Xáo và phân vai' }).click()
+  await expect(
+    table.host.page.getByRole('button', { name: 'Xáo và phân lại vai' }),
+  ).toBeVisible()
+
+  // Chủ phòng cũng là một player: tự xem vai và sẵn sàng như mọi người (R24).
+  for (const { page } of [table.host, ...table.players]) {
+    const ready = page.getByRole('button', {
+      name: 'Tôi đã xem vai và sẵn sàng',
+    })
+    await expect(ready).toBeVisible()
+    await ready.click()
+    await expect(
+      page.getByRole('button', { name: 'Hủy sẵn sàng' }),
+    ).toBeVisible()
+  }
+
+  const start = table.host.page.getByRole('button', {
+    name: 'Bắt đầu đêm đầu tiên',
+  })
+  await expect(start).toBeEnabled()
+  await start.click()
+  await expect(table.host.page).toHaveURL(/\/game$/)
+  await Promise.all(
+    table.players.map(({ page }) => expect(page).toHaveURL(/\/game$/)),
+  )
+}
+
+// Tất cả người tham gia (host + players) — vai có thể rơi vào bất kỳ ai.
+export function selfParticipants(table: SelfTable): TablePlayer[] {
+  return [table.host, ...table.players]
 }

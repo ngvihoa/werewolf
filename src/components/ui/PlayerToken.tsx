@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 
 import { Check, Crown } from 'lucide-react'
+import { cn } from '#/lib/cn'
 
 export type PlayerTokenProps = {
   displayName: string
@@ -8,6 +9,9 @@ export type PlayerTokenProps = {
   selectable?: boolean
   selected?: boolean
   dead?: boolean
+  // R23 (SELF): player rời game giữa ván — mờ như người chết nhưng không có
+  // dấu † hay gạch ngang tên (vẫn "sống" trong luật, chỉ không còn tham gia).
+  left?: boolean
   disabled?: boolean
   acting?: boolean
   winner?: boolean
@@ -39,6 +43,7 @@ export function PlayerToken({
   selectable = false,
   selected = false,
   dead = false,
+  left = false,
   disabled = false,
   acting = false,
   winner = false,
@@ -47,11 +52,12 @@ export function PlayerToken({
   statusText = null,
   onSelect,
 }: PlayerTokenProps) {
-  const unavailable = dead || disabled
+  const unavailable = dead || left || disabled
   const interactive = selectable && !unavailable
+  const faded = (dead || left) && !winner
   const surfaceClassName = selected
     ? 'bg-danger/15 ring-2 ring-danger'
-    : dead && !winner
+    : faded
       ? 'bg-transparent opacity-55 ring-line saturate-50'
       : acting
         ? 'bg-danger/10 ring-danger/40'
@@ -93,16 +99,15 @@ export function PlayerToken({
         />
       ) : null}
       <span
-        className={`grid size-10 place-items-center overflow-hidden rounded-full font-mono text-sm ring-1 sm:size-9 ${
-          acting
-            ? 'bg-danger/15 text-accent ring-danger/40'
-            : 'bg-white/8 text-ink-muted ring-line'
-        }`}
+        className={`grid size-10 place-items-center overflow-hidden rounded-full font-mono text-sm ring-1 sm:size-9 ${acting
+          ? 'bg-danger/15 text-accent ring-danger/40'
+          : 'bg-white/8 text-ink-muted ring-line'
+          }`}
       >
         {roleImageSrc ? (
           <img
             alt=""
-            className="size-full origin-top scale-[1.6] object-cover object-top"
+            className={cn("size-full origin-top scale-[1.6] object-cover object-top bg-white")}
             height={40}
             src={roleImageSrc}
             width={40}

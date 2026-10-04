@@ -8,19 +8,43 @@ export function PlayerControls({
   mode = 'MODERATED',
   role,
   ready,
+  left = false,
+  leaving = false,
   pending,
   error,
   onReadyChange,
+  onLeaveGame,
 }: {
   // SELF mode: không có Quản trò — người phân vai là chủ phòng.
   mode?: 'MODERATED' | 'SELF'
   role: Role | null
   ready: boolean
+  // R23 (SELF): viewer đã rời — chỉ còn xem, không toggle ready nữa.
+  left?: boolean
+  leaving?: boolean
   pending: boolean
   error: string | null
   onReadyChange: (ready: boolean) => void
+  // R23 (SELF): chỉ truyền ở mode SELF — nút rời ván chơi.
+  onLeaveGame?: () => void
 }) {
   const isSelf = mode === 'SELF'
+  if (left) {
+    return (
+      <div className="flex flex-col gap-4">
+        <p className="font-mono text-sm tracking-wide text-accent uppercase">
+          Đã rời
+        </p>
+        <h2 className="text-balance text-2xl font-medium tracking-tight text-ink sm:text-3xl">
+          Bạn đã rời ván
+        </h2>
+        <p className="text-pretty text-base/7 text-ink-muted sm:text-sm/6">
+          Bạn vẫn theo dõi sảnh chờ này. Ván sẽ bắt đầu mà không có bạn cho đến
+          khi vào lại ván sau (rematch).
+        </p>
+      </div>
+    )
+  }
   if (!role) {
     return (
       <div className="flex flex-col gap-4">
@@ -72,6 +96,18 @@ export function PlayerControls({
       >
         {ready ? 'Hủy sẵn sàng' : 'Tôi đã xem vai và sẵn sàng'}
       </Button>
+      {onLeaveGame ? (
+        <Button
+          variant="ghost"
+          size="md"
+          fullWidth
+          pending={leaving}
+          pendingLabel="Đang rời ván..."
+          onClick={onLeaveGame}
+        >
+          Rời ván chơi
+        </Button>
+      ) : null}
       {error ? <InlineError message={error} /> : null}
     </div>
   )

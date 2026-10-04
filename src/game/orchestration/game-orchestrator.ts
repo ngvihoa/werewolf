@@ -15,7 +15,10 @@ export type CommandOutcome = {
   events: GameEvent[]
 }
 
-export function createFirstNightState(players: readonly Player[]): GameState {
+export function createFirstNightState(
+  players: readonly Player[],
+  voteTie?: GameState['voteTie'],
+): GameState {
   const queue = createQueue(players, 1)
   activateNextRunnableStep(queue, players, [])
 
@@ -32,6 +35,7 @@ export function createFirstNightState(players: readonly Player[]): GameState {
     lastProtectedTargetId: null,
     pendingNightResolution: null,
     voteAttempt: 1,
+    voteTie,
     pendingVote: null,
     pendingVoteResolution: null,
     voteSubmissions: {},
@@ -81,6 +85,10 @@ export function executeCommand(
       return submitHunterShot(state, command.actorId, command.targetId, events)
     case 'CONFIRM_HUNTER_SHOT':
       return confirmHunterShot(state, events)
+    case 'SKIP_HUNTER_SHOT':
+      return skipHunterShot(state, events)
+    case 'END_GAME':
+      return endGameManually(state, command.reason, events)
   }
 }
 
@@ -411,6 +419,7 @@ function submitVoteResult(
     tied,
     selectedPlayerId,
     state.voteAttempt,
+    state.voteTie,
   )
   events.push({ type: 'VOTE_SUBMITTED', tied, selectedPlayerId })
   transitionPhase(state, 'VOTE_RESOLUTION', events)
@@ -532,6 +541,47 @@ function confirmHunterShot(
     events,
   )
   state.pendingHunterShot = null
+  return transitionAfterElimination(state, 'NIGHT', events)
+}
+
+// R23: kết thúc ván sớm. winner giữ NULL — màn kết quả hiển thị "Ván đã
+// kết thúc" thay vì công bố phe thắng. Lý do bắt buộc để audit.
+function endGameManually(
+  state: GameState,
+  reason: string,
+  events: GameEvent[],
+): Result<CommandOutcome> {
+  if (state.phase === 'GAME_OVER') {
+    return failure('INVALID_ACTION', 'Game is already over')
+  }
+  if (!reason.trim()) return reasonRequired()
+
+  state.pendingNightAction = null
+  state.pendingNightResolution = null
+  state.pendingVote = null
+  state.pendingVoteResolution = null
+  state.pendingHunterShot = null
+  transitionPhase(state, 'GAME_OVER', events)
+  events.push({ type: 'GAME_ENDED_MANUAL', reason: reason.trim() })
+  return success(state, events)
+}
+
+// R22: Thợ săn không bắn đúng hạn thì mất phát bắn — ván tiếp tục sang đêm.
+// Điều kiện: đang HUNTER_SHOT và hunter CHƯA chọn target (đã chọn thì đi
+// qua CONFIRM_HUNTER_SHOT).
+function skipHunterShot(
+  state: GameState,
+  events: GameEvent[],
+): Result<CommandOutcome> {
+  if (state.phase !== 'HUNTER_SHOT') {
+    return invalidPhase('HUNTER_SHOT', state.phase)
+  }
+  if (!state.pendingHunterShot || state.pendingHunterShot.targetId) {
+    return failure('INVALID_ACTION', 'No pending hunter shot to skip')
+  }
+
+  state.pendingHunterShot = null
+  events.push({ type: 'HUNTER_SHOT_SKIPPED' })
   return transitionAfterElimination(state, 'NIGHT', events)
 }
 

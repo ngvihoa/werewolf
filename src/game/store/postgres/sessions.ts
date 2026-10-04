@@ -2,7 +2,7 @@ import type { DatabaseTransaction, GameRow, GameVersionChanges } from './shared'
 import type { StoreResult } from '../model'
 
 import { gameSessions, gamePlayers, games } from '#/db/schema'
-import { and, eq, gt, isNull } from 'drizzle-orm'
+import { and, eq, gt, isNotNull, isNull } from 'drizzle-orm'
 
 import { storeErrorCodeSchema } from '../schema'
 
@@ -77,6 +77,20 @@ export async function isGameController(
     .limit(1)
 
   return player?.isHost ?? false
+}
+
+// R23: id các player đã rời game giữa ván — bot (clock) dùng để skip
+// step/abstain phiếu của họ ngay thay vì chờ timer.
+export async function findLeftPlayerIds(
+  transaction: DatabaseTransaction,
+  gameId: string,
+): Promise<string[]> {
+  const rows = await transaction
+    .select({ id: gamePlayers.id })
+    .from(gamePlayers)
+    .where(and(eq(gamePlayers.gameId, gameId), isNotNull(gamePlayers.leftAt)))
+
+  return rows.map((row) => row.id)
 }
 
 export function validateLobbyMutation(

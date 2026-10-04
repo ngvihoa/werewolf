@@ -3,6 +3,7 @@ import type {
   nightResolutionSchema,
   voteResolutionSchema,
 } from './schema'
+import type { MvpSettings } from './mvp-settings'
 import type { Player } from '../domain'
 import type { z } from 'zod'
 
@@ -110,8 +111,11 @@ export function resolveVote(
   tied: boolean,
   selectedPlayerId: string | null,
   attempt: 1 | 2,
+  // R14 thành setting chọn khi tạo phòng; vắng = hành vi cũ (revote 1 lần).
+  voteTie: MvpSettings['voteTie'] = 'REVOTE_ONCE',
 ): VoteResolution {
   if (tied) {
+    if (voteTie === 'NO_REVOTE') return { outcome: 'NO_ELIMINATION' }
     return attempt === 1
       ? { outcome: 'REVOTE', nextAttempt: 2 }
       : { outcome: 'NO_ELIMINATION' }

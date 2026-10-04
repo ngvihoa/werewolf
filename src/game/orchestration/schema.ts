@@ -49,6 +49,10 @@ export const gameCommandSchema = z.discriminatedUnion('type', [
     targetId: z.string().min(1),
   }),
   z.object({ type: z.literal('CONFIRM_HUNTER_SHOT') }),
+  // R22: Thợ săn không bắn đúng hạn (SELF) — mất phát bắn, ván đi tiếp.
+  z.object({ type: z.literal('SKIP_HUNTER_SHOT') }),
+  // R23: kết thúc ván sớm — Quản trò (MODERATED) hoặc chủ phòng (SELF).
+  z.object({ type: z.literal('END_GAME'), reason: z.string().min(1) }),
 ])
 
 // Event cũng là một IO boundary vì được lưu vào PostgreSQL dưới dạng type + JSONB.
@@ -130,5 +134,12 @@ export const gameEventSchema = z.discriminatedUnion('type', [
     type: z.literal('HUNTER_SHOT_CONFIRMED'),
     hunterId: z.string().min(1),
     targetId: z.string().min(1),
+  }),
+  // Audit-only: bot/hệ thống bỏ qua phát bắn (hết giờ R22).
+  z.object({ type: z.literal('HUNTER_SHOT_SKIPPED') }),
+  // R23: kết thúc ván sớm — audit-only (công khai chỉ qua PHASE_CHANGED).
+  z.object({
+    type: z.literal('GAME_ENDED_MANUAL'),
+    reason: z.string().min(1),
   }),
 ])

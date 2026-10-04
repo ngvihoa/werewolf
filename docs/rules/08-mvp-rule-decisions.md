@@ -10,32 +10,32 @@ Quy ước trạng thái:
 
 ## Tóm tắt phương án khuyến nghị
 
-| ID  | Luật                               | Mặc định đề xuất                                     |
-| --- | ---------------------------------- | ---------------------------------------------------- |
-| R01 | Composition 5 người                | 1 Werewolf, 1 Seer, 3 Villagers                      |
-| R02 | Composition 6 người                | 1 Werewolf, 1 Seer, 1 Witch, 3 Villagers             |
-| R03 | Điều kiện Werewolf thắng           | Werewolf sống >= Village sống                        |
-| R04 | Witch tự cứu                       | Cho phép                                             |
-| R05 | Witch dùng hai bình cùng đêm       | Không cho phép                                       |
-| R06 | Target của Poison                  | Player khác đang sống                                |
-| R07 | Thông tin Witch nhận               | Biết chính xác người bị Werewolf chọn                |
-| R08 | Witch bị tấn công                  | Vẫn được hành động trong đêm đó                      |
-| R09 | Seer tự soi                        | Không cho phép                                       |
-| R10 | Werewolf tự chọn                   | Không cho phép                                       |
-| R11 | Kết quả soi                        | Exact role                                           |
-| R12 | Công khai role khi chết            | Có                                                   |
-| R13 | Quyền xem của người chết           | Chỉ thông tin công khai và private state của mình    |
-| R14 | Vote hòa                           | Không ai bị loại                                     |
-| R15 | Player rời game                    | Tạm dừng để Moderator quyết định                     |
-| R16 | Action bị reject                   | Lưu metadata và lý do, không công khai target        |
-| R17 | Sửa role sau khi bắt đầu           | Không; chỉ qua manual override đặc biệt              |
-| R18 | Override ảnh hưởng state           | Tự động tính lại win condition                       |
-| R19 | Nhiều nguyên nhân chết cùng đêm    | Resolve đồng thời, một kết quả chết/player           |
-| R20 | Vote ở chế độ không quản trò       | Bỏ phiếu trên thiết bị, bot tính phiếu               |
-| R21 | Kết thúc thảo luận ban ngày (SELF) | Majority "Sẵn sàng bỏ phiếu" + timer tối thiểu       |
-| R22 | Timeout action đêm và vote (SELF)  | Step đêm 45s, vote 60s; hết giờ skip/abstain         |
-| R23 | Player rời game giữa ván (SELF)    | Không tự mark dead; auto skip/abstain, được quay lại |
-| R24 | Cấu hình composition (SELF)        | Creator cấu hình như moderator trong lobby           |
+| ID  | Luật                               | Mặc định đề xuất                                                   |
+| --- | ---------------------------------- | ------------------------------------------------------------------ |
+| R01 | Composition 5 người                | 1 Werewolf, 1 Seer, 3 Villagers                                    |
+| R02 | Composition 6 người                | 1 Werewolf, 1 Seer, 1 Witch, 3 Villagers                           |
+| R03 | Điều kiện Werewolf thắng           | Werewolf sống >= Village sống                                      |
+| R04 | Witch tự cứu                       | Cho phép                                                           |
+| R05 | Witch dùng hai bình cùng đêm       | Không cho phép                                                     |
+| R06 | Target của Poison                  | Player khác đang sống                                              |
+| R07 | Thông tin Witch nhận               | Biết chính xác người bị Werewolf chọn                              |
+| R08 | Witch bị tấn công                  | Vẫn được hành động trong đêm đó                                    |
+| R09 | Seer tự soi                        | Không cho phép                                                     |
+| R10 | Werewolf tự chọn                   | Không cho phép                                                     |
+| R11 | Kết quả soi                        | Exact role                                                         |
+| R12 | Công khai role khi chết            | Có                                                                 |
+| R13 | Quyền xem của người chết           | Chỉ thông tin công khai và private state của mình                  |
+| R14 | Vote hòa                           | Setting khi tạo phòng: revote 1 lần (mặc định) hoặc 1 lần duy nhất |
+| R15 | Player rời game                    | Tạm dừng để Moderator quyết định                                   |
+| R16 | Action bị reject                   | Lưu metadata và lý do, không công khai target                      |
+| R17 | Sửa role sau khi bắt đầu           | Không; chỉ qua manual override đặc biệt                            |
+| R18 | Override ảnh hưởng state           | Tự động tính lại win condition                                     |
+| R19 | Nhiều nguyên nhân chết cùng đêm    | Resolve đồng thời, một kết quả chết/player                         |
+| R20 | Vote ở chế độ không quản trò       | Bỏ phiếu trên thiết bị, bot tính phiếu                             |
+| R21 | Kết thúc thảo luận ban ngày (SELF) | Majority "Sẵn sàng bỏ phiếu" + timer tối thiểu                     |
+| R22 | Timeout action đêm và vote (SELF)  | Step đêm 45s, vote 60s; hết giờ skip/abstain                       |
+| R23 | Player rời game giữa ván (SELF)    | Không tự mark dead; auto skip/abstain, được quay lại               |
+| R24 | Cấu hình composition (SELF)        | Creator cấu hình như moderator trong lobby                         |
 
 ## Các quyết định
 
@@ -143,6 +143,12 @@ Kết luận: Đã chốt.
 - [ ] Moderator quyết định mỗi lần. Linh hoạt nhưng kết quả rule engine không còn hoàn toàn deterministic.
 
 Kết luận: Đã chốt.
+
+Cập nhật 2026-10-04: luật hòa thành **setting chọn khi tạo phòng** —
+`REVOTE_ONCE` (mặc định, hành vi trên) hoặc `NO_REVOTE` (một lần duy nhất,
+hòa ngay thì không ai bị loại, ván sang đêm). Lưu ở `games.settings.voteTie`,
+mang vào `GameState.voteTie` khi start; `resolveVote` áp cho cả tally bot
+(SELF) lẫn kết quả Quản trò khai báo (MODERATED). Chi tiết: docs/rules/07.
 
 ### R15. Player rời game giữa chừng
 
