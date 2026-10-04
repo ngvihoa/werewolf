@@ -140,8 +140,15 @@ Allowed
 ### Vote tie rule
 
 ```text
-Revote once, then no elimination
+Revote once, then no elimination (mặc định)
+One vote only — tie means no elimination
 ```
+
+**Đã lên setting (2026-10-04):** chọn khi tạo phòng (cả hai mode), lưu vào
+`games.settings.voteTie` và mang vào `GameState.voteTie` khi start. Mặc định
+`REVOTE_ONCE` giữ hành vi cũ; `NO_REVOTE` = hòa ngay lần đầu thì không ai bị
+loại, ván sang đêm. Rule engine áp cho cả tally của bot (SELF) lẫn kết quả
+Quản trò khai báo (MODERATED).
 
 ### Win condition
 
