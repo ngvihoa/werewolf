@@ -162,12 +162,17 @@ export async function createSelfTable(
   browser: Browser,
   playerCount = 5,
   names: { hostName?: string; playerNames?: string[] } = {},
+  contextOptions: Parameters<Browser['newContext']>[0] = {},
 ): Promise<SelfTable> {
   if (playerCount < 5 || playerCount > 15) {
     throw new Error('A table requires 5-15 players')
   }
 
-  const host = await openParticipant(browser, names.hostName ?? 'Chủ phòng')
+  const host = await openParticipant(
+    browser,
+    names.hostName ?? 'Chủ phòng',
+    contextOptions,
+  )
   await host.page.goto('/play')
   await host.page.waitForLoadState('networkidle')
   await host.page.getByRole('button', { name: /Không quản trò/ }).click()
@@ -185,6 +190,7 @@ export async function createSelfTable(
       const player = await openParticipant(
         browser,
         names.playerNames?.[index] ?? `Player ${index + 1}`,
+        contextOptions,
       )
       await player.page.goto('/play')
       await player.page.waitForLoadState('networkidle')
