@@ -228,7 +228,9 @@ mô tả ở trên.
   hunter shot); khi về 0, client gọi `game.tick` (R22).
 - Người đã rời hiển thị "đã rời" trong lưới người chơi — thẻ mờ nhưng không có
   dấu † hay gạch ngang tên vì vẫn "sống" trong luật (R23).
-- Nút "Rời ván" với dialog xác nhận: sau khi rời, người đó thấy trạng thái chỉ
-  xem và không hành động/bỏ phiếu được nữa.
+- Nút "Rời ván" nằm trên header trong ván (thay nhãn "Rời phòng") kèm dialog
+  xác nhận: sau khi rời, người đó thấy trạng thái chỉ xem và không hành động/
+  bỏ phiếu được nữa. Khối cuối màn chơi chỉ còn "Kết thúc ván" của chủ phòng —
+  một lối ra duy nhất trong ván, khỏi nhầm hai nút hai ngữ nghĩa.
 - Game over: mở lộ vai cả làng như MODERATED; ván kết thúc bằng "Kết thúc ván"
   hiển thị "Ván đã kết thúc" thay vì công bố phe thắng.

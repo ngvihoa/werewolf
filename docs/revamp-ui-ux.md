@@ -404,11 +404,17 @@ pattern RoleCardDialog).
   (opacity-55 + saturate-50) nhưng KHÔNG có dấu † hay gạch ngang tên vì người
   rời vẫn "sống" trong luật; statusText "Đã rời". Người rời nhìn màn của mình
   thấy trạng thái chỉ xem thay mọi form hành động.
-- **`SelfGameControls` (R23)**: khối cuối màn chơi phía player, chỉ SELF và
-  chưa GAME_OVER. "Rời ván" → dialog xác nhận hai nút (không quay lại được
-  trong ván); "Kết thúc ván" chỉ host → dialog input lý do BẮT BUỘC (submit
-  disabled khi rỗng), copy ghi rõ cả bàn chuyển thẳng màn kết quả, không công
-  bố phe thắng.
+- **`SelfGameControls` (R23, rev 2026-10-04)**: khối cuối màn chơi phía player,
+  chỉ SELF + chưa GAME_OVER + **chỉ host** — "Kết thúc ván" → dialog input lý
+  do BẮT BUỘC (submit disabled khi rỗng), copy ghi rõ cả bàn chuyển thẳng màn
+  kết quả, không công bố phe thắng.
+- **"Rời ván" trên header (rev 2026-10-04)**: `RoomHeader` đổi nhãn
+  "Rời phòng" → "Rời ván" khi đang ở SELF trong ván (người chơi chưa rời),
+  mở `SelfLeaveDialog` xác nhận hai nút (không quay lại được trong ván) rồi
+  gọi `leaveGame`. Lý do: trước đó trong ván có hai lối ra hai ngữ nghĩa —
+  "Rời phòng" trên header chỉ xóa phiên local (ván không hay biết, người đó
+  bị xử lý như AFK chậm), còn "Rời ván" nằm cuối nội dung. Giờ một lối ra
+  duy nhất, đúng nghĩa; "Rời phòng" giữ nguyên ở lobby / MODERATED / đã rời.
 - **Rematch (`SelfRematchControl`, T7)**: ở màn kết quả, host thấy nút
   "Chơi ván mới cùng phòng" với xác nhận hai bước — copy Y HỆT khối rematch
   Quản trò để hai mode nhất quán; người chơi thường thấy `WaitingState`

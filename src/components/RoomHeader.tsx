@@ -8,11 +8,15 @@ export function RoomHeader({
   isModerator,
   roomCode,
   actions,
+  leaveLabel = 'Rời phòng',
   onLeave,
 }: {
   isModerator: boolean
   roomCode?: string
   actions?: ReactNode
+  // SELF trong ván đổi nhãn thành "Rời ván" — rút khỏi ván trong game state
+  // (R23), không phải rút phiên local.
+  leaveLabel?: string
   onLeave: () => void
 }) {
   const [copyStatus, setCopyStatus] = useState<'IDLE' | 'COPIED' | 'ERROR'>(
@@ -88,7 +92,7 @@ export function RoomHeader({
           type="button"
           onClick={onLeave}
         >
-          Rời phòng
+          {leaveLabel}
           <span
             aria-hidden="true"
             className="pointer-fine:hidden absolute top-1/2 left-1/2 size-[max(100%,3rem)] -translate-1/2"

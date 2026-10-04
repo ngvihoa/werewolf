@@ -164,8 +164,14 @@ test('SELF AFK: đêm 1 không kẹt — step hết giờ tự skip, ván đi ti
       () => seer.page.getByText('Ngày 01'),
       60_000,
     )
+    // Người chứng kiến còn sống: phải loại cả NẠN NHÂN (nonWolf) — Sói cắn
+    // participant đầu tiên khác Sói, người đó có thể đứng trước cả Tiên tri
+    // lẫn các dân làng khác trong danh sách.
     const aliveWitness = participants.find(
-      (player) => player.name !== werewolf.name && player.name !== seer.name,
+      (player) =>
+        player.name !== werewolf.name &&
+        player.name !== seer.name &&
+        player.name !== nonWolf.name,
     )
     if (aliveWitness) {
       await reloadUntilVisible(
@@ -174,6 +180,47 @@ test('SELF AFK: đêm 1 không kẹt — step hết giờ tự skip, ván đi ti
         60_000,
       )
     }
+  } finally {
+    await table.close()
+  }
+})
+
+test('SELF: rời ván từ header — xác nhận rồi chỉ còn xem', async ({
+  browser,
+}) => {
+  test.setTimeout(180_000)
+  const table = await createSelfTable(browser, 5)
+
+  try {
+    await startSelfTable(table)
+    const leaver = table.players[0]
+    if (!leaver) throw new Error('Leaver is missing')
+
+    // Trong ván, nút trên header là "Rời ván" (không phải "Rời phòng") —
+    // một lối ra duy nhất đúng nghĩa (R23).
+    const headerLeave = leaver.page.getByRole('button', { name: 'Rời ván' })
+    await expect(headerLeave).toBeVisible()
+    await headerLeave.click()
+
+    // Dialog xác nhận: nút confirm cùng tên nằm trong dialog đang mở.
+    const dialog = leaver.page.locator('dialog[open]')
+    await expect(dialog).toBeVisible()
+    await dialog.getByRole('button', { name: 'Rời ván' }).click()
+
+    // Sau khi rời: màn chỉ còn xem, token của họ trong lưới hiện "Đã rời",
+    // và header trở lại "Rời phòng" (chỉ thoát phiên xem).
+    await reloadUntilVisible(
+      leaver.page,
+      () => leaver.page.getByText('Bạn đã rời ván'),
+      30_000,
+    )
+    await expect(leaver.page.getByText('Đã rời').first()).toBeVisible()
+    await expect(
+      leaver.page.getByRole('button', { name: 'Rời phòng' }),
+    ).toBeVisible()
+    await expect(
+      leaver.page.getByRole('button', { name: 'Rời ván' }),
+    ).toHaveCount(0)
   } finally {
     await table.close()
   }

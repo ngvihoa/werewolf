@@ -17,9 +17,11 @@ import { roleArtUrl } from '#/game/presentation/role-art'
 import { GameShell } from '#/components/ui/GameShell'
 import { roleLabel } from '#/game/presentation/labels'
 import { STEP_ROLE } from '#/game/rules/transitions'
+import { useRef } from 'react'
 
 import { GameHistorySheet } from './-components/GameHistorySheet'
 import { SelfGameControls } from './-components/SelfGameControls'
+import { SelfLeaveDialog } from './-components/SelfLeaveDialog'
 import { GameBoard } from './-components/GameBoard'
 
 export const Route = createFileRoute('/game')({ component: GamePage })
@@ -30,6 +32,7 @@ function GamePage() {
   const activeSessionToken = sessionToken ?? ''
   const queryClient = useQueryClient()
   const viewQuery = useGameView(activeSessionToken)
+  const leaveDialogRef = useRef<HTMLDialogElement>(null)
   const invalidateView = () =>
     queryClient.invalidateQueries({
       queryKey: gameViewQueryKey(activeSessionToken),
@@ -139,6 +142,13 @@ function GamePage() {
   const gameStarted = isModerator
     ? view.game.state !== null
     : view.phase !== 'LOBBY'
+  // R23 (SELF): đang trong ván ở SELF với người chơi chưa rời — nút header là
+  // "Rời ván" (leaveGame), không phải "Rời phòng" (xóa phiên local).
+  const canLeaveMidGame =
+    !isModerator &&
+    view.gameMode === 'SELF' &&
+    view.phase !== 'GAME_OVER' &&
+    !view.me.left
   const phase = isModerator ? (view.game.state?.phase ?? 'SETUP') : view.phase
   const round = isModerator ? (view.game.state?.round ?? 1) : view.round
   const activeQueueItem = isModerator
@@ -186,6 +196,7 @@ function GamePage() {
       header={
         <RoomHeader
           isModerator={isModerator}
+          leaveLabel={canLeaveMidGame ? 'Rời ván' : undefined}
           roomCode={roomCode}
           actions={
             isModerator ? (
@@ -202,7 +213,11 @@ function GamePage() {
               />
             ) : undefined
           }
-          onLeave={leaveSession}
+          onLeave={
+            canLeaveMidGame
+              ? () => leaveDialogRef.current?.showModal()
+              : leaveSession
+          }
         />
       }
     >
@@ -223,12 +238,25 @@ function GamePage() {
           })
         }
       />
-      {/* R23 (SELF): rời ván / chủ phòng kết thúc ván sớm — ẩn ở MODERATED
-          (không đổi flow) và khi ván đã xong hoặc người xem đã rời. */}
+      {/* R23 (SELF): "Rời ván" dời lên header — một lối ra duy nhất trong ván
+          thay cho "Rời phòng" (xóa phiên local, ván không hay biết). Người đã
+          rời / ván kết thúc / MODERATED trở lại "Rời phòng". */}
+      {canLeaveMidGame ? (
+        <SelfLeaveDialog
+          dialogRef={leaveDialogRef}
+          pending={leaveGameMutation.isPending}
+          onConfirm={() =>
+            leaveGameMutation.mutate({ idempotencyKey: createIdempotencyKey() })
+          }
+        />
+      ) : null}
+      {/* "Kết thúc ván" chỉ chủ phòng — ẩn ở MODERATED (không đổi flow) và
+          khi ván đã xong hoặc người xem đã rời. */}
       {!isModerator &&
       view.gameMode === 'SELF' &&
       view.phase !== 'GAME_OVER' &&
-      !view.me.left ? (
+      !view.me.left &&
+      view.isHost ? (
         <SelfGameControls
           view={view}
           pending={leaveGameMutation.isPending || commandMutation.isPending}
@@ -238,9 +266,6 @@ function GamePage() {
               command,
               idempotencyKey: createIdempotencyKey(),
             })
-          }
-          onLeaveGame={() =>
-            leaveGameMutation.mutate({ idempotencyKey: createIdempotencyKey() })
           }
         />
       ) : null}

@@ -323,8 +323,17 @@ test('SELF: đạo diễn ván 5 người và chụp mọi khoảnh khắc mới
       await consentAndVerify(player)
     }
     await consentAndVerify(seer)
-    await expect(seer.page.getByText('Bạn đã sẵn sàng')).toBeVisible()
-    await shoot(seer.page, '12-ngay-da-san-sang')
+    // Consent cuối có thể mở biểu quyết ngay (deadline thảo luận 30s đã qua
+    // khi cả bàn bấm xong) — khung "Bạn đã sẵn sàng" chỉ chụp khi còn kịp;
+    // trễ thì khung biểu quyết (13) đã phản ánh bước tiếp theo.
+    const readyNow = await seer.page
+      .getByText('Bạn đã sẵn sàng')
+      .first()
+      .isVisible()
+      .catch(() => false)
+    if (readyNow) {
+      await shoot(seer.page, '12-ngay-da-san-sang')
+    }
 
     // ===== Biểu quyết trên thiết bị (R20) =====
     const ballot = (page: Page) =>

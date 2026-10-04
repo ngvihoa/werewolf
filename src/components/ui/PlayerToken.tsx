@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 
 import { Check, Crown } from 'lucide-react'
+import { cn } from '#/lib/cn'
 
 export type PlayerTokenProps = {
   displayName: string
@@ -98,16 +99,15 @@ export function PlayerToken({
         />
       ) : null}
       <span
-        className={`grid size-10 place-items-center overflow-hidden rounded-full font-mono text-sm ring-1 sm:size-9 ${
-          acting
-            ? 'bg-danger/15 text-accent ring-danger/40'
-            : 'bg-white/8 text-ink-muted ring-line'
-        }`}
+        className={`grid size-10 place-items-center overflow-hidden rounded-full font-mono text-sm ring-1 sm:size-9 ${acting
+          ? 'bg-danger/15 text-accent ring-danger/40'
+          : 'bg-white/8 text-ink-muted ring-line'
+          }`}
       >
         {roleImageSrc ? (
           <img
             alt=""
-            className="size-full origin-top scale-[1.6] object-cover object-top"
+            className={cn("size-full origin-top scale-[1.6] object-cover object-top bg-white")}
             height={40}
             src={roleImageSrc}
             width={40}
