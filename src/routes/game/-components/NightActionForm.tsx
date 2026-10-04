@@ -108,6 +108,7 @@ export function NightActionForm({
   }
 
   if (submitted && !error) {
+    const isSelf = view.gameMode === 'SELF'
     return (
       <WaitingState
         icon={
@@ -116,7 +117,11 @@ export function NightActionForm({
           </span>
         }
         title="Đã gửi hành động"
-        description="Quản trò sẽ xem xét và xác nhận. Kết quả đêm sẽ hiện ngay khi mọi người hoàn thành."
+        description={
+          isSelf
+            ? 'Hệ thống xác nhận tự động. Kết quả đêm sẽ hiện ngay khi mọi người hoàn thành.'
+            : 'Quản trò sẽ xem xét và xác nhận. Kết quả đêm sẽ hiện ngay khi mọi người hoàn thành.'
+        }
       />
     )
   }
@@ -236,7 +241,9 @@ export function NightActionForm({
             isWitch ? false : isCupid ? selectedIds.length !== 2 : !targetId
           }
         >
-          Gửi hành động cho Quản trò
+          {view.gameMode === 'SELF'
+            ? 'Gửi hành động'
+            : 'Gửi hành động cho Quản trò'}
         </CommandButton>
       </div>
     </form>
