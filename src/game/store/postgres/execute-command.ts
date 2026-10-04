@@ -139,20 +139,27 @@ export async function executeGameCommand(
     let botEvents: GameEvent[] = []
     let botSteps: BotStep[] = []
 
-    // SELF: quản trò bot chạy tới fixpoint trong cùng transaction — người chơi
-    // gửi một lệnh, cả chuỗi confirm hệ thống ghi cùng một version.
-    if (game.mode === 'SELF') {
+    // M12: quản trò bot chạy tới fixpoint ở CẢ HAI mode — người chơi/quản trò
+    // gửi một lệnh, cả chuỗi confirm hệ thống ghi cùng một version. Allowlist
+    // theo mode quyết định bot được phát lệnh gì (MODERATED chỉ confirm step
+    // + tally; SELF giữ nguyên R20–R23).
+    {
       // Mốc thời gian gắn cả TRƯỚC lẫn SAU loop: DAY và step mới thường được
-      // tạo bên trong loop bởi chính bot.
-      stampDiscussionDeadline(finalState, now)
-      stampWaitingDeadline(finalState, now)
-      const bot = runBotLoop(finalState, { now, leftPlayerIds })
+      // tạo bên trong loop bởi chính bot. Cả hai hàm stamp tự no-op phần
+      // SELF-only khi mode là MODERATED (chỉ còn mốc VOTE cho alert M8).
+      stampDiscussionDeadline(finalState, now, game.mode)
+      stampWaitingDeadline(finalState, now, game.mode)
+      const bot = runBotLoop(finalState, {
+        now,
+        leftPlayerIds,
+        mode: game.mode,
+      })
       if (!bot.ok) {
         return failure(STORE_ERROR_CODE.INVALID_GAME_STATE, bot.error.message)
       }
       finalState = bot.state
-      stampDiscussionDeadline(finalState, now)
-      stampWaitingDeadline(finalState, now)
+      stampDiscussionDeadline(finalState, now, game.mode)
+      stampWaitingDeadline(finalState, now, game.mode)
       botEvents = stampEnteredBy(bot.events, enteredBy)
       botSteps = bot.steps
     }

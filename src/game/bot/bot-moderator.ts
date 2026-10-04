@@ -1,5 +1,5 @@
 import type { GameState, NightQueueItem } from '../orchestration/model'
-import type { DomainError } from '../domain'
+import type { DomainError, GameMode } from '../domain'
 import type { GameCommand } from '../orchestration/commands'
 import type { GameEvent } from '../orchestration/events'
 
@@ -27,6 +27,10 @@ export type BotClock = {
   // R23: player đã rời game giữa ván (SELF). Bot skip step/phát bắn của họ và
   // abstain phiếu còn thiếu NGAY thay vì chờ timer (R22).
   leftPlayerIds?: readonly string[]
+  // Revamp MODERATED (M12): allowlist command bot theo mode. Vắng = SELF
+  // (hành vi nguyên bản). MODERATED chỉ được CONFIRM_STEP khi có action chờ
+  // và tally khi đủ phiếu — mọi gate công bố thuộc về người.
+  mode?: GameMode
 }
 
 /**
@@ -39,12 +43,17 @@ export function nextBotCommands(
   clock?: BotClock,
 ): GameCommand[] {
   if (state.winner) return []
+  // M12: allowlist theo mode — vắng clock/mode giữ hành vi SELF nguyên bản.
+  const moderated = clock?.mode === 'MODERATED'
 
   switch (state.phase) {
     case 'NIGHT': {
       // Submit sai target đã bị rule engine từ chối lúc submit, nên mọi action
       // chờ confirm đều hợp lệ — bot confirm luôn, không có đường REJECT.
+      // MODERATED cũng vậy: action do quản trò proxy submit (M2), bot tự tiến
+      // queue để mỗi step chỉ tốn một tương tác của quản trò (M3).
       if (state.pendingNightAction) return [{ type: 'CONFIRM_STEP' }]
+      if (moderated) return []
       // R23: chủ sở hữu step đã rời game → skip ngay (không ai còn hành động
       // được), dù timer chưa hết.
       const activeStep = state.queue.find((item) => item.status === 'ACTIVE')
@@ -57,10 +66,15 @@ export function nextBotCommands(
         : []
     }
     case 'NIGHT_RESOLUTION':
-      return state.pendingNightResolution
-        ? [{ type: 'CONFIRM_NIGHT_RESOLUTION' }]
-        : []
+      // M3: công bố bình minh là gate người ở MODERATED — nhịp đọc kịch bản
+      // của quản trò quyết định khi nào làng biết ca chết.
+      return moderated
+        ? []
+        : state.pendingNightResolution
+          ? [{ type: 'CONFIRM_NIGHT_RESOLUTION' }]
+          : []
     case 'HUNTER_SHOT': {
+      if (moderated) return []
       // Hunter tự submit phát bắn qua thiết bị; bot chỉ xác nhận.
       if (state.pendingHunterShot?.targetId) {
         return [{ type: 'CONFIRM_HUNTER_SHOT' }]
@@ -78,24 +92,30 @@ export function nextBotCommands(
         : []
     }
     case 'DAY':
+      // M7: MODERATED mở vote bằng nút của quản trò (START_VOTE), không consent.
+      if (moderated) return []
       // R21: đủ majority người sống bấm "Sẵn sàng bỏ phiếu" VÀ đã qua mốc
       // thảo luận tối thiểu → mở vote. Một người chưa đồng ý không kẹt ván.
       return canOpenVote(state, clock) ? [{ type: 'START_VOTE' }] : []
     case 'VOTE':
-      // R20: khi mọi người sống (không tính người đã rời — R23) đã bỏ phiếu,
-      // bot tally và phát kết quả — hòa theo R14 (attempt 1 → revote,
-      // attempt 2 → không ai bị loại).
+      // R20/M6: khi mọi người sống đã bỏ phiếu, bot tally và phát kết quả —
+      // hòa theo R14 (attempt 1 → revote, attempt 2 → không ai bị loại). Cả
+      // hai mode dùng chung tally; MODERATED không có đường deadline.
       if (allAliveVoted(state, clock)) {
         return [{ type: 'SUBMIT_VOTE_RESULT', ...tallyVotes(state) }]
       }
+      if (moderated) return []
       // R22: hết giờ biểu quyết → phiếu thiếu tính trắng, tally luôn.
       return deadlineExpired(state, clock)
         ? [{ type: 'SUBMIT_VOTE_RESULT', ...tallyVotes(state) }]
         : []
     case 'VOTE_RESOLUTION':
-      return state.pendingVoteResolution
-        ? [{ type: 'CONFIRM_VOTE_RESULT' }]
-        : []
+      // M3/M6: công bố kết quả biểu quyết là gate người ở MODERATED.
+      return moderated
+        ? []
+        : state.pendingVoteResolution
+          ? [{ type: 'CONFIRM_VOTE_RESULT' }]
+          : []
     default:
       return []
   }
@@ -202,10 +222,17 @@ function canOpenVote(state: Readonly<GameState>, clock?: BotClock): boolean {
  * Store gọi khi state vừa thay đổi (trước và sau bot loop): gắn mốc hết giờ
  * cho ngữ cảnh chờ MỚI; giữ nguyên mốc nếu vẫn cùng ngữ cảnh. Orchestrator
  * giữ nguyên thuần khiết — chỉ store (biết `now`) mới gắn mốc thời gian.
+ *
+ * M8/M12: MODERATED chỉ stamp ngữ cảnh VOTE (đèn alert trên màn quản trò —
+ * hết giờ không phát lệnh nào); đêm thuộc quản trò nên không có đồng hồ.
  */
-export function stampWaitingDeadline(state: GameState, now: Date): void {
+export function stampWaitingDeadline(
+  state: GameState,
+  now: Date,
+  mode: GameMode = 'SELF',
+): void {
   const context = waitingContext(state)
-  if (!context) {
+  if (!context || (mode === 'MODERATED' && context.kind !== 'VOTE')) {
     state.waitingKey = null
     state.waitingDeadlineAt = null
     return
@@ -222,8 +249,14 @@ export function stampWaitingDeadline(state: GameState, now: Date): void {
  * Store gọi SAU khi lệnh người chơi được chấp nhận và TRƯỚC runBotLoop: nếu
  * state vừa vào DAY mà chưa có mốc thì gắn mốc thảo luận tối thiểu. Orchestrator
  * giữ nguyên thuần khiết — chỉ store (biết `now`) mới được gắn mốc thời gian.
+ * MODERATED không có consent R21 nên no-op (M12).
  */
-export function stampDiscussionDeadline(state: GameState, now: Date): void {
+export function stampDiscussionDeadline(
+  state: GameState,
+  now: Date,
+  mode: GameMode = 'SELF',
+): void {
+  if (mode === 'MODERATED') return
   if (state.phase === 'DAY' && !state.discussionMinEndsAt) {
     state.discussionMinEndsAt = new Date(
       now.getTime() + MIN_DISCUSSION_MS,
@@ -289,10 +322,11 @@ export function runBotLoop(
     state = outcome.value.state
     // Bot có thể đổi ngữ cảnh chờ (skip step → step mới ACTIVE, vào DAY,
     // revote...): gắn mốc ngay trong loop để lần kiểm kế tiếp so đúng mốc,
-    // tránh một tick hết hạn ăn theo toàn bộ các step còn lại.
+    // tránh một tick hết hạn ăn theo toàn bộ các step còn lại. Cả hai hàm
+    // stamp tự no-op phần SELF-only khi mode là MODERATED.
     if (clock) {
-      stampDiscussionDeadline(state, clock.now)
-      stampWaitingDeadline(state, clock.now)
+      stampDiscussionDeadline(state, clock.now, clock.mode)
+      stampWaitingDeadline(state, clock.now, clock.mode)
     }
     events.push(...outcome.value.events)
     steps.push({ command, previousState, events: outcome.value.events })

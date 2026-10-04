@@ -538,24 +538,27 @@ export class InMemoryGameStore implements GameStore {
     const humanEvents = stampEnteredBy(outcome.value.events, enteredBy)
     let botEvents: GameEvent[] = []
 
-    // SELF: sau lệnh người chơi, quản trò bot chạy tới fixpoint trong cùng
-    // "transaction" — version chỉ tăng một lần cho cả thay đổi.
-    if (game.mode === 'SELF') {
+    // M12: sau lệnh người chơi, quản trò bot chạy tới fixpoint ở CẢ HAI mode
+    // trong cùng "transaction" — version chỉ tăng một lần cho cả thay đổi.
+    // Allowlist theo mode quyết định bot được phát lệnh gì.
+    {
       const now = this.#now()
       // Mốc thời gian có thể cần gắn cả TRƯỚC lẫn SAU loop: DAY và step mới
-      // thường được tạo bên trong loop bởi chính bot.
-      stampDiscussionDeadline(finalState, now)
-      stampWaitingDeadline(finalState, now)
+      // thường được tạo bên trong loop bởi chính bot. Cả hai hàm stamp tự
+      // no-op phần SELF-only khi mode là MODERATED.
+      stampDiscussionDeadline(finalState, now, game.mode)
+      stampWaitingDeadline(finalState, now, game.mode)
       const bot = runBotLoop(finalState, {
         now,
         leftPlayerIds: this.#leftPlayerIds(game),
+        mode: game.mode,
       })
       if (!bot.ok) {
         return failure('INVALID_GAME_STATE', bot.error.message)
       }
       finalState = bot.state
-      stampDiscussionDeadline(finalState, now)
-      stampWaitingDeadline(finalState, now)
+      stampDiscussionDeadline(finalState, now, game.mode)
+      stampWaitingDeadline(finalState, now, game.mode)
       botEvents = stampEnteredBy(bot.events, enteredBy)
     }
 

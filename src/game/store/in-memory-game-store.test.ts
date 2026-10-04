@@ -363,14 +363,15 @@ describe('InMemoryGameStore commands', () => {
     }
   })
 
-  it('authorizes the moderator proxy submit and appends orchestration events', () => {
+  it('MODERATED: proxy submit của quản trò được bot auto-confirm cùng lệnh', () => {
     const { store, created, game } = createStartedGame()
     const seer = game.lobbyPlayers.find((player) => player.role === 'SEER')
     const wolf = game.lobbyPlayers.find((player) => player.role === 'WEREWOLF')
     if (!seer || !wolf) throw new Error('Fixture roles missing')
 
-    // Revamp MODERATED (M2): đêm thuộc quản trò — proxy submit với actorId
-    // của chủ role là đường chính, event audit mang enteredBy MODERATOR.
+    // Revamp MODERATED (M2/M3): đêm thuộc quản trò — proxy submit với actorId
+    // của chủ role, bot auto-confirm trong cùng command (M12), event audit
+    // mang enteredBy MODERATOR.
     const executed = store.execute({
       gameId: game.id,
       sessionToken: moderatorToken(created),
@@ -396,12 +397,29 @@ describe('InMemoryGameStore commands', () => {
       throw new Error('Expected updated game to exist')
     }
 
-    const submittedEntry = updatedGame.value.history.at(-1)
-    expect(submittedEntry?.event.type).toBe('NIGHT_ACTION_SUBMITTED')
+    // Bot confirm ngay: step Seer COMPLETED, step kế ACTIVE.
+    expect(
+      updatedGame.value.state?.queue.find(
+        (item) => item.step === 'SEER_INSPECT',
+      )?.status,
+    ).toBe('COMPLETED')
+    expect(
+      updatedGame.value.state?.queue.find((item) => item.status === 'ACTIVE')
+        ?.step,
+    ).toBe('WEREWOLF_ATTACK')
+
+    const submittedEntry = updatedGame.value.history.find(
+      (entry) => entry.event.type === 'NIGHT_ACTION_SUBMITTED',
+    )
     expect(submittedEntry?.actor).toBe('MODERATOR')
     if (submittedEntry?.event.type === 'NIGHT_ACTION_SUBMITTED') {
       expect(submittedEntry.event.enteredBy).toBe('MODERATOR')
     }
+    // Bot confirm ghi actor SYSTEM trong cùng version.
+    const confirmedEntry = updatedGame.value.history.find(
+      (entry) => entry.event.type === 'NIGHT_ACTION_CONFIRMED',
+    )
+    expect(confirmedEntry?.actor).toBe('SYSTEM')
   })
 
   it('MODERATED: player không tự submit action đêm — kể cả chủ role', () => {

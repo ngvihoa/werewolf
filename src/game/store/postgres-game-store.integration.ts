@@ -984,7 +984,8 @@ describe('PostgresGameStore.execute', () => {
       error: { code: 'NOT_AUTHORIZED' },
     })
 
-    // Quản trò nhập thay Seer (proxy input) — đường chính của chế độ mới.
+    // Quản trò nhập thay Seer (proxy input) — bot auto-confirm trong cùng
+    // transaction (M3/M12): version chỉ tăng 1 cho cả chuỗi.
     const submitted = await store.execute({
       gameId: created.value.gameId,
       sessionToken: moderatorToken(created.value),
@@ -1034,38 +1035,39 @@ describe('PostgresGameStore.execute', () => {
       error: { code: 'STALE_VERSION' },
     })
 
-    const rejected = await store.execute({
+    // Proxy nốt step cuối của đêm (Sói cắn) — bot confirm xong queue cạn,
+    // vào NIGHT_RESOLUTION và DỪNG (gate công bố thuộc về người, M3).
+    const wolfCommand = {
+      type: 'SUBMIT_NIGHT_ACTION' as const,
+      action: {
+        type: 'WEREWOLF_ATTACK' as const,
+        actorId: wolf.playerId,
+        targetId: seer.playerId,
+      },
+    }
+    const wolfSubmitted = await store.execute({
       gameId: created.value.gameId,
       sessionToken: moderatorToken(created.value),
-      idempotencyKey: 'reject-seer-action',
+      idempotencyKey: 'submit-wolf-action',
       expectedVersion: submitted.value.version,
-      command: { type: 'REJECT_STEP', reason: 'Please choose again' },
+      command: wolfCommand,
     })
-    if (!rejected.ok) throw new Error('Expected rejection to succeed')
-
-    // Rejected action không còn giữ partial unique slot, nên cùng queue step
-    // có thể nhận attempt tiếp theo.
-    const resubmitted = await store.execute({
-      gameId: created.value.gameId,
-      sessionToken: moderatorToken(created.value),
-      idempotencyKey: 'resubmit-seer-action',
-      expectedVersion: rejected.value.version,
-      command,
-    })
-    if (!resubmitted.ok) throw new Error('Expected resubmission to succeed')
+    if (!wolfSubmitted.ok) {
+      throw new Error('Expected werewolf proxy submission to succeed')
+    }
 
     const confirmed = await store.execute({
       gameId: created.value.gameId,
       sessionToken: moderatorToken(created.value),
-      idempotencyKey: 'confirm-seer-action',
-      expectedVersion: resubmitted.value.version,
-      command: { type: 'CONFIRM_STEP' },
+      idempotencyKey: 'confirm-night-resolution',
+      expectedVersion: wolfSubmitted.value.version,
+      command: { type: 'CONFIRM_NIGHT_RESOLUTION' },
     })
     expect(confirmed).toEqual({
       ok: true,
       value: {
         gameId: created.value.gameId,
-        version: resubmitted.value.version + 1,
+        version: wolfSubmitted.value.version + 1,
       },
     })
 
@@ -1090,36 +1092,37 @@ describe('PostgresGameStore.execute', () => {
       .orderBy(asc(gameEvents.sequence))
 
     expect(storedGame).toMatchObject({
-      version: started.value.version + 4,
-      state: { pendingNightAction: null },
+      version: started.value.version + 3,
+      state: { pendingNightAction: null, phase: 'DAY' },
     })
     expect(storedSteps).toEqual([
       { step: 'SEER_INSPECT', status: 'COMPLETED' },
-      { step: 'WEREWOLF_ATTACK', status: 'ACTIVE' },
+      { step: 'WEREWOLF_ATTACK', status: 'COMPLETED' },
     ])
     expect(storedActions).toMatchObject([
       {
         actorPlayerId: seer.playerId,
         attempt: 1,
         type: 'SEER_INSPECT',
-        status: 'REJECTED',
-        rejectionReason: 'Please choose again',
+        status: 'CONFIRMED',
       },
       {
-        actorPlayerId: seer.playerId,
-        attempt: 2,
-        type: 'SEER_INSPECT',
-        payload: { actorId: seer.playerId, targetId: wolf.playerId },
+        actorPlayerId: wolf.playerId,
+        attempt: 1,
+        type: 'WEREWOLF_ATTACK',
         status: 'CONFIRMED',
       },
     ])
-    expect(commandEvents.slice(-6)).toEqual([
+    // Submit do quản trò (MODERATOR); chuỗi confirm của bot ghi SYSTEM.
+    expect(commandEvents.slice(-8)).toEqual([
       { type: 'NIGHT_ACTION_SUBMITTED', createdBy: 'MODERATOR' },
-      { type: 'NIGHT_ACTION_REJECTED', createdBy: 'MODERATOR' },
+      { type: 'NIGHT_ACTION_CONFIRMED', createdBy: 'SYSTEM' },
+      { type: 'SEER_RESULT_RECORDED', createdBy: 'SYSTEM' },
+      { type: 'QUEUE_STEP_ACTIVATED', createdBy: 'SYSTEM' },
       { type: 'NIGHT_ACTION_SUBMITTED', createdBy: 'MODERATOR' },
-      { type: 'NIGHT_ACTION_CONFIRMED', createdBy: 'MODERATOR' },
-      { type: 'SEER_RESULT_RECORDED', createdBy: 'MODERATOR' },
-      { type: 'QUEUE_STEP_ACTIVATED', createdBy: 'MODERATOR' },
+      { type: 'NIGHT_ACTION_CONFIRMED', createdBy: 'SYSTEM' },
+      { type: 'NIGHT_RESOLUTION_PREPARED', createdBy: 'SYSTEM' },
+      { type: 'PHASE_CHANGED', createdBy: 'SYSTEM' },
     ])
 
     if (!storedGame?.state) throw new Error('Expected persisted game state')

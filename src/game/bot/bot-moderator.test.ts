@@ -741,3 +741,140 @@ describe('R21: ngữ cảnh DISCUSSION của pha Day', () => {
     })
   })
 })
+
+describe('M12: bot allowlist theo mode — MODERATED', () => {
+  function moderatedClock(now = new Date('2026-10-04T10:00:00.000Z')) {
+    return { now, mode: 'MODERATED' as const }
+  }
+
+  function submitAndConfirm(state: GameState, action: NightAction): GameState {
+    const outcome = executeCommand(state, {
+      type: 'SUBMIT_NIGHT_ACTION',
+      action,
+    })
+    if (!outcome.ok) throw new Error(outcome.error.message)
+    const loop = runBotLoop(outcome.value.state, moderatedClock())
+    if (!loop.ok) throw new Error(loop.error.message)
+    return loop.state
+  }
+
+  it('auto-confirm action proxy trong cùng loop — queue tự tiến', () => {
+    let state = createFirstNightState(FIVE_PLAYERS)
+    state = submitAndConfirm(state, {
+      type: 'SEER_INSPECT',
+      actorId: 'seer',
+      targetId: 'wolf',
+    })
+    expect(
+      state.queue.find((item) => item.step === 'SEER_INSPECT')?.status,
+    ).toBe('COMPLETED')
+    expect(state.queue.find((item) => item.status === 'ACTIVE')?.step).toBe(
+      'WEREWOLF_ATTACK',
+    )
+  })
+
+  it('dừng ở NIGHT_RESOLUTION — gate công bố bình minh thuộc về người', () => {
+    let state = createFirstNightState(FIVE_PLAYERS)
+    state = submitAndConfirm(state, {
+      type: 'SEER_INSPECT',
+      actorId: 'seer',
+      targetId: 'wolf',
+    })
+    state = submitAndConfirm(state, {
+      type: 'WEREWOLF_ATTACK',
+      actorId: 'wolf',
+      targetId: 'v1',
+    })
+    expect(state.phase).toBe('NIGHT_RESOLUTION')
+    expect(state.pendingNightResolution).not.toBeNull()
+    // Không ai chết trước khi quản trò công bố.
+    expect(state.players.find((player) => player.id === 'v1')?.alive).toBe(true)
+    expect(nextBotCommands(state, moderatedClock())).toEqual([])
+  })
+
+  it('không auto-confirm hunter shot và vote result là gate người', () => {
+    const shotPending = createFirstNightState(FIVE_PLAYERS)
+    shotPending.phase = 'HUNTER_SHOT'
+    shotPending.pendingHunterShot = { hunterId: 'v1', targetId: 'v2' }
+    expect(nextBotCommands(shotPending, moderatedClock())).toEqual([])
+
+    const resolution = createFirstNightState(FIVE_PLAYERS)
+    resolution.phase = 'VOTE_RESOLUTION'
+    resolution.pendingVoteResolution = { outcome: 'ELIMINATED', playerId: 'v1' }
+    expect(nextBotCommands(resolution, moderatedClock())).toEqual([])
+  })
+
+  it('DAY không consent, không START_VOTE tự động; đủ phiếu thì tally luôn', () => {
+    const day = createFirstNightState(FIVE_PLAYERS)
+    day.phase = 'DAY'
+    day.discussionMinEndsAt = null
+    // Cả bàn consent cũng không mở vote — START_VOTE là nút quản trò (M7).
+    day.voteConsentIds = FIVE_PLAYERS.map((player) => player.id)
+    expect(nextBotCommands(day, moderatedClock())).toEqual([])
+
+    const vote = createFirstNightState(FIVE_PLAYERS)
+    vote.phase = 'VOTE'
+    vote.voteSubmissions = {
+      wolf: 'v1',
+      seer: 'v1',
+      v1: 'wolf',
+      v2: 'v1',
+      v3: 'v1',
+    }
+    const commands = nextBotCommands(vote, moderatedClock())
+    expect(commands).toEqual([
+      { type: 'SUBMIT_VOTE_RESULT', tied: false, selectedPlayerId: 'v1' },
+    ])
+  })
+
+  it('không timeout, không skip PLAYER_LEFT ở MODERATED — quản trò là trọng tài', () => {
+    // Step đợi lâu hơn 45s: SELF sẽ SKIP_TIME... MODERATED im lặng.
+    const state = createFirstNightState(FIVE_PLAYERS)
+    state.waitingKey = 'STEP:1:SEER_INSPECT'
+    state.waitingDeadlineAt = new Date(
+      Date.parse('2026-10-04T09:59:00.000Z'),
+    ).toISOString()
+    expect(nextBotCommands(state, moderatedClock())).toEqual([])
+
+    // Chủ step "đã rời" (clock.leftPlayerIds) — MODERATED cũng im lặng.
+    expect(
+      nextBotCommands(state, {
+        ...moderatedClock(),
+        leftPlayerIds: ['seer'],
+      }),
+    ).toEqual([])
+  })
+
+  it('stamping: MODERATED chỉ gắn mốc VOTE, không stamp STEP/DAY', () => {
+    const night = createFirstNightState(FIVE_PLAYERS)
+    stampWaitingDeadline(
+      night,
+      new Date('2026-10-04T10:00:00.000Z'),
+      'MODERATED',
+    )
+    expect(night.waitingKey).toBeNull()
+    expect(night.waitingDeadlineAt).toBeNull()
+
+    const day = createFirstNightState(FIVE_PLAYERS)
+    day.phase = 'DAY'
+    stampDiscussionDeadline(
+      day,
+      new Date('2026-10-04T10:00:00.000Z'),
+      'MODERATED',
+    )
+    stampWaitingDeadline(day, new Date('2026-10-04T10:00:00.000Z'), 'MODERATED')
+    // Không có mốc thảo luận tối thiểu R21 ở MODERATED.
+    expect(day.discussionMinEndsAt).toBeNull()
+    expect(day.waitingKey).toBeNull()
+
+    const vote = createFirstNightState(FIVE_PLAYERS)
+    vote.phase = 'VOTE'
+    stampWaitingDeadline(
+      vote,
+      new Date('2026-10-04T10:00:00.000Z'),
+      'MODERATED',
+    )
+    expect(vote.waitingKey).toBe('VOTE:1:1')
+    expect(vote.waitingDeadlineAt).not.toBeNull()
+  })
+})
