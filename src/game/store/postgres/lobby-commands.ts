@@ -721,6 +721,13 @@ export async function startGame(
 
     const state = createFirstNightState(domainPlayers)
 
+    // R22: đêm đầu cũng cần mốc chờ ngay từ start — không có deadline thì
+    // không client nào tick và người AFK ở step đầu tiên kẹt ván vĩnh viễn.
+    if (lockedGame.mode === 'SELF') {
+      stampDiscussionDeadline(state, now)
+      stampWaitingDeadline(state, now)
+    }
+
     await transaction.insert(gameQueueSteps).values(
       state.queue.map((item, index) => {
         return {

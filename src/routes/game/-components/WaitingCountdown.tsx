@@ -65,7 +65,9 @@ export function WaitingCountdown({
       ? 'Thời gian hành động'
       : waiting.kind === 'VOTE'
         ? 'Thời gian biểu quyết'
-        : 'Thời gian phát súng'
+        : waiting.kind === 'DISCUSSION'
+          ? 'Thảo luận tối thiểu'
+          : 'Thời gian phát súng'
 
   return (
     <p className="text-center font-mono text-sm tabular-nums text-ink-subtle">

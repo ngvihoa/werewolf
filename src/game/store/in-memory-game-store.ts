@@ -334,6 +334,12 @@ export class InMemoryGameStore implements GameStore {
       players.push(createDomainPlayer(player.id, player.role))
     }
     game.state = createFirstNightState(players)
+    // R22: đêm đầu cũng cần mốc chờ ngay từ start — không có deadline thì
+    // không client nào tick và người AFK ở step đầu tiên kẹt ván vĩnh viễn.
+    if (game.mode === 'SELF') {
+      stampDiscussionDeadline(game.state, this.#now())
+      stampWaitingDeadline(game.state, this.#now())
+    }
     game.version += 1
     this.#appendEvents(game, session.kind, session.playerId, [
       { type: 'GAME_STARTED' },

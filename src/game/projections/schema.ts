@@ -186,9 +186,10 @@ export const playerGameViewSchema = z.object({
     })
     .optional(),
   // SELF mode (R22): ngữ cảnh đang chờ + mốc hết giờ (ISO, giờ server).
+  // DISCUSSION = mốc thảo luận tối thiểu của pha Day (R21).
   waiting: z
     .object({
-      kind: z.enum(['STEP', 'VOTE', 'HUNTER_SHOT']),
+      kind: z.enum(['STEP', 'VOTE', 'HUNTER_SHOT', 'DISCUSSION']),
       key: z.string(),
       deadlineAt: z.string(),
     })

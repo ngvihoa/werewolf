@@ -9,7 +9,14 @@ import {
   executeCommand,
 } from '../orchestration/game-orchestrator'
 
-import { nextBotCommands, runBotLoop } from './bot-moderator'
+import {
+  stampDiscussionDeadline,
+  stampWaitingDeadline,
+  MIN_DISCUSSION_MS,
+  nextBotCommands,
+  waitingContext,
+  runBotLoop,
+} from './bot-moderator'
 
 function villager(id: string): Player {
   return { id, role: 'VILLAGER', alive: true, abilityState: null }
@@ -697,5 +704,40 @@ describe('R23: người chơi rời game (leftPlayerIds qua clock)', () => {
       leftPlayerIds: ['v1'],
     })
     expect(commands).toEqual([{ type: 'CONFIRM_HUNTER_SHOT' }])
+  })
+})
+
+describe('R21: ngữ cảnh DISCUSSION của pha Day', () => {
+  it('DAY có waiting context DISCUSSION — countdown auto-tick mở vote khi majority đã consent', () => {
+    const state = createFirstNightState(FIVE_PLAYERS)
+    state.phase = 'DAY'
+    expect(waitingContext(state)).toEqual({
+      kind: 'DISCUSSION',
+      key: 'DISCUSSION:1',
+      timeoutMs: MIN_DISCUSSION_MS,
+    })
+
+    // Store stamp hai mốc khi vào Day; cả bàn consent trước khi qua 30s.
+    const now = new Date('2026-08-08T00:00:00.000Z')
+    stampDiscussionDeadline(state, now)
+    stampWaitingDeadline(state, now)
+    state.voteConsentIds = ['wolf', 'seer', 'v1', 'v2']
+
+    // Chưa hết mốc thảo luận tối thiểu → bot không mở vote.
+    expect(
+      nextBotCommands(state, { now: new Date('2026-08-08T00:00:29.000Z') }),
+    ).toEqual([])
+
+    // Hết mốc → client tick → bot loop mở vote ngay.
+    const bot = runBotLoop(state, {
+      now: new Date('2026-08-08T00:00:31.000Z'),
+    })
+    if (!bot.ok) throw new Error(bot.error.message)
+    expect(bot.state.phase).toBe('VOTE')
+    expect(bot.events).toContainEqual({
+      type: 'PHASE_CHANGED',
+      from: 'DAY',
+      to: 'VOTE',
+    })
   })
 })

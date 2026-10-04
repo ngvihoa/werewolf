@@ -140,7 +140,7 @@ function stepOwnerLeft(
  * một lần cho mỗi ngữ cảnh.
  */
 export type WaitingContext = {
-  kind: 'STEP' | 'VOTE' | 'HUNTER_SHOT'
+  kind: 'STEP' | 'VOTE' | 'HUNTER_SHOT' | 'DISCUSSION'
   key: string
   timeoutMs: number
 }
@@ -169,6 +169,17 @@ export function waitingContext(
       kind: 'HUNTER_SHOT',
       key: `SHOT:${state.round}`,
       timeoutMs: HUNTER_SHOT_TIMEOUT_MS,
+    }
+  }
+  // R21: DAY không có đồng hồ cứng — mốc duy nhất là thời gian thảo luận tối
+  // thiểu. Countdown hiện cho mọi người và auto-tick khi hết (R22) để bot mở
+  // vote nếu majority đã consent: không có ngữ cảnh này, cả bàn bấm consent
+  // sớm sẽ không còn command nào kích hoạt bot loop và vote không bao giờ mở.
+  if (state.phase === 'DAY') {
+    return {
+      kind: 'DISCUSSION',
+      key: `DISCUSSION:${state.round}`,
+      timeoutMs: MIN_DISCUSSION_MS,
     }
   }
   return null

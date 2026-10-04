@@ -632,6 +632,10 @@ describe('InMemoryGameStore self mode (không quản trò)', () => {
     expect(snapshot.ok).toBe(true)
     if (!snapshot.ok) return
     expect(snapshot.value.state?.phase).toBe('NIGHT')
+    // R22: đêm đầu có mốc chờ ngay từ start — nếu không, không client nào
+    // tick và người AFK ở step đầu tiên kẹt ván vĩnh viễn.
+    expect(snapshot.value.state?.waitingKey).toBe('STEP:1:SEER_INSPECT')
+    expect(snapshot.value.state?.waitingDeadlineAt).toBeTruthy()
     expect(
       snapshot.value.lobbyPlayers.every((player) => player.role !== null),
     ).toBe(true)
