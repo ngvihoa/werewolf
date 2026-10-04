@@ -291,6 +291,13 @@ mép card — logo "đóng đinh" vào vòng tròn đúng silhouette mockup, gi�
 nốt cảm giác overlap "trơ". (3) Bỏ helper text "Mỗi người dùng một phiên
 riêng" dưới card. e2e entry pass.
 
+**Rev 6 — thêm selector luật hòa biểu quyết ở form tạo phòng (2026-10-04)**:
+fieldset 2 radio (pattern native radio `accent-danger` của ModeratorControls)
+đặt giữa field tên và nút submit, dùng chung form MODERATED/SELF —
+"Bỏ phiếu lại một lần" (mặc định) / "Một lần duy nhất". Gửi kèm
+`voteTie` trong `lobby.createGame`; chi tiết rule ở docs/rules/07 (Vote tie
+rule) + docs/rules/08 (R14).
+
 ## 11. Thiết kế lại floating button đổi theme (2026-10-02 đêm) ✅
 
 Grill 4 quyết định (đều theo phương án đề xuất): popover swatch / icon-only
