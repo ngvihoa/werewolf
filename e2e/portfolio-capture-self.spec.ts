@@ -352,7 +352,10 @@ test('SELF: đạo diễn ván 5 người và chụp mọi khoảnh khắc mới
       throw new Error('Voters are missing')
     }
 
-    // Khung biểu quyết với mục tiêu đã chọn (dân vote Sói).
+    // Khung biểu quyết với mục tiêu đã chọn (dân vote Sói). Click ngay sau
+    // reload có thể rơi trước hydration (nút hiện từ SSR HTML nhưng chưa có
+    // handler) → click bị nuốt, chụp ra trạng thái chưa chọn. Nên sau click
+    // PHẢI thấy nút "Bỏ phiếu" bật sáng (disabled={!targetId}) rồi mới chụp.
     await expect(async () => {
       await firstVoter.page.reload()
       const ballotButton = firstVoter.page
@@ -362,6 +365,7 @@ test('SELF: đạo diễn ván 5 người và chụp mọi khoảnh khắc mới
       await firstVoter.page
         .getByRole('button', { name: confirmedWolf.name, exact: true })
         .click()
+      await expect(ballotButton).toBeEnabled({ timeout: 5_000 })
     }).toPass({ timeout: 90_000 })
     await shootBoth(firstVoter.page, '13-bieu-quyet-chon')
     await voteAndVerify(firstVoter, confirmedWolf.name)
