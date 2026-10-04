@@ -47,10 +47,11 @@ export function moderatorPhaseTitle(
 export function moderatorPhaseDescription(phase: GameState['phase']) {
   return (
     {
-      NIGHT: 'Chỉ người có vai đang được gọi mới có thể gửi hành động.',
+      NIGHT:
+        'Gọi từng vai theo hàng đợi và chọn giúp họ; hệ thống tự tiến bước.',
       NIGHT_RESOLUTION: 'Kết quả chưa công khai cho tới khi Quản trò xác nhận.',
       DAY: 'Cho người chơi thảo luận, sau đó mở biểu quyết khi sẵn sàng.',
-      VOTE: 'Nhập kết quả cuối cùng của bàn chơi.',
+      VOTE: 'Cả bàn biểu quyết trên thiết bị; đủ phiếu hệ thống tự tính kết quả.',
       VOTE_RESOLUTION: 'Kiểm tra người bị loại hoặc yêu cầu biểu quyết lại.',
       HUNTER_SHOT: 'Chờ Thợ săn chọn mục tiêu, sau đó xác nhận phát bắn.',
       GAME_OVER: 'Điều kiện thắng đã được kiểm tra tự động.',
