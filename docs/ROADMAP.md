@@ -280,8 +280,8 @@ apply to the new `SELF` mode).
 - [x] T5 Lazy timers + `game.tick` (AFK auto-skip / abstain)
 - [x] T6 Player leaving mid-game in SELF mode
 - [x] T7 Game over + rematch in SELF mode
-- [ ] T8 Sync rule docs (02/03/04/05/07), 08 decisions, revamp-ui-ux.md
-- [ ] T9 Multi-context e2e for a full SELF game + MODERATED regression
+- [x] T8 Sync rule docs (02/03/04/05/07), 08 decisions, revamp-ui-ux.md
+- [x] T9 Multi-context e2e for a full SELF game + MODERATED regression
 
 Exit criteria:
 
