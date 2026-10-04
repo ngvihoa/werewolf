@@ -148,7 +148,10 @@ test('SELF AFK: đêm 1 không kẹt — step hết giờ tự skip, ván đi ti
 
     // Đêm kết thúc bình thường → Day prompt + consent banner, kể cả trên
     // trang của người AFK. Banner dựa vào refetch của page nên phải
-    // reload-poll thay vì expect trực tiếp.
+    // reload-poll thay vì expect trực tiếp. Lưu ý: Sói cắn participant đầu
+    // tiên khác Sói — có thể đúng là Tiên tri AFK, nên consent chỉ assert
+    // trên người SỐNG; trang người AFK xác nhận đã sang Ngày (dù sống hay
+    // đang quan sát sau khi chết).
     const consent = (page: Page) =>
       page.getByRole('button', { name: 'Sẵn sàng bỏ phiếu' })
     await reloadUntilVisible(
@@ -156,7 +159,21 @@ test('SELF AFK: đêm 1 không kẹt — step hết giờ tự skip, ván đi ti
       () => consent(werewolf.page),
       60_000,
     )
-    await reloadUntilVisible(seer.page, () => consent(seer.page), 60_000)
+    await reloadUntilVisible(
+      seer.page,
+      () => seer.page.getByText('Ngày 01'),
+      60_000,
+    )
+    const aliveWitness = participants.find(
+      (player) => player.name !== werewolf.name && player.name !== seer.name,
+    )
+    if (aliveWitness) {
+      await reloadUntilVisible(
+        aliveWitness.page,
+        () => consent(aliveWitness.page),
+        60_000,
+      )
+    }
   } finally {
     await table.close()
   }
