@@ -217,6 +217,8 @@ const gameStateSchema = z.object({
   lastProtectedTargetId: z.string().nullable().optional(),
   pendingNightResolution: nightResolutionSchema.nullable(),
   voteAttempt: z.union([z.literal(1), z.literal(2)]),
+  // Luật hòa biểu quyết (R14) chọn khi tạo phòng — optional cho state cũ.
+  voteTie: z.enum(['REVOTE_ONCE', 'NO_REVOTE']).optional(),
   voteSubmissions: z.record(z.string(), z.string().nullable()).optional(),
   voteConsentIds: z.array(z.string()).optional(),
   discussionMinEndsAt: z.string().nullable().optional(),

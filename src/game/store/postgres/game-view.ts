@@ -104,6 +104,7 @@ export async function getGameView(
         mode: game.mode,
         hostPlayerId:
           players.find((p) => p.isHost && !p.isModerator)?.id ?? null,
+        settings: game.settings,
         lobbyPlayers: players.map((p) => ({
           id: p.id,
           role: p.role,

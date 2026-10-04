@@ -9,6 +9,7 @@ import type {
   storeErrorSchema,
 } from './schema'
 import type { GameMode, Role } from '../domain'
+import type { MvpSettings } from '../rules/mvp-settings'
 import type { GameState } from '../orchestration/model'
 import type { z } from 'zod'
 
@@ -55,6 +56,8 @@ export type LocalGame = {
   mode: GameMode
   // SELF mode: id của player chủ phòng (tạo phòng). MODERATED là null.
   hostPlayerId: string | null
+  // Settings chọn khi tạo phòng (hiện có voteTie); startGame đọc khi tạo state.
+  settings: MvpSettings
   lobbyPlayers: LobbyPlayer[]
   state: GameState | null
   history: StoredEvent[]

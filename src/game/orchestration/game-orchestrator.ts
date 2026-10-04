@@ -15,7 +15,10 @@ export type CommandOutcome = {
   events: GameEvent[]
 }
 
-export function createFirstNightState(players: readonly Player[]): GameState {
+export function createFirstNightState(
+  players: readonly Player[],
+  voteTie?: GameState['voteTie'],
+): GameState {
   const queue = createQueue(players, 1)
   activateNextRunnableStep(queue, players, [])
 
@@ -32,6 +35,7 @@ export function createFirstNightState(players: readonly Player[]): GameState {
     lastProtectedTargetId: null,
     pendingNightResolution: null,
     voteAttempt: 1,
+    voteTie,
     pendingVote: null,
     pendingVoteResolution: null,
     voteSubmissions: {},
@@ -415,6 +419,7 @@ function submitVoteResult(
     tied,
     selectedPlayerId,
     state.voteAttempt,
+    state.voteTie,
   )
   events.push({ type: 'VOTE_SUBMITTED', tied, selectedPlayerId })
   transitionPhase(state, 'VOTE_RESOLUTION', events)

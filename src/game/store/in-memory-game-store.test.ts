@@ -647,6 +647,63 @@ describe('InMemoryGameStore self mode (không quản trò)', () => {
     expect(startedEvent?.actorPlayerId).toBe(created.playerId)
   })
 
+  it('carry setting voteTie từ createGame vào state khi start', () => {
+    const store = createStore()
+    const created = store.createGame({
+      mode: 'SELF',
+      creatorName: 'Hoa',
+      voteTie: 'NO_REVOTE',
+    })
+    if (!created.ok) throw new Error(created.error.message)
+    const game = created.value
+    if (game.mode !== 'SELF') throw new Error('Expected a SELF game')
+    const players = [
+      { playerId: game.playerId, token: game.playerSessionToken },
+    ]
+    for (const name of ['An', 'Binh', 'Cuong', 'Dung']) {
+      const joined = store.joinGame(game.roomCode, name)
+      if (!joined.ok) throw new Error(joined.error.message)
+      players.push({
+        playerId: joined.value.playerId,
+        token: joined.value.playerSessionToken,
+      })
+    }
+    const assigned = store.assignRoles(
+      game.playerSessionToken,
+      currentVersion(store, game.gameId),
+      'self-assign',
+    )
+    if (!assigned.ok) throw new Error(assigned.error.message)
+    for (const player of players) {
+      const ready = store.setReady(
+        player.token,
+        currentVersion(store, game.gameId),
+        true,
+        `ready-${player.token}`,
+      )
+      if (!ready.ok) throw new Error(ready.error.message)
+    }
+    const started = store.startGame(
+      game.playerSessionToken,
+      currentVersion(store, game.gameId),
+      'self-start',
+    )
+    if (!started.ok) throw new Error(started.error.message)
+
+    const snapshot = store.getGame(game.gameId)
+    expect(snapshot.ok).toBe(true)
+    if (!snapshot.ok) return
+    expect(snapshot.value.state?.voteTie).toBe('NO_REVOTE')
+  })
+
+  it('mặc định voteTie là REVOTE_ONCE khi createGame không truyền', () => {
+    const { store, created } = startSelfGame()
+    const snapshot = store.getGame(created.gameId)
+    expect(snapshot.ok).toBe(true)
+    if (!snapshot.ok) return
+    expect(snapshot.value.state?.voteTie).toBe('REVOTE_ONCE')
+  })
+
   it('startGame vẫn chặn khi một player (kể cả chủ phòng) chưa sẵn sàng', () => {
     const { store, created } = createSelfGame()
     for (const name of ['An', 'Binh', 'Cuong', 'Dung']) {

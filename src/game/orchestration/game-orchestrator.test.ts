@@ -339,6 +339,40 @@ describe('night orchestration', () => {
 })
 
 describe('vote orchestration', () => {
+  it('ends a tied vote with no elimination right away when voteTie is NO_REVOTE', () => {
+    const state = {
+      ...createFirstNightState(fivePlayers, 'NO_REVOTE'),
+      phase: 'VOTE' as const,
+    }
+    const outcome = run(state, {
+      type: 'SUBMIT_VOTE_RESULT',
+      tied: true,
+      selectedPlayerId: null,
+    })
+
+    expect(outcome.state.pendingVoteResolution).toEqual({
+      outcome: 'NO_ELIMINATION',
+    })
+  })
+
+  it('defaults to one revote when voteTie is not set (state cũ)', () => {
+    const state = {
+      ...createFirstNightState(fivePlayers),
+      phase: 'VOTE' as const,
+    }
+    expect(state.voteTie).toBeUndefined()
+    const outcome = run(state, {
+      type: 'SUBMIT_VOTE_RESULT',
+      tied: true,
+      selectedPlayerId: null,
+    })
+
+    expect(outcome.state.pendingVoteResolution).toEqual({
+      outcome: 'REVOTE',
+      nextAttempt: 2,
+    })
+  })
+
   it('eliminates the surviving lover from heartbreak after a vote', () => {
     const players: Player[] = [
       { id: 'wolf', role: 'WEREWOLF', alive: true, abilityState: null },

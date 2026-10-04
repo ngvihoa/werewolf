@@ -43,6 +43,9 @@ export type GameState = {
   // R21: mốc thời gian tối thiểu của thảo luận (ISO) — store gắn khi vào DAY,
   // bot chỉ mở vote khi đã qua mốc. Orchestrator giữ NULL, không biết đồng hồ.
   discussionMinEndsAt?: string | null
+  // Luật hòa biểu quyết (R14) chọn khi tạo phòng, mang theo trong state để
+  // rule engine deterministic. Vắng = REVOTE_ONCE (state cũ trước setting).
+  voteTie?: 'REVOTE_ONCE' | 'NO_REVOTE'
   // R22: định danh ngữ cảnh đang chờ người chơi (step/vote/hunter shot) và
   // mốc hết giờ (ISO). Store gắn khi ngữ cảnh đổi; bot so với đồng hồ server
   // để skip/abstain. Orchestrator không đọc hai trường này.

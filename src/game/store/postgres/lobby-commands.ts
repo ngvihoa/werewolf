@@ -22,6 +22,7 @@ import { createFirstNightState } from '../../orchestration/game-orchestrator'
 import { storeErrorCodeSchema } from '../schema'
 import { serializeGameEvent } from '../event-persistence'
 import { playerSchema } from '../../schema'
+import { MVP_SETTINGS } from '../../rules/mvp-settings'
 import {
   assignRoles as assignRolesToPlayers,
   validateRoleComposition,
@@ -88,6 +89,10 @@ export async function createGame(
               roomCode,
               moderatorName: ownerName,
               mode,
+              settings: {
+                ...MVP_SETTINGS,
+                voteTie: input.voteTie ?? MVP_SETTINGS.voteTie,
+              },
             })
             .returning({
               id: games.id,
@@ -719,7 +724,10 @@ export async function startGame(
       )
     }
 
-    const state = createFirstNightState(domainPlayers)
+    const state = createFirstNightState(
+      domainPlayers,
+      lockedGame.settings.voteTie,
+    )
 
     // R22: đêm đầu cũng cần mốc chờ ngay từ start — không có deadline thì
     // không client nào tick và người AFK ở step đầu tiên kẹt ván vĩnh viễn.

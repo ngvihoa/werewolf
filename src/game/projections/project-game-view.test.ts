@@ -4,6 +4,8 @@ import type { GameState } from '../orchestration/model'
 
 import { describe, expect, it } from 'vitest'
 
+import { MVP_SETTINGS } from '../rules/mvp-settings'
+
 import { getGameViewResultSchema } from './schema'
 import { projectGameView } from './project-game-view'
 
@@ -77,6 +79,7 @@ function createGame(): LocalGame {
     moderatorName: 'Moderator',
     mode: 'MODERATED',
     hostPlayerId: null,
+    settings: MVP_SETTINGS,
     lobbyPlayers: [
       { id: 'seer', displayName: 'Seer', ready: true, role: 'SEER' },
       { id: 'wolf', displayName: 'Wolf', ready: true, role: 'WEREWOLF' },

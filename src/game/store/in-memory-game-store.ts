@@ -22,6 +22,7 @@ import type { GameView } from '../projections/model'
 
 import { gameCommandSchema } from '../orchestration/schema'
 import { projectGameView } from '../projections/project-game-view'
+import { MVP_SETTINGS } from '../rules/mvp-settings'
 import { assignRoles } from '../rules/role-assignment'
 import {
   stampDiscussionDeadline,
@@ -76,6 +77,10 @@ export class InMemoryGameStore implements GameStore {
       moderatorName: ownerName,
       mode,
       hostPlayerId: null,
+      settings: {
+        ...MVP_SETTINGS,
+        voteTie: input.voteTie ?? MVP_SETTINGS.voteTie,
+      },
       lobbyPlayers: [],
       state: null,
       history: [],
@@ -333,7 +338,7 @@ export class InMemoryGameStore implements GameStore {
       }
       players.push(createDomainPlayer(player.id, player.role))
     }
-    game.state = createFirstNightState(players)
+    game.state = createFirstNightState(players, game.settings.voteTie)
     // R22: đêm đầu cũng cần mốc chờ ngay từ start — không có deadline thì
     // không client nào tick và người AFK ở step đầu tiên kẹt ván vĩnh viễn.
     if (game.mode === 'SELF') {

@@ -1,9 +1,14 @@
 import type { Role } from '../domain'
 
+// Luật hòa khi biểu quyết (R14): REVOTE_ONCE = hòa → biểu quyết lại đúng một
+// lần (lần 2 hòa thì không ai bị loại); NO_REVOTE = một lần duy nhất, hòa
+// ngay thì không ai bị loại và ván sang đêm. Chọn khi tạo phòng.
+export type VoteTie = 'REVOTE_ONCE' | 'NO_REVOTE'
+
 export type MvpSettings = {
   revealRoleOnDeath: boolean
   seerResult: 'TEAM_ALIGNMENT'
-  voteTie: 'REVOTE_ONCE'
+  voteTie: VoteTie
   witchCanSelfHeal: boolean
   witchCanUseBothPotions: boolean
   witchCanSelfPoison: boolean

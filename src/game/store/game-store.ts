@@ -7,6 +7,7 @@ import type {
 import type { RoleCompositionSelection } from '../domain'
 import type { GameCommand } from '../orchestration/commands'
 import type { GameView } from '../projections/model'
+import type { VoteTie } from '../rules/mvp-settings'
 
 export type Awaitable<T> = T | Promise<T>
 
@@ -17,9 +18,10 @@ export type TickInput = {
 
 // MODERATED: người tạo là Quản trò và nhận moderator session.
 // SELF: người tạo là chủ phòng — một player thường được quyền cấu hình.
+// voteTie: luật hòa biểu quyết (R14), mặc định REVOTE_ONCE.
 export type CreateGameInput =
-  | { mode: 'MODERATED'; moderatorName: string }
-  | { mode: 'SELF'; creatorName: string }
+  | { mode: 'MODERATED'; moderatorName: string; voteTie?: VoteTie }
+  | { mode: 'SELF'; creatorName: string; voteTie?: VoteTie }
 
 /**
  * Định nghĩa schema cho một lệnh thực thi trong game
