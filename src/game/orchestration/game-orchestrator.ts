@@ -240,6 +240,14 @@ function undoStep(
 
   restoreConsumedResources(state, action)
   state.confirmedNightActions.pop()
+  // Mọi step ACTIVE phía sau là hệ quả của action bị hoàn tác (bot đã kích
+  // hoạt bước kế sau khi confirm) — đưa về PENDING để đêm chạy lại đúng thứ
+  // tự từ bước vừa mở, không bao giờ có hai step ACTIVE cùng lúc.
+  for (const queueItem of state.queue) {
+    if (queueItem !== item && queueItem.status === 'ACTIVE') {
+      queueItem.status = 'PENDING'
+    }
+  }
   item.status = 'ACTIVE'
   item.skipReason = null
   if (state.phase === 'NIGHT_RESOLUTION') {

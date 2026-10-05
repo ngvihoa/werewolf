@@ -676,6 +676,42 @@ describe('night undo (revamp MODERATED, M9)', () => {
     ])
   })
 
+  it('reverts the later-activated step to PENDING so only one step is ACTIVE', () => {
+    let state = createFirstNightState(fivePlayers)
+    state = run(state, {
+      type: 'SUBMIT_NIGHT_ACTION',
+      action: { type: 'SEER_INSPECT', actorId: 'seer', targetId: 'wolf' },
+    }).state
+    state = run(state, { type: 'CONFIRM_STEP' }).state
+    // Step WEREWOLF_ATTACK đã ACTIVE là hệ quả của confirm trên.
+    expect(
+      state.queue.find((item) => item.step === 'WEREWOLF_ATTACK')?.status,
+    ).toBe('ACTIVE')
+
+    const undone = run(state, { type: 'UNDO_STEP', reason: 'Sai mục tiêu' })
+    const seerStep = undone.state.queue.find(
+      (item) => item.step === 'SEER_INSPECT',
+    )
+    const wolfStep = undone.state.queue.find(
+      (item) => item.step === 'WEREWOLF_ATTACK',
+    )
+    expect(seerStep?.status).toBe('ACTIVE')
+    expect(wolfStep?.status).toBe('PENDING')
+
+    // Đêm chạy lại từ Tiên tri: confirm xong Wolf ACTIVE lại đúng thứ tự.
+    state = run(undone.state, {
+      type: 'SUBMIT_NIGHT_ACTION',
+      action: { type: 'SEER_INSPECT', actorId: 'seer', targetId: 'a' },
+    }).state
+    state = run(state, { type: 'CONFIRM_STEP' }).state
+    expect(
+      state.queue.find((item) => item.step === 'WEREWOLF_ATTACK')?.status,
+    ).toBe('ACTIVE')
+    expect(state.queue.filter((item) => item.status === 'ACTIVE')).toHaveLength(
+      1,
+    )
+  })
+
   it('unlinks lovers when undoing CUPID_LINK', () => {
     const players: Player[] = [
       ...fivePlayers,

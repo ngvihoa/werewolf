@@ -57,6 +57,58 @@ export async function persistGameAction(
     return
   }
 
+  // Revamp MODERATED (M9): hoàn tác rút row CONFIRMED cuối cùng của step bị
+  // undo sang CANCELLED — mở slot của partial unique index
+  // (game_actions_one_open_per_queue_step_idx: một row SUBMITTED/CONFIRMED
+  // mỗi step) cho attempt kế tiếp. Check constraint yêu cầu CANCELLED phải
+  // có decided_at + decided_by_session_id + rejection_reason — undo luôn do
+  // moderator session phát với lý do bắt buộc nên đủ cả ba.
+  if (input.command.type === 'UNDO_STEP') {
+    const undoneAction = input.previousState.confirmedNightActions.at(-1)
+    if (!undoneAction) {
+      throw new Error('Undone action is missing from game state')
+    }
+    const [queueStep] = await transaction
+      .select({ id: gameQueueSteps.id })
+      .from(gameQueueSteps)
+      .where(
+        and(
+          eq(gameQueueSteps.gameId, input.gameId),
+          eq(gameQueueSteps.round, input.previousState.round),
+          eq(gameQueueSteps.step, undoneAction.type),
+        ),
+      )
+      .limit(1)
+    if (!queueStep) {
+      throw new Error('Undone queue step is missing from the database')
+    }
+    const [confirmedRow] = await transaction
+      .select({ id: gameActions.id })
+      .from(gameActions)
+      .where(
+        and(
+          eq(gameActions.gameId, input.gameId),
+          eq(gameActions.queueStepId, queueStep.id),
+          eq(gameActions.status, 'CONFIRMED'),
+        ),
+      )
+      .orderBy(desc(gameActions.attempt))
+      .limit(1)
+    if (!confirmedRow) {
+      throw new Error('Confirmed action row is missing for the undone step')
+    }
+    await transaction
+      .update(gameActions)
+      .set({
+        status: 'CANCELLED',
+        rejectionReason: input.command.reason.trim(),
+        decidedBySessionId: input.sessionId,
+        decidedAt: input.now,
+      })
+      .where(eq(gameActions.id, confirmedRow.id))
+    return
+  }
+
   if (
     input.command.type !== 'CONFIRM_STEP' &&
     input.command.type !== 'REJECT_STEP'
