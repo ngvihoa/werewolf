@@ -70,6 +70,9 @@ export function ModeratorGamePanel({
       activeItem?.status === 'ACTIVE' &&
       !state.pendingNightAction ? (
         <NightActionProxyForm
+          // key theo vòng+step: picker là state nội bộ — đổi bước đêm phải
+          // reset (nếu không, mục tiêu của bước trước trôi sang picker kế).
+          key={`${state.round}-${activeItem.step}`}
           state={state}
           names={names}
           pending={pending}

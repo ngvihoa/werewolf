@@ -39,6 +39,23 @@ export function TableGamePanel({
       </div>
     )
   }
+  // Thợ săn bị loại ban ngày vẫn tự bấm phát bắn — quyền hành động duy nhất
+  // của người đã chết, phải đứng trên dead-state (ban ngày, mắt mở, không
+  // tell).
+  if (view.phase === 'HUNTER_SHOT' && view.turn.canAct) {
+    return (
+      <div className="flex flex-col gap-6">
+        <HunterShotForm
+          view={view}
+          pending={pending}
+          error={error}
+          onCommand={onCommand}
+        />
+        {error ? <InlineError message={error} /> : null}
+      </div>
+    )
+  }
+
   if (!view.me.alive) {
     return (
       <div className="flex flex-col gap-4">
@@ -114,21 +131,8 @@ export function TableGamePanel({
     )
   }
 
-  if (view.phase === 'HUNTER_SHOT' && view.turn.canAct) {
-    return (
-      <div className="flex flex-col gap-6">
-        <HunterShotForm
-          view={view}
-          pending={pending}
-          error={error}
-          onCommand={onCommand}
-        />
-        {error ? <InlineError message={error} /> : null}
-      </div>
-    )
-  }
-
-  // VOTE_RESOLUTION: chờ quản trò công bố — khoảng lặng có chủ ý.
+  // VOTE_RESOLUTION / HUNTER_SHOT của người còn sống không phải thợ săn:
+  // chờ quản trò — khoảng lặng có chủ ý.
   return (
     <div className="flex flex-col gap-6">
       <WaitingState
