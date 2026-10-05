@@ -8,7 +8,7 @@ import { commandReceipts } from '#/db/schema'
 import { and, eq } from 'drizzle-orm'
 
 import { gameMutationResultSchema, storeErrorCodeSchema } from '../schema'
-import { authorizeCommand } from '../command-authorization'
+import { authorizeCommand, stampEnteredBy } from '../command-authorization'
 import { executeCommand } from '../../orchestration/game-orchestrator'
 import {
   stampDiscussionDeadline,
@@ -94,7 +94,7 @@ export async function executeGameCommand(
       )
     }
 
-    const authorization = authorizeCommand(session, input.command)
+    const authorization = authorizeCommand(session, input.command, game.mode)
     if (!authorization.ok) return authorization
     // R23: player chỉ được END_GAME khi là chủ phòng ở SELF (game đã lock ở trên).
     if (input.command.type === 'END_GAME' && session.kind === 'PLAYER') {
@@ -131,25 +131,36 @@ export async function executeGameCommand(
     }
 
     let finalState = outcome.value.state
-    const humanEvents = outcome.value.events
+    // M4: nguồn nhập của event audit — session nào khởi phát lệnh thì action
+    // mang nguồn đó (bot confirm cùng transaction kế thừa).
+    const enteredBy: 'PLAYER' | 'MODERATOR' =
+      session.kind === 'MODERATOR' ? 'MODERATOR' : 'PLAYER'
+    const humanEvents = stampEnteredBy(outcome.value.events, enteredBy)
     let botEvents: GameEvent[] = []
     let botSteps: BotStep[] = []
 
-    // SELF: quản trò bot chạy tới fixpoint trong cùng transaction — người chơi
-    // gửi một lệnh, cả chuỗi confirm hệ thống ghi cùng một version.
-    if (game.mode === 'SELF') {
+    // M12: quản trò bot chạy tới fixpoint ở CẢ HAI mode — người chơi/quản trò
+    // gửi một lệnh, cả chuỗi confirm hệ thống ghi cùng một version. Allowlist
+    // theo mode quyết định bot được phát lệnh gì (MODERATED chỉ confirm step
+    // + tally; SELF giữ nguyên R20–R23).
+    {
       // Mốc thời gian gắn cả TRƯỚC lẫn SAU loop: DAY và step mới thường được
-      // tạo bên trong loop bởi chính bot.
-      stampDiscussionDeadline(finalState, now)
-      stampWaitingDeadline(finalState, now)
-      const bot = runBotLoop(finalState, { now, leftPlayerIds })
+      // tạo bên trong loop bởi chính bot. Cả hai hàm stamp tự no-op phần
+      // SELF-only khi mode là MODERATED (chỉ còn mốc VOTE cho alert M8).
+      stampDiscussionDeadline(finalState, now, game.mode)
+      stampWaitingDeadline(finalState, now, game.mode)
+      const bot = runBotLoop(finalState, {
+        now,
+        leftPlayerIds,
+        mode: game.mode,
+      })
       if (!bot.ok) {
         return failure(STORE_ERROR_CODE.INVALID_GAME_STATE, bot.error.message)
       }
       finalState = bot.state
-      stampDiscussionDeadline(finalState, now)
-      stampWaitingDeadline(finalState, now)
-      botEvents = bot.events
+      stampDiscussionDeadline(finalState, now, game.mode)
+      stampWaitingDeadline(finalState, now, game.mode)
+      botEvents = stampEnteredBy(bot.events, enteredBy)
       botSteps = bot.steps
     }
 

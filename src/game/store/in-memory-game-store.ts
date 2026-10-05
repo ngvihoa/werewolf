@@ -34,7 +34,7 @@ import {
   executeCommand,
 } from '../orchestration/game-orchestrator'
 
-import { authorizeCommand } from './command-authorization'
+import { authorizeCommand, stampEnteredBy } from './command-authorization'
 import { createRoomCode } from './utils.room-code'
 
 type StoreDependencies = {
@@ -502,7 +502,7 @@ export class InMemoryGameStore implements GameStore {
       return failure('INVALID_GAME_STATE', 'Game has not started')
     }
 
-    const authorization = authorizeCommand(session, input.command)
+    const authorization = authorizeCommand(session, input.command, game.mode)
     if (!authorization.ok) return authorization
     // R23: player chỉ được END_GAME khi là chủ phòng ở SELF.
     if (input.command.type === 'END_GAME' && session.kind === 'PLAYER') {
@@ -531,28 +531,35 @@ export class InMemoryGameStore implements GameStore {
     }
 
     let finalState = outcome.value.state
-    const humanEvents = outcome.value.events
+    // M4: nguồn nhập của event audit — session nào khởi phát lệnh thì action
+    // mang nguồn đó (bot confirm cùng "transaction" kế thừa).
+    const enteredBy: 'PLAYER' | 'MODERATOR' =
+      session.kind === 'MODERATOR' ? 'MODERATOR' : 'PLAYER'
+    const humanEvents = stampEnteredBy(outcome.value.events, enteredBy)
     let botEvents: GameEvent[] = []
 
-    // SELF: sau lệnh người chơi, quản trò bot chạy tới fixpoint trong cùng
-    // "transaction" — version chỉ tăng một lần cho cả thay đổi.
-    if (game.mode === 'SELF') {
+    // M12: sau lệnh người chơi, quản trò bot chạy tới fixpoint ở CẢ HAI mode
+    // trong cùng "transaction" — version chỉ tăng một lần cho cả thay đổi.
+    // Allowlist theo mode quyết định bot được phát lệnh gì.
+    {
       const now = this.#now()
       // Mốc thời gian có thể cần gắn cả TRƯỚC lẫn SAU loop: DAY và step mới
-      // thường được tạo bên trong loop bởi chính bot.
-      stampDiscussionDeadline(finalState, now)
-      stampWaitingDeadline(finalState, now)
+      // thường được tạo bên trong loop bởi chính bot. Cả hai hàm stamp tự
+      // no-op phần SELF-only khi mode là MODERATED.
+      stampDiscussionDeadline(finalState, now, game.mode)
+      stampWaitingDeadline(finalState, now, game.mode)
       const bot = runBotLoop(finalState, {
         now,
         leftPlayerIds: this.#leftPlayerIds(game),
+        mode: game.mode,
       })
       if (!bot.ok) {
         return failure('INVALID_GAME_STATE', bot.error.message)
       }
       finalState = bot.state
-      stampDiscussionDeadline(finalState, now)
-      stampWaitingDeadline(finalState, now)
-      botEvents = bot.events
+      stampDiscussionDeadline(finalState, now, game.mode)
+      stampWaitingDeadline(finalState, now, game.mode)
+      botEvents = stampEnteredBy(bot.events, enteredBy)
     }
 
     game.state = finalState
@@ -607,8 +614,15 @@ export class InMemoryGameStore implements GameStore {
 
     game.state = finalState
     game.version += 1
+    // Tick chỉ tồn tại ở SELF: action được bot confirm luôn do một người chơi
+    // submit ở transaction trước — nguồn nhập là PLAYER.
     if (bot.events.length > 0) {
-      this.#appendEvents(game, 'SYSTEM', null, bot.events)
+      this.#appendEvents(
+        game,
+        'SYSTEM',
+        null,
+        stampEnteredBy(bot.events, 'PLAYER'),
+      )
     }
     return success({ gameId: game.id, version: game.version })
   }

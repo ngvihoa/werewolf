@@ -23,6 +23,12 @@ export function getEventTargetPlayerId(event: GameEvent): string | null {
       return event.playerId
     case 'VOTE_SUBMITTED':
       return event.selectedPlayerId
+    // Revamp MODERATED (M9/M10): audit hoàn tác/override trỏ về chủ role và
+    // người bị đánh dấu để truy vấn theo người.
+    case 'STEP_UNDONE':
+      return event.action.actorId
+    case 'PLAYER_OVERRIDE_APPLIED':
+      return event.playerId
     default:
       return null
   }

@@ -290,3 +290,34 @@ Exit criteria:
 - An AFK player never deadlocks the game (timeout skip/abstain per R22).
 - MODERATED mode behavior is unchanged (regression suite green).
 - No new hidden-information leak; existing negative tests stay green.
+
+## Phase 10 - Revamp MODERATED: quản trò điều phối (moderator table)
+
+Goal: on a physical table, the moderator runs the whole night from their own
+screen while players only see their secret role on their devices. Detailed
+plan: `docs/revamp-moderator-mode.md` (decisions M1–M13, merged into
+R25–R31 in `docs/rules/08-mvp-rule-decisions.md`); task list:
+`docs/tasks-2026-10-04.md`. SELF mode must stay untouched.
+
+- [x] T1 Command `UNDO_STEP` + undo handler restoring consumed resources (R27)
+- [x] T2 Command `MODERATOR_OVERRIDE_MARK_DEAD` (R28)
+- [x] T3 `enteredBy` audit on night actions and hunter shot (R25)
+- [x] T4 Authorization per mode: proxy input as the main path, player blocked from night actions (R25)
+- [x] T5 Bot allowlist per mode: auto-confirm + tally, human gates at announcement milestones (R26)
+- [x] T6 Private-history parity + `enteredBy` labels (R30)
+- [x] T7 Minimal player view + vote candidate counts + moderator monitor (R29, R30)
+- [x] T8 Moderator night-action proxy form + night relay (R25)
+- [x] T9 Undo + override UI with reason dialogs (R27, R28)
+- [x] T10 Vote: start button, live monitor, alert-only timeout, manual-tally fallback (R29, R31)
+- [x] T11 New route `/table` + two-way guards (R30)
+- [x] T12 `/table` player screen: static night, private notebook (R30)
+- [x] T13 Dedicated e2e scenario `e2e/moderator-table.spec.ts` + multiplayer migration to proxy night
+- [x] T14 Dedicated capture run → `captures/` (per conventions in `captures/README.md`)
+- [x] T15 Merge decisions into rule docs (04/05/07/08 R25–R31) + this roadmap
+
+Exit criteria:
+
+- An 8-player MODERATED game runs from lobby to night 2 with proxy input,
+  undo, override, device voting and manual-tally fallback (e2e green).
+- Night screens of players never reveal queue progress or pacing (M13).
+- SELF mode behavior unchanged (regression suite green).

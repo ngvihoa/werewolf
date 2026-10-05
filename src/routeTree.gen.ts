@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as homeRouteRouteImport } from './routes/(home)/route'
 import { Route as GameRouteRouteImport } from './routes/game/route'
 import { Route as LobbyRouteRouteImport } from './routes/lobby/route'
+import { Route as TableRouteRouteImport } from './routes/table/route'
 import { Route as homeIndexRouteImport } from './routes/(home)/index'
 import { Route as homePlayRouteImport } from './routes/(home)/play'
 import { Route as homeRulesRouteImport } from './routes/(home)/rules'
@@ -30,6 +31,11 @@ const GameRouteRoute = GameRouteRouteImport.update({
 const LobbyRouteRoute = LobbyRouteRouteImport.update({
   id: '/lobby',
   path: '/lobby',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TableRouteRoute = TableRouteRouteImport.update({
+  id: '/table',
+  path: '/table',
   getParentRoute: () => rootRouteImport,
 } as any)
 const homeIndexRoute = homeIndexRouteImport.update({
@@ -61,6 +67,7 @@ const ApiRpcSplatRoute = ApiRpcSplatRouteImport.update({
 export interface FileRoutesByFullPath {
   '/game': typeof GameRouteRoute
   '/lobby': typeof LobbyRouteRoute
+  '/table': typeof TableRouteRoute
   '/play': typeof homePlayRoute
   '/rules': typeof homeRulesRoute
   '/': typeof homeIndexRoute
@@ -70,6 +77,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/game': typeof GameRouteRoute
   '/lobby': typeof LobbyRouteRoute
+  '/table': typeof TableRouteRoute
   '/play': typeof homePlayRoute
   '/rules': typeof homeRulesRoute
   '/': typeof homeIndexRoute
@@ -81,6 +89,7 @@ export interface FileRoutesById {
   '/(home)': typeof homeRouteRouteWithChildren
   '/game': typeof GameRouteRoute
   '/lobby': typeof LobbyRouteRoute
+  '/table': typeof TableRouteRoute
   '/(home)/play': typeof homePlayRoute
   '/(home)/rules': typeof homeRulesRoute
   '/(home)/': typeof homeIndexRoute
@@ -90,15 +99,30 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/game' | '/lobby' | '/play' | '/rules' | '/' | '/join/$code' | '/api/rpc/$'
+    | '/game'
+    | '/lobby'
+    | '/table'
+    | '/play'
+    | '/rules'
+    | '/'
+    | '/join/$code'
+    | '/api/rpc/$'
   fileRoutesByTo: FileRoutesByTo
   to:
-    '/game' | '/lobby' | '/play' | '/rules' | '/' | '/join/$code' | '/api/rpc/$'
+    | '/game'
+    | '/lobby'
+    | '/table'
+    | '/play'
+    | '/rules'
+    | '/'
+    | '/join/$code'
+    | '/api/rpc/$'
   id:
     | '__root__'
     | '/(home)'
     | '/game'
     | '/lobby'
+    | '/table'
     | '/(home)/play'
     | '/(home)/rules'
     | '/(home)/'
@@ -110,6 +134,7 @@ export interface RootRouteChildren {
   homeRouteRoute: typeof homeRouteRouteWithChildren
   GameRouteRoute: typeof GameRouteRoute
   LobbyRouteRoute: typeof LobbyRouteRoute
+  TableRouteRoute: typeof TableRouteRoute
   ApiRpcSplatRoute: typeof ApiRpcSplatRoute
 }
 
@@ -134,6 +159,13 @@ declare module '@tanstack/react-router' {
       path: '/lobby'
       fullPath: '/lobby'
       preLoaderRoute: typeof LobbyRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/table': {
+      id: '/table'
+      path: '/table'
+      fullPath: '/table'
+      preLoaderRoute: typeof TableRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/(home)/': {
@@ -196,6 +228,7 @@ const rootRouteChildren: RootRouteChildren = {
   homeRouteRoute: homeRouteRouteWithChildren,
   GameRouteRoute: GameRouteRoute,
   LobbyRouteRoute: LobbyRouteRoute,
+  TableRouteRoute: TableRouteRoute,
   ApiRpcSplatRoute: ApiRpcSplatRoute,
 }
 export const routeTree = rootRouteImport

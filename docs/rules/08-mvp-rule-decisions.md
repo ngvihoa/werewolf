@@ -10,32 +10,39 @@ Quy ước trạng thái:
 
 ## Tóm tắt phương án khuyến nghị
 
-| ID  | Luật                               | Mặc định đề xuất                                                   |
-| --- | ---------------------------------- | ------------------------------------------------------------------ |
-| R01 | Composition 5 người                | 1 Werewolf, 1 Seer, 3 Villagers                                    |
-| R02 | Composition 6 người                | 1 Werewolf, 1 Seer, 1 Witch, 3 Villagers                           |
-| R03 | Điều kiện Werewolf thắng           | Werewolf sống >= Village sống                                      |
-| R04 | Witch tự cứu                       | Cho phép                                                           |
-| R05 | Witch dùng hai bình cùng đêm       | Không cho phép                                                     |
-| R06 | Target của Poison                  | Player khác đang sống                                              |
-| R07 | Thông tin Witch nhận               | Biết chính xác người bị Werewolf chọn                              |
-| R08 | Witch bị tấn công                  | Vẫn được hành động trong đêm đó                                    |
-| R09 | Seer tự soi                        | Không cho phép                                                     |
-| R10 | Werewolf tự chọn                   | Không cho phép                                                     |
-| R11 | Kết quả soi                        | Exact role                                                         |
-| R12 | Công khai role khi chết            | Có                                                                 |
-| R13 | Quyền xem của người chết           | Chỉ thông tin công khai và private state của mình                  |
-| R14 | Vote hòa                           | Setting khi tạo phòng: revote 1 lần (mặc định) hoặc 1 lần duy nhất |
-| R15 | Player rời game                    | Tạm dừng để Moderator quyết định                                   |
-| R16 | Action bị reject                   | Lưu metadata và lý do, không công khai target                      |
-| R17 | Sửa role sau khi bắt đầu           | Không; chỉ qua manual override đặc biệt                            |
-| R18 | Override ảnh hưởng state           | Tự động tính lại win condition                                     |
-| R19 | Nhiều nguyên nhân chết cùng đêm    | Resolve đồng thời, một kết quả chết/player                         |
-| R20 | Vote ở chế độ không quản trò       | Bỏ phiếu trên thiết bị, bot tính phiếu                             |
-| R21 | Kết thúc thảo luận ban ngày (SELF) | Majority "Sẵn sàng bỏ phiếu" + timer tối thiểu                     |
-| R22 | Timeout action đêm và vote (SELF)  | Step đêm 45s, vote 60s; hết giờ skip/abstain                       |
-| R23 | Player rời game giữa ván (SELF)    | Không tự mark dead; auto skip/abstain, được quay lại               |
-| R24 | Cấu hình composition (SELF)        | Creator cấu hình như moderator trong lobby                         |
+| ID  | Luật                               | Mặc định đề xuất                                                           |
+| --- | ---------------------------------- | -------------------------------------------------------------------------- |
+| R01 | Composition 5 người                | 1 Werewolf, 1 Seer, 3 Villagers                                            |
+| R02 | Composition 6 người                | 1 Werewolf, 1 Seer, 1 Witch, 3 Villagers                                   |
+| R03 | Điều kiện Werewolf thắng           | Werewolf sống >= Village sống                                              |
+| R04 | Witch tự cứu                       | Cho phép                                                                   |
+| R05 | Witch dùng hai bình cùng đêm       | Không cho phép                                                             |
+| R06 | Target của Poison                  | Player khác đang sống                                                      |
+| R07 | Thông tin Witch nhận               | Biết chính xác người bị Werewolf chọn                                      |
+| R08 | Witch bị tấn công                  | Vẫn được hành động trong đêm đó                                            |
+| R09 | Seer tự soi                        | Không cho phép                                                             |
+| R10 | Werewolf tự chọn                   | Không cho phép                                                             |
+| R11 | Kết quả soi                        | Exact role                                                                 |
+| R12 | Công khai role khi chết            | Có                                                                         |
+| R13 | Quyền xem của người chết           | Chỉ thông tin công khai và private state của mình                          |
+| R14 | Vote hòa                           | Setting khi tạo phòng: revote 1 lần (mặc định) hoặc 1 lần duy nhất         |
+| R15 | Player rời game                    | Tạm dừng để Moderator quyết định                                           |
+| R16 | Action bị reject                   | Lưu metadata và lý do, không công khai target                              |
+| R17 | Sửa role sau khi bắt đầu           | Không; chỉ qua manual override đặc biệt                                    |
+| R18 | Override ảnh hưởng state           | Tự động tính lại win condition                                             |
+| R19 | Nhiều nguyên nhân chết cùng đêm    | Resolve đồng thời, một kết quả chết/player                                 |
+| R20 | Vote ở chế độ không quản trò       | Bỏ phiếu trên thiết bị, bot tính phiếu                                     |
+| R21 | Kết thúc thảo luận ban ngày (SELF) | Majority "Sẵn sàng bỏ phiếu" + timer tối thiểu                             |
+| R22 | Timeout action đêm và vote (SELF)  | Step đêm 45s, vote 60s; hết giờ skip/abstain                               |
+| R23 | Player rời game giữa ván (SELF)    | Không tự mark dead; auto skip/abstain, được quay lại                       |
+| R24 | Cấu hình composition (SELF)        | Creator cấu hình như moderator trong lobby                                 |
+| R25 | Hành động đêm ở MODERATED          | Quản trò nhập thay qua picker (proxy), audit `enteredBy`                   |
+| R26 | Bot ở MODERATED                    | Auto-confirm step đêm + tally; người gate 3 mốc công bố                    |
+| R27 | Hoàn tác bước đêm (MODERATED)      | `UNDO_STEP`: step cuối, trước gate bình minh, hoàn trả tài nguyên          |
+| R28 | Override của quản trò (MODERATED)  | `MARK_DEAD` tay với lý do; win condition tự tính lại                       |
+| R29 | Vote ban ngày (MODERATED)          | Thiết bị mặc định (counts live), đếm tay dự phòng; START_VOTE của quản trò |
+| R30 | Màn chơi player MODERATED          | Route `/table` riêng; đêm tĩnh; sổ tay riêng với nhãn nguồn                |
+| R31 | Timeout (MODERATED)                | Đêm không timeout; vote alert-only trên màn quản trò                       |
 
 ## Các quyết định
 
@@ -257,6 +264,126 @@ Kết luận: Đã chốt — không mark dead, auto skip/abstain.
       thuận nữa cho MVP.
 
 Kết luận: Đã chốt — creator cấu hình.
+
+## Quyết định cho chế độ quản trò điều phối (R25–R31)
+
+Revamp MODERATED (M1–M13, nguồn `docs/revamp-moderator-mode.md`): tách hẳn hai
+định danh sản phẩm trên cùng một engine — **SELF** giữ nguyên ("app là quản
+trò"), **MODERATED** trở thành "quản trò điều phối + app trợ lý" cho bàn vật lý.
+Luật chơi không đổi (win condition, R14, hàng đợi đêm, event sourcing); chỉ đổi
+_ai phát lệnh_ và _ai thấy gì_. SELF phải vô hình trước mọi thay đổi.
+
+### R25. Ai nhập hành động đêm ở MODERATED?
+
+- [x] **Quản trò nhập thay trên màn của mình qua picker (proxy, M2/M5,
+      Khuyến nghị).** Queue đêm cũ bắt buộc chủ role submit trên thiết bị —
+      ngầm giả định người chơi giữ máy mở suốt ván, trong khi app không có
+      wake lock/notification; màn hình sáng lúc đêm còn là "tell" lộ ai đang
+      hành động. Quản trò gọi từng vai theo hàng đợi, chọn giúp bằng picker có
+      validate của rule engine phản hồi ngay (dữ liệu game chỉ chọn — ô text
+      tự do chỉ dành cho lý do audit). Lệnh vẫn mang actorId của chủ role,
+      audit gắn `enteredBy: 'MODERATOR'`. Player bị chặn submit action đêm ở
+      MODERATED.
+- [ ] Player tự submit trên thiết bị (bản cũ). Điện thoại khóa màn hình là
+      treo cả đêm, không ai biết tới lượt của mình ngoài giọng quản trò.
+- [ ] Proxy chỉ là fallback khi player không submit. Hai đường song song làm
+      UI rối và không xóa được tell màn hình sáng.
+
+Kết luận: Đã chốt — proxy picker là đường chính; parity dữ liệu (R30) bảo đảm
+action nhập hộ vẫn chiếu về đúng chủ kèm nhãn nguồn.
+
+### R26. Bot ở MODERATED xác nhận cái gì?
+
+- [x] **Bot auto-confirm step đêm + tally; người gate 3 mốc công bố
+      (M3/M12, Khuyến nghị).** Thay nhánh cứng `mode === 'SELF'` bằng allowlist
+      command theo mode: bot phát `CONFIRM_STEP` ngay sau mỗi proxy submit
+      (hàng đợi tự tiến) và `SUBMIT_VOTE_RESULT` khi đủ phiếu; `CONFIRM_NIGHT_RESOLUTION`,
+      `CONFIRM_HUNTER_SHOT`, `CONFIRM_VOTE_RESULT` và `START_VOTE` là của người.
+      Bot im lặng ở consent R21, timeout R22 và skip — nhịp bàn thuộc về quản
+      trò.
+- [ ] Bot confirm tất cả như SELF. Mất quyền công bố — quản trò không còn vai
+      trò trọng tài.
+- [ ] Người confirm từng step. Trở lại nút bấm dày đặc mà revamp muốn xóa.
+
+Kết luận: Đã chốt — allowlist theo mode; `REJECT_STEP` không tồn tại ở
+MODERATED (cửa sổ confirm dài 0 giây dưới bot), lưới an toàn là `UNDO_STEP` (R27).
+
+### R27. Quản trò chọn nhầm thì sao? — hoàn tác bước đêm
+
+- [x] **`UNDO_STEP`: hoàn tác step COMPLETED cuối cùng của đêm hiện tại, lý do
+      bắt buộc (M9, Khuyến nghị).** Cửa sổ tới trước `CONFIRM_NIGHT_RESOLUTION`
+      — mọi thứ vẫn private, chết chóc chưa apply. Hoàn trả tài nguyên đã
+      consume (bình Witch, enhanced Alpha, killAvailable White Wolf, nối Cupid),
+      step về `ACTIVE`, các step ACTIVE phía sau (bot đã kích hoạt) về `PENDING`;
+      nếu state đã vào `NIGHT_RESOLUTION` thì revert phase. Event
+      `STEP_UNDONE { step, action, reason }`. Trên Postgres, row `CONFIRMED`
+      của step bị hoàn tác chuyển sang `CANCELLED` để attempt kế không va
+      partial unique index.
+- [ ] Không có undo, reject lúc submit. Quản trò proxy không có cửa sổ confirm
+      để bắt lỗi (bot confirm tức thì) — mis-tap là chết chóc.
+- [ ] Undo nhiều step / xuyên đêm. Vượt scope MVP; state cũ không còn tái tạo
+      được một cách tin cậy.
+
+Kết luận: Đã chốt — một step, một lần, trước gate bình minh.
+
+### R28. Override của quản trò ở MODERATED?
+
+- [x] **`MODERATOR_OVERRIDE_MARK_DEAD` duy nhất, lý do bắt buộc (M10, Khuyến
+      nghị).** Người bỏ về giữa ván được đánh dấu chết tay (thông lệ bàn vật
+      lý); queue tự skip role của người chết (`ROLE_OWNER_DEAD` có sẵn) và win
+      condition tự tính lại từ alive set — nhất quán R18. Không làm `MARK_LEFT`
+      ở revamp này để tránh đụng machinery R23 của SELF.
+- [ ] Bộ override đầy đủ (alive↔dead, restore ability, đổi target). Đụng quá
+      nhiều engine state cho MVP.
+- [ ] Không có override. Bàn vật lý chắc chắn gặp người bỏ về — ván kẹt.
+
+Kết luận: Đã chốt — chỉ MARK_DEAD với lý do bắt buộc, event `PLAYER_OVERRIDE_APPLIED`.
+
+### R29. Vote ban ngày diễn ra thế nào ở MODERATED?
+
+- [x] **Thiết bị là mặc định + fallback đếm tay; `START_VOTE` là nút của quản
+      trò (M6/M7, Khuyến nghị).** Không consent R21. Người chơi bỏ phiếu trên
+      thiết bị (tái dùng `SUBMIT_VOTE`), mọi người thấy counts live theo ứng
+      viên + x/y đã bỏ nhưng KHÔNG lộ ai vote ai; đủ phiếu bot tally, hòa xử
+      theo R14 voteTie. `CONFIRM_VOTE_RESULT` là gate công bố. Bàn không muốn
+      vote qua máy → quản trò nhập kết quả đếm tay trực tiếp (`SUBMIT_VOTE_RESULT`
+      với picker người/hòa). Hunter bị vote loại tự bấm phát bắn trên thiết bị
+      ban ngày; `CONFIRM_HUNTER_SHOT` là gate.
+- [ ] Chỉ nhập kết quả đếm tay (bản cũ). Mất counts live — lợi thế chính của
+      vote thiết bị.
+- [ ] Consent + thiết bị. Hai lớp đồng thuận dư thừa — nhịp bàn là quyền quản
+      trò.
+
+Kết luận: Đã chốt — thiết bị mặc định, đếm tay dự phòng.
+
+### R30. Người chơi MODERATED thấy gì và ở đâu?
+
+- [x] **Route riêng `/table`; đêm là màn tĩnh; sổ tay riêng tư (M1/M4/M11/M13,
+      Khuyến nghị).** Player MODERATED được redirect khỏi `/game` sang `/table`
+      (guards hai chiều; join không cần biết mode). Đêm: chỉ role card + lưới
+      public — không tiến trình queue, không countdown, không "đang chờ ai"
+      (chống tell ánh sáng lẫn nhịp đêm). Dữ liệu riêng theo vai (kết quả soi,
+      potion…) hiện ngay khi step được confirm — parity với việc họ tự nhập
+      (M4), mục lịch sử gắn nhãn nguồn "do quản trò nhập". Không có nút "Rời
+      ván" giữa chừng — người bỏ về do quản trò xử lý qua R28.
+- [ ] Dùng lại màn `/game` của SELF branch theo mode. Countdown/consent của
+      SELF lộ nhịp đêm; component rối đôi nhánh.
+- [ ] Đêm vẫn hiện hàng đợi ẩn danh. Vẫn tell nhịp — màn đổi mỗi step.
+
+Kết luận: Đã chốt — `/table`, màn tĩnh, parity dữ liệu.
+
+### R31. Timeout ở MODERATED thì sao?
+
+- [x] **Đêm không timeout; vote alert-only (M8, Khuyến nghị).** Nhịp đêm là
+      nhịp quản trò — người nhập luôn có mặt nên stall không tồn tại. Vote tái
+      dùng mốc `waitingDeadlineAt` của R22 nhưng hết hạn KHÔNG phát lệnh bot
+      nào: màn quản trò sáng đèn "quá giờ — đôn ngoài đời, skip, hay nhập
+      tay?" và người quyết. AUTO_SKIP không đưa vào MODERATED.
+- [ ] Timeouts như SELF (auto-skip). Bàn vật lý chậm là thật — tự skip là
+      mất quyền người chơi.
+- [ ] Không có alert. Quản trò phải tự canh giờ bằng tay.
+
+Kết luận: Đã chốt — không timeout đêm, vote alert-only.
 
 ## Cách chốt
 

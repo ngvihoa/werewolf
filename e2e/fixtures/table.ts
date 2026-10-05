@@ -103,9 +103,11 @@ export async function startTable(table: TestTable): Promise<void> {
   })
   await expect(start).toBeEnabled()
   await start.click()
+  // Revamp MODERATED (M11): quản trò ở /game, người chơi MODERATED được đá
+  // sang trang riêng /table.
   await expect(table.moderator.page).toHaveURL(/\/game$/)
   await Promise.all(
-    table.players.map(({ page }) => expect(page).toHaveURL(/\/game$/)),
+    table.players.map(({ page }) => expect(page).toHaveURL(/\/table$/)),
   )
 }
 
@@ -250,4 +252,128 @@ export async function startSelfTable(table: SelfTable): Promise<void> {
 // Tất cả người tham gia (host + players) — vai có thể rơi vào bất kỳ ai.
 export function selfParticipants(table: SelfTable): TablePlayer[] {
   return [table.host, ...table.players]
+}
+
+// ===== Revamp MODERATED (proxy input M2, bot auto-confirm M3) =====
+
+// Quản trò chọn giúp chủ role một mục tiêu ngay trên panel của mình. Bot
+// auto-confirm trong cùng lệnh nên sau hàm này step đã COMPLETED — step kế
+// xuất hiện với nút submit của vai đó. Scope vào <form> để không trúng token
+// cùng tên ở lưới roster bên dưới (strict mode).
+export async function proxyNightStep(
+  moderatorPage: Page,
+  options: {
+    submitLabel: string
+    targetName?: string
+    secondTargetName?: string
+  },
+): Promise<void> {
+  const form = moderatorPage.locator('form').filter({
+    has: moderatorPage.getByRole('button', {
+      name: options.submitLabel,
+      exact: true,
+    }),
+  })
+  if (options.targetName) {
+    await form
+      .getByRole('button', { name: options.targetName, exact: true })
+      .click()
+  }
+  if (options.secondTargetName) {
+    await form
+      .getByRole('button', { name: options.secondTargetName, exact: true })
+      .click()
+  }
+  const submit = form.getByRole('button', {
+    name: options.submitLabel,
+    exact: true,
+  })
+  await submit.click()
+  await expect(submit).toBeHidden()
+}
+
+// M9: hoàn tác bước đêm cuối qua dialog — bước trở lại ACTIVE, quản trò
+// chọn lại được.
+export async function undoLastNightStep(moderatorPage: Page): Promise<void> {
+  await moderatorPage
+    .getByRole('button', { name: 'Hoàn tác bước vừa rồi' })
+    .click()
+  const dialog = moderatorPage.locator('dialog[open]')
+  await expect(dialog).toBeVisible()
+  await dialog.getByLabel('Lý do hoàn tác (bắt buộc)').fill('E2E: chọn nhầm')
+  await dialog.getByRole('button', { name: 'Hoàn tác', exact: true }).click()
+  await expect(dialog).toBeHidden()
+  // Form proxy giữ state đã chọn trong React — reload để bước trở lại với
+  // picker sạch (như quản trò thật nhìn lại màn).
+  await moderatorPage.reload()
+}
+
+// M10: đánh dấu người sống bị loại khỏi ván qua dialog override.
+export async function overrideMarkDead(
+  moderatorPage: Page,
+  playerName: string,
+): Promise<void> {
+  await moderatorPage
+    .getByRole('button', { name: 'Đánh dấu người bỏ khỏi ván' })
+    .click()
+  const dialog = moderatorPage.locator('dialog[open]')
+  await expect(dialog).toBeVisible()
+  await dialog.getByRole('button', { name: playerName, exact: true }).click()
+  await dialog.getByLabel('Lý do (bắt buộc)').fill('E2E: bỏ về giữa ván')
+  await dialog
+    .getByRole('button', { name: 'Đánh dấu đã chết', exact: true })
+    .click()
+  await expect(dialog).toBeHidden()
+}
+
+// M6: một người chơi bỏ phiếu trên /table — targetName rỗng = phiếu trắng.
+export async function castTableVote(
+  player: TablePlayer,
+  targetName?: string,
+): Promise<void> {
+  await player.page.reload()
+  if (targetName) {
+    await player.page
+      .getByRole('button', { name: targetName, exact: true })
+      .click()
+  } else {
+    await player.page.getByLabel(/Bỏ phiếu trắng/).check()
+  }
+  const submit = player.page.getByRole('button', { name: 'Ghi phiếu' })
+  await submit.click()
+  await expect(player.page.getByText('Đã ghi phiếu của bạn')).toBeVisible({
+    timeout: 10_000,
+  })
+}
+
+// Revamp MODERATED: đọc bảng vai ngay từ god-view roster của Quản trò
+// (mỗi token hiện tên + nhãn vai) — thay vì mở dialog từng người chơi
+// (findPlayerByRole là O(n) page-ops, đắt trong fixture 8 người). Trả danh
+// sách tên theo NHÃN VAI để bắt được role nhóm (8 người có 2 Ma sói).
+export async function findRoleOwners(
+  moderatorPage: Page,
+): Promise<Map<string, string[]>> {
+  const map = new Map<string, string[]>()
+  const items = moderatorPage.getByRole('listitem')
+  const count = await items.count()
+  for (let index = 0; index < count; index += 1) {
+    const lines = (await items.nth(index).innerText())
+      .split('\n')
+      .map((line) => line.trim())
+    // Cấu trúc roster: dòng 1 = tên, dòng 2 = nhãn vai. Listitem của queue
+    // / picker có nhãn khác (vd "Thợ săn chọn mục tiêu", số thứ tự) — không
+    // trùng key nhãn vai nên vô hại.
+    if (lines.length >= 2 && lines[0] && lines[1]) {
+      const owners = map.get(lines[1]) ?? []
+      if (!owners.includes(lines[0])) owners.push(lines[0])
+      map.set(lines[1], owners)
+    }
+  }
+  return map
+}
+
+export function playerByName(table: TestTable, name: string): TablePlayer {
+  const player = table.players.find((candidate) => candidate.name === name)
+  if (!player) throw new Error(`No player named "${name}"`)
+  return player
 }

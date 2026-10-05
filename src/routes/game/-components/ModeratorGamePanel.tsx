@@ -6,11 +6,16 @@ import { InlineError } from '#/components/InlineError'
 import { useState } from 'react'
 
 import { moderatorPhaseDescription, moderatorPhaseTitle } from './game-copy'
+import { OverrideMarkDeadControl } from './OverrideMarkDeadControl'
 import { VoteResolutionControl } from './VoteResolutionControl'
+import { NightActionProxyForm } from './NightActionProxyForm'
 import { ResolutionControl } from './ResolutionControl'
+import { UndoStepControl } from './UndoStepControl'
 import { CommandButton } from './CommandButton'
 import { PendingAction } from './PendingAction'
+import { VoteMonitor } from './VoteMonitor'
 import { SkipControl } from './SkipControl'
+import { NightRelay } from './NightRelay'
 import { NightQueue } from './NightQueue'
 import { GameOver } from './GameOver'
 import { VoteForm } from './VoteForm'
@@ -55,6 +60,25 @@ export function ModeratorGamePanel({
       </div>
 
       {state.phase === 'NIGHT' ? <NightQueue queue={state.queue} /> : null}
+      {state.phase === 'NIGHT' ? (
+        <NightRelay state={state} names={names} />
+      ) : null}
+      {/* Revamp MODERATED (M2): đêm thuộc quản trò — khi step ACTIVE mà chưa
+          có action chờ, quản trò nhập thay bằng picker; bot tự confirm ngay
+          trong cùng lệnh (M3), nên PendingAction hiếm khi thấy. */}
+      {state.phase === 'NIGHT' &&
+      activeItem?.status === 'ACTIVE' &&
+      !state.pendingNightAction ? (
+        <NightActionProxyForm
+          // key theo vòng+step: picker là state nội bộ — đổi bước đêm phải
+          // reset (nếu không, mục tiêu của bước trước trôi sang picker kế).
+          key={`${state.round}-${activeItem.step}`}
+          state={state}
+          names={names}
+          pending={pending}
+          onCommand={onCommand}
+        />
+      ) : null}
       {state.phase === 'NIGHT' && state.pendingNightAction ? (
         <PendingAction
           action={state.pendingNightAction}
@@ -65,6 +89,14 @@ export function ModeratorGamePanel({
       ) : null}
       {state.phase === 'NIGHT' && activeItem?.status === 'ACTIVE' ? (
         <SkipControl pending={pending} onCommand={onCommand} />
+      ) : null}
+      {state.phase === 'NIGHT' || state.phase === 'NIGHT_RESOLUTION' ? (
+        <UndoStepControl
+          state={state}
+          names={names}
+          pending={pending}
+          onCommand={onCommand}
+        />
       ) : null}
       {state.phase === 'NIGHT_RESOLUTION' ? (
         <ResolutionControl
@@ -87,17 +119,33 @@ export function ModeratorGamePanel({
         </CommandButton>
       ) : null}
       {state.phase === 'VOTE' ? (
-        <VoteForm
-          players={livingPlayers.map((player) => ({
-            id: player.id,
-            displayName: names.get(player.id) ?? 'Người chơi',
-          }))}
-          attempt={state.voteAttempt}
-          pending={pending}
-          onSubmit={(tied, selectedPlayerId) =>
-            onCommand({ type: 'SUBMIT_VOTE_RESULT', tied, selectedPlayerId })
-          }
-        />
+        <>
+          <VoteMonitor state={state} names={names} />
+          {/* M6: biểu quyết qua thiết bị là mặc định; form đếm tay là lối
+              thoát (bàn không dùng máy / máy lỗi / dồn phiếu cuối). */}
+          <details className="flex flex-col gap-3 border-t border-line pt-5">
+            <summary className="cursor-pointer text-sm/6 text-ink-muted">
+              Nhập kết quả đếm tay (dự phòng)
+            </summary>
+            <div className="pt-3">
+              <VoteForm
+                players={livingPlayers.map((player) => ({
+                  id: player.id,
+                  displayName: names.get(player.id) ?? 'Người chơi',
+                }))}
+                attempt={state.voteAttempt}
+                pending={pending}
+                onSubmit={(tied, selectedPlayerId) =>
+                  onCommand({
+                    type: 'SUBMIT_VOTE_RESULT',
+                    tied,
+                    selectedPlayerId,
+                  })
+                }
+              />
+            </div>
+          </details>
+        </>
       ) : null}
       {state.phase === 'VOTE_RESOLUTION' ? (
         <VoteResolutionControl
@@ -125,6 +173,14 @@ export function ModeratorGamePanel({
         ) : (
           <WaitingState title="Đang chờ Thợ săn chọn người kéo theo." />
         )
+      ) : null}
+      {state.winner === null && state.phase !== 'GAME_OVER' ? (
+        <OverrideMarkDeadControl
+          state={state}
+          names={names}
+          pending={pending}
+          onCommand={onCommand}
+        />
       ) : null}
       {state.phase === 'GAME_OVER' ? (
         <div className="flex flex-col gap-5">

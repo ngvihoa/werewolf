@@ -564,3 +564,333 @@ describe('vote orchestration', () => {
     })
   })
 })
+
+describe('night undo (revamp MODERATED, M9)', () => {
+  it('restores witch potions and reactivates the step', () => {
+    const players: Player[] = [
+      ...fivePlayers.filter((player) => player.role !== 'VILLAGER'),
+      {
+        id: 'witch',
+        role: 'WITCH',
+        alive: true,
+        abilityState: {
+          healingPotionAvailable: true,
+          poisonPotionAvailable: true,
+        },
+      },
+      { id: 'v', role: 'VILLAGER', alive: true, abilityState: null },
+    ]
+    let state = createFirstNightState(players)
+    state = run(state, { type: 'SKIP_STEP', reason: 'Skip Seer' }).state
+    state = run(state, {
+      type: 'SUBMIT_NIGHT_ACTION',
+      action: { type: 'WEREWOLF_ATTACK', actorId: 'wolf', targetId: 'v' },
+    }).state
+    state = run(state, { type: 'CONFIRM_STEP' }).state
+    state = run(state, {
+      type: 'SUBMIT_NIGHT_ACTION',
+      action: {
+        type: 'WITCH_ACTION',
+        actorId: 'witch',
+        heal: true,
+        poisonTargetId: null,
+      },
+    }).state
+    state = run(state, { type: 'CONFIRM_STEP' }).state
+    expect(
+      state.players.find((player) => player.role === 'WITCH')?.abilityState,
+    ).toEqual({ healingPotionAvailable: false, poisonPotionAvailable: true })
+
+    const undone = run(state, { type: 'UNDO_STEP', reason: 'Sai lựa chọn' })
+    expect(
+      undone.state.players.find((player) => player.role === 'WITCH')
+        ?.abilityState,
+    ).toEqual({ healingPotionAvailable: true, poisonPotionAvailable: true })
+    expect(undone.state.confirmedNightActions).toHaveLength(1)
+    expect(undone.state.pendingNightAction).toBeNull()
+    const witchStep = undone.state.queue.find(
+      (item) => item.step === 'WITCH_ACTION',
+    )
+    expect(witchStep?.status).toBe('ACTIVE')
+    expect(undone.events.at(-1)).toMatchObject({
+      type: 'STEP_UNDONE',
+      step: 'WITCH_ACTION',
+    })
+
+    // Nộp lại được ngay sau khi hoàn tác.
+    state = run(undone.state, {
+      type: 'SUBMIT_NIGHT_ACTION',
+      action: {
+        type: 'WITCH_ACTION',
+        actorId: 'witch',
+        heal: true,
+        poisonTargetId: null,
+      },
+    }).state
+    expect(
+      state.queue.find((item) => item.step === 'WITCH_ACTION')?.status,
+    ).toBe('WAITING_MODERATOR_CONFIRMATION')
+  })
+
+  it('reverts NIGHT_RESOLUTION back to NIGHT when undoing the last step', () => {
+    let state = createFirstNightState(fivePlayers)
+    state = run(state, {
+      type: 'SUBMIT_NIGHT_ACTION',
+      action: { type: 'SEER_INSPECT', actorId: 'seer', targetId: 'wolf' },
+    }).state
+    state = run(state, { type: 'CONFIRM_STEP' }).state
+    state = run(state, {
+      type: 'SUBMIT_NIGHT_ACTION',
+      action: { type: 'WEREWOLF_ATTACK', actorId: 'wolf', targetId: 'a' },
+    }).state
+    state = run(state, { type: 'CONFIRM_STEP' }).state
+    expect(state.phase).toBe('NIGHT_RESOLUTION')
+    expect(state.pendingNightResolution?.deaths).toEqual([
+      { playerId: 'a', causes: ['WEREWOLF_ATTACK'] },
+    ])
+
+    const undone = run(state, { type: 'UNDO_STEP', reason: 'Sói bấm nhầm' })
+    expect(undone.state.phase).toBe('NIGHT')
+    expect(undone.state.pendingNightResolution).toBeNull()
+    expect(undone.state.confirmedNightActions).toEqual([
+      { type: 'SEER_INSPECT', actorId: 'seer', targetId: 'wolf' },
+    ])
+    expect(
+      undone.state.queue.find((item) => item.step === 'WEREWOLF_ATTACK')
+        ?.status,
+    ).toBe('ACTIVE')
+    expect(undone.events).toContainEqual({
+      type: 'PHASE_CHANGED',
+      from: 'NIGHT_RESOLUTION',
+      to: 'NIGHT',
+    })
+
+    // Sói chọn lại nạn nhân khác — kết quả đêm phản ánh lựa chọn mới.
+    state = run(undone.state, {
+      type: 'SUBMIT_NIGHT_ACTION',
+      action: { type: 'WEREWOLF_ATTACK', actorId: 'wolf', targetId: 'b' },
+    }).state
+    state = run(state, { type: 'CONFIRM_STEP' }).state
+    expect(state.pendingNightResolution?.deaths).toEqual([
+      { playerId: 'b', causes: ['WEREWOLF_ATTACK'] },
+    ])
+  })
+
+  it('reverts the later-activated step to PENDING so only one step is ACTIVE', () => {
+    let state = createFirstNightState(fivePlayers)
+    state = run(state, {
+      type: 'SUBMIT_NIGHT_ACTION',
+      action: { type: 'SEER_INSPECT', actorId: 'seer', targetId: 'wolf' },
+    }).state
+    state = run(state, { type: 'CONFIRM_STEP' }).state
+    // Step WEREWOLF_ATTACK đã ACTIVE là hệ quả của confirm trên.
+    expect(
+      state.queue.find((item) => item.step === 'WEREWOLF_ATTACK')?.status,
+    ).toBe('ACTIVE')
+
+    const undone = run(state, { type: 'UNDO_STEP', reason: 'Sai mục tiêu' })
+    const seerStep = undone.state.queue.find(
+      (item) => item.step === 'SEER_INSPECT',
+    )
+    const wolfStep = undone.state.queue.find(
+      (item) => item.step === 'WEREWOLF_ATTACK',
+    )
+    expect(seerStep?.status).toBe('ACTIVE')
+    expect(wolfStep?.status).toBe('PENDING')
+
+    // Đêm chạy lại từ Tiên tri: confirm xong Wolf ACTIVE lại đúng thứ tự.
+    state = run(undone.state, {
+      type: 'SUBMIT_NIGHT_ACTION',
+      action: { type: 'SEER_INSPECT', actorId: 'seer', targetId: 'a' },
+    }).state
+    state = run(state, { type: 'CONFIRM_STEP' }).state
+    expect(
+      state.queue.find((item) => item.step === 'WEREWOLF_ATTACK')?.status,
+    ).toBe('ACTIVE')
+    expect(state.queue.filter((item) => item.status === 'ACTIVE')).toHaveLength(
+      1,
+    )
+  })
+
+  it('unlinks lovers when undoing CUPID_LINK', () => {
+    const players: Player[] = [
+      ...fivePlayers,
+      { id: 'cupid', role: 'CUPID', alive: true, abilityState: null },
+    ]
+    let state = createFirstNightState(players)
+    state = run(state, {
+      type: 'SUBMIT_NIGHT_ACTION',
+      action: {
+        type: 'CUPID_LINK',
+        actorId: 'cupid',
+        targetIds: ['a', 'wolf'],
+      },
+    }).state
+    state = run(state, { type: 'CONFIRM_STEP' }).state
+    expect(state.loverIds).toEqual(['a', 'wolf'])
+
+    const undone = run(state, { type: 'UNDO_STEP', reason: 'Nhầm cặp' })
+    expect(undone.state.loverIds).toBeNull()
+    expect(
+      undone.state.queue.find((item) => item.step === 'CUPID_LINK')?.status,
+    ).toBe('ACTIVE')
+  })
+
+  it('rejects undo without reason, on a fresh night, or after the night is announced', () => {
+    const fresh = createFirstNightState(fivePlayers)
+    expect(
+      executeCommand(fresh, { type: 'UNDO_STEP', reason: 'X' }),
+    ).toMatchObject({
+      ok: false,
+      error: { code: 'INVALID_ACTION' },
+    })
+    expect(
+      executeCommand(fresh, { type: 'UNDO_STEP', reason: '  ' }),
+    ).toMatchObject({
+      ok: false,
+      error: { code: 'INVALID_ACTION' },
+    })
+
+    let state = createFirstNightState(fivePlayers)
+    state = run(state, {
+      type: 'SUBMIT_NIGHT_ACTION',
+      action: { type: 'SEER_INSPECT', actorId: 'seer', targetId: 'wolf' },
+    }).state
+    state = run(state, { type: 'CONFIRM_STEP' }).state
+    state = run(state, {
+      type: 'SUBMIT_NIGHT_ACTION',
+      action: { type: 'WEREWOLF_ATTACK', actorId: 'wolf', targetId: 'a' },
+    }).state
+    state = run(state, { type: 'CONFIRM_STEP' }).state
+    state = run(state, { type: 'CONFIRM_NIGHT_RESOLUTION' }).state
+    expect(state.phase).toBe('DAY')
+    // Sang ngày rồi thì đêm đã công bố — hết cửa sổ hoàn tác.
+    expect(
+      executeCommand(state, { type: 'UNDO_STEP', reason: 'X' }),
+    ).toMatchObject({
+      ok: false,
+      error: { code: 'INVALID_ACTION' },
+    })
+  })
+})
+
+describe('moderator override mark dead (revamp MODERATED, M10)', () => {
+  it('skips the active step whose owner died and advances the night', () => {
+    const outcome = run(createFirstNightState(fivePlayers), {
+      type: 'MODERATOR_OVERRIDE_MARK_DEAD',
+      playerId: 'seer',
+      reason: 'Bỏ về giữa ván',
+    })
+    const state = outcome.state
+
+    expect(state.players.find((player) => player.id === 'seer')?.alive).toBe(
+      false,
+    )
+    expect(outcome.events).toContainEqual({
+      type: 'PLAYER_OVERRIDE_APPLIED',
+      playerId: 'seer',
+      reason: 'Bỏ về giữa ván',
+    })
+    expect(outcome.events).toContainEqual({
+      type: 'QUEUE_STEP_SKIPPED',
+      step: 'SEER_INSPECT',
+      reason: 'MODERATOR_OVERRIDE',
+    })
+    expect(
+      state.queue.find((item) => item.step === 'WEREWOLF_ATTACK')?.status,
+    ).toBe('ACTIVE')
+  })
+
+  it('does not skip the werewolf step while another wolf still sits at the table', () => {
+    const players: Player[] = [
+      ...fivePlayers.filter((player) => player.id !== 'wolf'),
+      { id: 'wolf1', role: 'WEREWOLF', alive: true, abilityState: null },
+      { id: 'wolf2', role: 'WEREWOLF', alive: true, abilityState: null },
+    ]
+    let state = createFirstNightState(players)
+    state = run(state, {
+      type: 'MODERATOR_OVERRIDE_MARK_DEAD',
+      playerId: 'wolf1',
+      reason: 'Bỏ về giữa ván',
+    }).state
+
+    expect(
+      state.queue.find((item) => item.step === 'WEREWOLF_ATTACK')?.status,
+    ).toBe('PENDING')
+  })
+
+  it('ends the game at the next gate when the override settles the win', () => {
+    let state = createFirstNightState(fivePlayers)
+    state = run(state, {
+      type: 'MODERATOR_OVERRIDE_MARK_DEAD',
+      playerId: 'wolf',
+      reason: 'Bỏ về giữa ván',
+    }).state
+    state = run(state, { type: 'SKIP_STEP', reason: 'Skip Seer' }).state
+    // Wolf step tự skip ROLE_OWNER_DEAD khi advance, đêm hết → chờ gate.
+    expect(state.phase).toBe('NIGHT_RESOLUTION')
+
+    state = run(state, { type: 'CONFIRM_NIGHT_RESOLUTION' }).state
+    expect(state.winner).toBe('VILLAGE')
+    expect(state.phase).toBe('GAME_OVER')
+  })
+
+  it('does not double-report a death the resolution already contains', () => {
+    let state = createFirstNightState(fivePlayers)
+    state = run(state, { type: 'SKIP_STEP', reason: 'Skip Seer' }).state
+    state = run(state, {
+      type: 'SUBMIT_NIGHT_ACTION',
+      action: { type: 'WEREWOLF_ATTACK', actorId: 'wolf', targetId: 'a' },
+    }).state
+    state = run(state, { type: 'CONFIRM_STEP' }).state
+    expect(state.phase).toBe('NIGHT_RESOLUTION')
+
+    // Override đúng người nằm sẵn trong resolution — chết một lần duy nhất.
+    const overrideOutcome = run(state, {
+      type: 'MODERATOR_OVERRIDE_MARK_DEAD',
+      playerId: 'a',
+      reason: 'Bỏ về giữa ván',
+    })
+    state = overrideOutcome.state
+    const confirmOutcome = run(state, { type: 'CONFIRM_NIGHT_RESOLUTION' })
+    state = confirmOutcome.state
+
+    const allEvents = [...overrideOutcome.events, ...confirmOutcome.events]
+    const diedEvents = allEvents.filter(
+      (event) => event.type === 'PLAYER_DIED' && event.playerId === 'a',
+    )
+    expect(diedEvents).toHaveLength(1)
+    expect(state.phase).toBe('DAY')
+  })
+
+  it('rejects overrides for unknown, already dead, or finished games', () => {
+    let state = createFirstNightState(fivePlayers)
+    expect(
+      executeCommand(state, {
+        type: 'MODERATOR_OVERRIDE_MARK_DEAD',
+        playerId: 'ghost',
+        reason: 'X',
+      }),
+    ).toMatchObject({ ok: false, error: { code: 'INVALID_TARGET' } })
+
+    state = run(state, {
+      type: 'MODERATOR_OVERRIDE_MARK_DEAD',
+      playerId: 'a',
+      reason: 'Bỏ về giữa ván',
+    }).state
+    expect(
+      executeCommand(state, {
+        type: 'MODERATOR_OVERRIDE_MARK_DEAD',
+        playerId: 'a',
+        reason: 'Lần nữa',
+      }),
+    ).toMatchObject({ ok: false, error: { code: 'INVALID_TARGET' } })
+    expect(
+      executeCommand(state, {
+        type: 'MODERATOR_OVERRIDE_MARK_DEAD',
+        playerId: 'b',
+        reason: '  ',
+      }),
+    ).toMatchObject({ ok: false, error: { code: 'INVALID_ACTION' } })
+  })
+})

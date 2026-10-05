@@ -23,6 +23,15 @@ export const gameCommandSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('CONFIRM_STEP') }),
   z.object({ type: z.literal('REJECT_STEP'), reason: z.string().min(1) }),
   z.object({ type: z.literal('SKIP_STEP'), reason: z.string().min(1) }),
+  // Revamp MODERATED (M9): hoàn tác action đêm cuối cùng — lý do bắt buộc.
+  z.object({ type: z.literal('UNDO_STEP'), reason: z.string().min(1) }),
+  // Revamp MODERATED (M10): đánh dấu người chơi chết tay vì ngoại lệ bàn
+  // (bỏ về giữa ván…) — lý do bắt buộc để audit.
+  z.object({
+    type: z.literal('MODERATOR_OVERRIDE_MARK_DEAD'),
+    playerId: z.string().min(1),
+    reason: z.string().min(1),
+  }),
   z.object({ type: z.literal('CONFIRM_NIGHT_RESOLUTION') }),
   z.object({ type: z.literal('START_VOTE') }),
   z.object({
@@ -55,6 +64,11 @@ export const gameCommandSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('END_GAME'), reason: z.string().min(1) }),
 ])
 
+// Revamp MODERATED (M4): nguồn nhập của action — dùng cho audit và nhãn
+// "do quản trò nhập" trên thiết bị người chơi.
+export const enteredBySchema = z.enum(['PLAYER', 'MODERATOR'])
+export type EnteredBy = z.infer<typeof enteredBySchema>
+
 // Event cũng là một IO boundary vì được lưu vào PostgreSQL dưới dạng type + JSONB.
 // Discriminated union bảo đảm mỗi type chỉ đi cùng payload tương ứng.
 export const gameEventSchema = z.discriminatedUnion('type', [
@@ -70,10 +84,14 @@ export const gameEventSchema = z.discriminatedUnion('type', [
   z.object({
     type: z.literal('NIGHT_ACTION_SUBMITTED'),
     action: nightActionSchema,
+    // Revamp MODERATED (M4): ai là người nhập action — người chơi trên thiết
+    // bị hay quản trò nhập thay. Optional: event cũ trong DB không có trường.
+    enteredBy: enteredBySchema.optional(),
   }),
   z.object({
     type: z.literal('NIGHT_ACTION_CONFIRMED'),
     action: nightActionSchema,
+    enteredBy: enteredBySchema.optional(),
   }),
   z.object({
     type: z.literal('SEER_RESULT_RECORDED'),
@@ -129,6 +147,7 @@ export const gameEventSchema = z.discriminatedUnion('type', [
     type: z.literal('HUNTER_SHOT_SUBMITTED'),
     hunterId: z.string().min(1),
     targetId: z.string().min(1),
+    enteredBy: enteredBySchema.optional(),
   }),
   z.object({
     type: z.literal('HUNTER_SHOT_CONFIRMED'),
@@ -137,6 +156,22 @@ export const gameEventSchema = z.discriminatedUnion('type', [
   }),
   // Audit-only: bot/hệ thống bỏ qua phát bắn (hết giờ R22).
   z.object({ type: z.literal('HUNTER_SHOT_SKIPPED') }),
+  // Revamp MODERATED (M9): audit hoàn tác — projection xóa các entry riêng
+  // tương ứng với action này khỏi history của chủ role (bù trừ, xem
+  // project-game-view). Reason mang ngữ cảnh vì sao quản trò hoàn tác.
+  z.object({
+    type: z.literal('STEP_UNDONE'),
+    step: queueStepSchema,
+    action: nightActionSchema,
+    reason: z.string().min(1),
+  }),
+  // Revamp MODERATED (M10): đánh dấu chết tay — audit-only, công khai chỉ qua
+  // PLAYER_DIED do handler phát kèm.
+  z.object({
+    type: z.literal('PLAYER_OVERRIDE_APPLIED'),
+    playerId: z.string().min(1),
+    reason: z.string().min(1),
+  }),
   // R23: kết thúc ván sớm — audit-only (công khai chỉ qua PHASE_CHANGED).
   z.object({
     type: z.literal('GAME_ENDED_MANUAL'),

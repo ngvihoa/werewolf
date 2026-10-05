@@ -54,7 +54,7 @@ export function RoomHeader({
                   ? 'Đã sao chép mã phòng'
                   : 'Sao chép mã phòng'
               }
-              className="flex h-10 items-center gap-2 rounded-full bg-midnight/75 pr-3.5 pl-4 ring-1 ring-line-strong backdrop-blur-sm transition-colors hover:bg-midnight/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500"
+              className="flex h-10 items-center gap-2 rounded-full bg-midnight/90 pr-3.5 pl-4 ring-1 ring-line-strong backdrop-blur-sm transition-colors hover:bg-midnight/95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500"
               title={
                 copyStatus === 'COPIED'
                   ? 'Đã sao chép'

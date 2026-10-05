@@ -129,6 +129,11 @@ function GamePage() {
 
   const view = viewQuery.data
   const isModerator = view.viewer === 'MODERATOR'
+  // Revamp MODERATED (M11): guard hai chiều — người chơi MODERATED có trang
+  // riêng /table (màn tĩnh đêm + biểu quyết ban ngày).
+  if (!isModerator && view.gameMode === 'MODERATED') {
+    return <Navigate to="/table" replace />
+  }
   const roomCode = isModerator ? view.game.roomCode : view.roomCode
   const players = isModerator
     ? view.game.lobbyPlayers.map((player) => ({

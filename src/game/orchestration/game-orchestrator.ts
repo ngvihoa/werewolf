@@ -1,4 +1,4 @@
-import type { DomainError, Player, Result } from '../domain'
+import type { DomainError, Player, QueueStep, Result } from '../domain'
 import type { GameState, NightQueueItem } from './model'
 import type { NightAction } from '../rules/night-actions'
 import type { GameCommand } from './commands'
@@ -62,6 +62,10 @@ export function executeCommand(
       return rejectStep(state, command.reason, events)
     case 'SKIP_STEP':
       return skipStep(state, command.reason, events)
+    case 'UNDO_STEP':
+      return undoStep(state, command.reason, events)
+    case 'MODERATOR_OVERRIDE_MARK_DEAD':
+      return overrideMarkDead(state, command.playerId, command.reason, events)
     case 'CONFIRM_NIGHT_RESOLUTION':
       return confirmNightResolution(state, events)
     case 'START_VOTE':
@@ -196,6 +200,161 @@ function skipStep(
   })
   advanceNight(state, events)
   return success(state, events)
+}
+
+// Revamp MODERATED (M9): hoàn tác action đêm cuối cùng. Quản trò là người
+// nhập duy nhất nên mis-tap không còn cửa sổ confirm để bắt — undo là lưới
+// an toàn. Chỉ step COMPLETED cuối cùng của đêm hiện tại, và phải trước khi
+// đêm được công bố (mọi dữ liệu đêm vẫn riêng tư nên hoàn tác an toàn về
+// thông tin). Tài nguyên đã consume lúc confirm được hoàn trả đúng bằng.
+function undoStep(
+  state: GameState,
+  reason: string,
+  events: GameEvent[],
+): Result<CommandOutcome> {
+  if (state.phase !== 'NIGHT' && state.phase !== 'NIGHT_RESOLUTION') {
+    return invalidPhase('NIGHT', state.phase)
+  }
+  if (!reason.trim()) return reasonRequired()
+  if (state.pendingNightAction) {
+    return failure(
+      'INVALID_ACTION',
+      'Wait for the pending action to resolve before undoing',
+    )
+  }
+  const action = state.confirmedNightActions.at(-1)
+  if (!action) {
+    return failure('INVALID_ACTION', 'No completed night step to undo')
+  }
+  // Tên step trùng khớp tên action type theo design queue (getNightQueue).
+  const item = state.queue.find(
+    (queueItem) =>
+      queueItem.step === action.type && queueItem.status === 'COMPLETED',
+  )
+  if (!item) {
+    return failure(
+      'INVALID_ACTION',
+      'The last action does not match any completed step',
+    )
+  }
+
+  restoreConsumedResources(state, action)
+  state.confirmedNightActions.pop()
+  // Mọi step ACTIVE phía sau là hệ quả của action bị hoàn tác (bot đã kích
+  // hoạt bước kế sau khi confirm) — đưa về PENDING để đêm chạy lại đúng thứ
+  // tự từ bước vừa mở, không bao giờ có hai step ACTIVE cùng lúc.
+  for (const queueItem of state.queue) {
+    if (queueItem !== item && queueItem.status === 'ACTIVE') {
+      queueItem.status = 'PENDING'
+    }
+  }
+  item.status = 'ACTIVE'
+  item.skipReason = null
+  if (state.phase === 'NIGHT_RESOLUTION') {
+    // Kết quả đã tính từ action bị hoàn tác là sai — vứt bỏ, đêm chạy lại
+    // từ step vừa mở và sẽ tính lần nữa khi chạy hết queue.
+    state.pendingNightResolution = null
+    transitionPhase(state, 'NIGHT', events)
+  }
+  events.push({
+    type: 'STEP_UNDONE',
+    step: item.step,
+    action,
+    reason: reason.trim(),
+  })
+  return success(state, events)
+}
+
+// Gương của consumeWitchResources / consumeAlphaWerewolfAbility /
+// consumeWhiteWolfAbility / gán loverIds lúc confirmStep — hoàn trả từng loại.
+function restoreConsumedResources(state: GameState, action: NightAction): void {
+  if (action.type === 'WITCH_ACTION') {
+    const witch = state.players.find((player) => player.id === action.actorId)
+    if (witch?.role === 'WITCH') {
+      if (action.heal) witch.abilityState.healingPotionAvailable = true
+      if (action.poisonTargetId) witch.abilityState.poisonPotionAvailable = true
+    }
+    return
+  }
+  if (action.type === 'WEREWOLF_ATTACK' && action.enhanced) {
+    const alpha = state.players.find((player) => player.id === action.actorId)
+    if (alpha?.role === 'ALPHA_WEREWOLF') {
+      alpha.abilityState.enhancedAttackAvailable = true
+    }
+    return
+  }
+  if (action.type === 'WHITE_WOLF_KILL') {
+    const whiteWolf = state.players.find(
+      (player) => player.id === action.actorId,
+    )
+    if (whiteWolf?.role === 'WHITE_WOLF') {
+      whiteWolf.abilityState.killAvailable = true
+    }
+    return
+  }
+  if (action.type === 'CUPID_LINK') state.loverIds = null
+}
+
+// Revamp MODERATED (M10): ngoại lệ bàn chơi — người bỏ về giữa ván được đánh
+// dấu chết tay. Queue tự bỏ step của người mất (cùng ownership với
+// activateNextRunnableStep: Sói chỉ cần một con còn ngồi tại bàn); win
+// condition tự tính lại ở mốc chuyển pha kế tiếp như mọi cái chết khác.
+function overrideMarkDead(
+  state: GameState,
+  playerId: string,
+  reason: string,
+  events: GameEvent[],
+): Result<CommandOutcome> {
+  if (state.phase === 'GAME_OVER' || state.winner) {
+    return failure('INVALID_ACTION', 'Game is already over')
+  }
+  if (!reason.trim()) return reasonRequired()
+  const target = state.players.find((player) => player.id === playerId)
+  if (!target) return failure('INVALID_TARGET', 'Player does not exist')
+  if (!target.alive) {
+    return failure('INVALID_TARGET', 'Player is already dead')
+  }
+
+  events.push({
+    type: 'PLAYER_OVERRIDE_APPLIED',
+    playerId,
+    reason: reason.trim(),
+  })
+  setPlayerDead(state.players, playerId)
+  events.push({
+    type: 'PLAYER_DIED',
+    playerId,
+    causes: ['MODERATOR_OVERRIDE'],
+  })
+  // Chỉ mở rộng đêm khi step đang ACTIVE vừa mất chủ sở hữu. Ở
+  // NIGHT_RESOLUTION giữ nguyên pending: chết đã có trong resolution (hoặc
+  // applyDeaths bỏ qua người đã chết), gate công bố quyết định phần còn lại.
+  if (state.phase === 'NIGHT' && !state.pendingNightAction) {
+    const activeStep = state.queue.find((item) => item.status === 'ACTIVE')
+    if (activeStep && stepOwnerGone(state, activeStep.step)) {
+      activeStep.status = 'SKIPPED'
+      activeStep.skipReason = 'MODERATOR_OVERRIDE'
+      events.push({
+        type: 'QUEUE_STEP_SKIPPED',
+        step: activeStep.step,
+        reason: activeStep.skipReason,
+      })
+      advanceNight(state, events)
+    }
+  }
+  return success(state, events)
+}
+
+// Ownership trùng activateNextRunnableStep: step thuộc người chết chỉ khi
+// không còn ai sống nắm role đó (Sói là nhóm).
+function stepOwnerGone(state: GameState, step: QueueStep): boolean {
+  return !state.players.some(
+    (player) =>
+      player.alive &&
+      (step === 'WEREWOLF_ATTACK'
+        ? isWerewolfPlayer(player)
+        : player.role === STEP_ROLE[step]),
+  )
 }
 
 function advanceNight(state: GameState, events: GameEvent[]): void {
@@ -697,7 +856,14 @@ function applyDeaths(
   events: GameEvent[],
 ): void {
   for (const death of deaths) {
-    setPlayerDead(state.players, death.playerId)
+    const player = state.players.find(
+      (candidate) => candidate.id === death.playerId,
+    )
+    // Override của quản trò giữa NIGHT_RESOLUTION có thể đã mark chết người
+    // nằm sẵn trong resolution — không phát PLAYER_DIED trùng cho người đã
+    // chết (event chết chỉ ghi một lần, bởi sự kiện đầu tiên giết họ).
+    if (!player?.alive) continue
+    player.alive = false
     events.push({ type: 'PLAYER_DIED', ...death })
   }
 }

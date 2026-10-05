@@ -8,6 +8,12 @@ Player UI nên tập trung vào ba câu hỏi:
 2. Hiện tại tôi có thể làm gì?
 3. Trạng thái công khai của ván là gì?
 
+Ở `MODERATED`, người chơi chơi trên route riêng `/table` (R30): màn đêm là màn
+tĩnh — chỉ role card + lưới public, không tiến trình queue hay countdown; dữ
+liệu riêng của vai (kết quả soi, potion…) hiện kèm nhãn nguồn khi mục lịch sử
+là action quản trò nhập hộ; ban ngày thêm phiếu biểu quyết với counts live.
+Người chơi bị chặn mọi hành động đêm ở mode này (R25).
+
 ### My Role
 
 Ví dụ:
@@ -105,20 +111,33 @@ Moderator cần thấy:
 - History.
 - Warning / edge case.
 
-Ví dụ:
+Revamp MODERATED (R25–R31) bổ sung vào panel:
+
+- **Khối nhập action đêm theo step ACTIVE** — picker người sống có validate
+  của rule engine, nút "Ghi nhận lựa chọn của `<vai>`" (R25).
+- **Relay thông tin đêm** — "Báo Phù thủy: Sói đã chọn `<tên>`" khi tới lượt
+  Witch; card "Báo Tiên tri: `<tên>` soi `<target>`: SÓI/NGƯỜI" sau khi soi
+  được ghi nhận (quản trò đọc/lật màn hình cho bàn).
+- **Hoàn tác bước vừa rồi** — dialog xác nhận + lý do bắt buộc (R27).
+- **Bắt đầu biểu quyết + vote monitor** — x/y đã bỏ, counts theo ứng viên
+  (không lộ ai vote ai), đèn alert khi quá giờ (R29, R31); form nhập kết quả
+  đếm tay thu gọn làm fallback.
+- **Đánh dấu người bỏ khỏi ván** — dialog chọn người sống + lý do (R28).
+
+Ví dụ (đêm, một form proxy hiện tại):
 
 ```text
 NIGHT 2
 
-✓ Seer        Completed
-→ Werewolf    Waiting confirmation
-○ Witch       Pending
+✓ Seer        Xong
+→ Werewolf    Đang gọi
+○ Witch       Chờ
 
-Werewolf selected:
-Bình
+Gọi Player 5, Player 6 (Ma sói) rồi chọn giúp họ.
+Ai cắn đêm nay?  [token picker]
 
-[Confirm & Continue]
-[Reject / Redo]
+[Ghi nhận lựa chọn của Ma sói]
+[Hoàn tác bước vừa rồi]
 ```
 
 ---
@@ -134,32 +153,35 @@ MVP nên giảm tối đa input của Moderator.
 
 ### Night
 
-Thông thường Moderator không nhập target thay player.
+Ở `MODERATED` (R25): quản trò nhập thay chủ role — gọi từng vai theo hàng đợi,
+chọn giúp qua picker có validate của rule engine; lệnh mang actorId của chủ
+role, audit ghi `enteredBy: 'MODERATOR'`. Chọn nhầm thì hoàn tác bằng
+`UNDO_STEP` (R27). Thông tin đêm phải truyền đạt (Sói chọn ai cho Phù thủy,
+kết quả soi) hiện sẵn trên panel để quản trò đọc.
 
-Moderator chủ yếu:
-
-- Confirm action.
-- Reject / redo khi sai.
-- Skip khi cần.
+Ở `SELF` (R20–R22): người chơi tự submit trên thiết bị, bot auto-confirm —
+quản trò không tồn tại.
 
 ### Day
 
-Do vote diễn ra ngoài đời, Moderator nhập:
+Ở `MODERATED` (R29): vote diễn ra qua thiết bị — người chơi bấm phiếu, panel
+quản trò thấy counts live và bấm công bố. Fallback khi bàn không dùng máy:
 
 ```text
-Eliminated player: [Cường]
+Nhập kết quả đếm tay (dự phòng)
+
+Eliminated player: [picker]
 ```
 
-MVP chưa cần nhập từng lá phiếu.
+Ở `SELF`: tương tự R20 — phiếu trên thiết bị, bot tally.
 
 ### Edge Case
 
 Moderator có thể:
 
 - Skip.
-- Redo.
-- Cancel action.
-- Manual override.
+- Hoàn tác bước đêm (`UNDO_STEP`, R27).
+- Manual override (`MODERATOR_OVERRIDE_MARK_DEAD`, R28).
 - Ghi reason.
 
 ---

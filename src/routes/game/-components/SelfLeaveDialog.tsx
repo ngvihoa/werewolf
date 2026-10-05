@@ -20,7 +20,7 @@ export function SelfLeaveDialog({
   return (
     <dialog
       aria-label="Xác nhận rời ván"
-      className="m-auto bg-transparent p-0 backdrop:bg-black/70"
+      className="m-auto bg-transparent p-0 backdrop:bg-black/85"
       ref={dialogRef}
       onClick={(event) => {
         if (event.target === event.currentTarget) event.currentTarget.close()
@@ -29,7 +29,7 @@ export function SelfLeaveDialog({
         if (event.key === 'Escape') event.currentTarget.close()
       }}
     >
-      <div className="w-80 rounded-2xl bg-surface p-5 ring-1 ring-line sm:w-96">
+      <div className="w-80 rounded-2xl bg-midnight p-5 ring-1 ring-line sm:w-96">
         <div className="flex items-start justify-between gap-3">
           <h3 className="text-lg font-medium text-ink">Rời ván chơi?</h3>
           <button

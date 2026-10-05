@@ -1,5 +1,6 @@
 import z from 'zod'
 
+import { enteredBySchema } from '../orchestration/schema'
 import {
   alphaWerewolfResourcesSchema,
   hybridWolfResourcesSchema,
@@ -116,6 +117,13 @@ export const privateHistoryEventSchema = z.discriminatedUnion('type', [
     action: nightActionSchema,
     reason: z.string(),
   }),
+  // Revamp MODERATED (M9): bù trừ khi quản trò hoàn tác — entry riêng của
+  // action bị hoàn tác bị xóa khỏi history rồi thay bằng mục này.
+  z.object({
+    type: z.literal('OWN_NIGHT_ACTION_UNDONE'),
+    action: nightActionSchema,
+    reason: z.string(),
+  }),
   z.object({
     type: z.literal('SEER_RESULT_RECORDED'),
     targetPlayerId: z.string(),
@@ -126,6 +134,9 @@ export const privateHistoryEventSchema = z.discriminatedUnion('type', [
 export const privateHistoryEntrySchema = z.object({
   sequence: z.number(),
   createdAt: z.string().datetime(),
+  // Revamp MODERATED (M4): nguồn nhập của action — nhãn "do quản trò nhập"
+  // trên thiết bị. Optional cho event cũ.
+  enteredBy: enteredBySchema.optional(),
   event: privateHistoryEventSchema,
 })
 
@@ -163,8 +174,9 @@ export const playerGameViewSchema = z.object({
   }),
   isCharmed: z.boolean(),
   lover: publicPlayerViewSchema.nullable(),
-  // SELF mode (R20): trạng thái bỏ phiếu trên thiết bị. Optional cho client/
-  // server lệch phiên; không có ở mode MODERATED (vote diễn ra ngoài đời).
+  // R20/M6: trạng thái bỏ phiếu trên thiết bị. Optional cho client/server
+  // lệch phiên. SELF giữ R20 (chỉ tổng); MODERATED có candidateCounts —
+  // counts theo ứng viên ban ngày, KHÔNG bao giờ lộ ai bỏ ai.
   vote: z
     .object({
       canVote: z.boolean(),
@@ -173,6 +185,9 @@ export const playerGameViewSchema = z.object({
       votedCount: z.number().int(),
       aliveCount: z.number().int(),
       voteAttempt: z.union([z.literal(1), z.literal(2)]),
+      // M6 (MODERATED): ứng viên id → số phiếu. Phiếu trắng = votedCount trừ
+      // tổng counts; breakdown từng người bỏ không bao giờ có ở đây.
+      candidateCounts: z.record(z.string(), z.number().int()).optional(),
     })
     .optional(),
   // SELF mode (R21): trạng thái consent kết thúc thảo luận ở pha DAY.
