@@ -29,6 +29,11 @@ Moderator có thể chọn:
 của người rời tự skip/abstain (step skip với reason `PLAYER_LEFT`), người rời
 dùng session cũ để xem tiếp. Host có nút "Kết thúc ván" như lối thoát cuối.
 
+Ở `MODERATED` (R28): người bỏ về giữa ván do quản trò đánh dấu qua
+`MODERATOR_OVERRIDE_MARK_DEAD` (lý do bắt buộc) — coi như chết, queue tự skip
+role và win condition tự tính lại. Player không có nút "Rời ván" giữa chừng ở
+MODERATED; "Rời phòng" chỉ xóa phiên local như cũ.
+
 ### Player submit nhầm target
 
 Trước khi step được confirm:
@@ -38,8 +43,12 @@ Trước khi step được confirm:
 
 Sau khi đã confirm:
 
-- Manual override.
-- Ghi reason vào history.
+- Ở MODERATED (R27): `UNDO_STEP` hoàn tác step cuối của đêm hiện tại với lý do
+  bắt buộc — hoàn trả tài nguyên đã consume, step về ACTIVE để chọn lại; cửa
+  sổ đóng ở `CONFIRM_NIGHT_RESOLUTION`.
+- Ở SELF: không có undo — submit sai đã bị rule engine từ chối ngay lúc submit;
+  sau confirm chỉ còn manual override (`END_GAME` như lối thoát cuối).
+- Ghi reason vào history (event `STEP_UNDONE`).
 
 ### Role owner đã chết
 
@@ -101,6 +110,12 @@ Mọi override phải có:
 End game manually đã có command `END_GAME`: Quản trò (MODERATED) hoặc chủ phòng
 (SELF) kết thúc ván sớm, reason bắt buộc để audit; winner giữ NULL — màn kết
 quả hiển thị "Ván đã kết thúc" thay vì công bố phe thắng.
+
+Revamp MODERATED (R28) đưa override vào command set chính thức: duy nhất
+`MODERATOR_OVERRIDE_MARK_DEAD { playerId, reason }` — đánh dấu người sống chết
+tay (bỏ về giữa ván), event `PLAYER_OVERRIDE_APPLIED`, queue tự skip role của
+người chết và win condition tự tính lại từ alive set (R18). Các override khác
+trong danh sách trên vẫn là non-goal của MVP.
 
 ---
 
@@ -169,6 +184,14 @@ Hằng số MVP, chưa đưa lên setting UI — data model chừa đường nâ
 settings như các rule khác.
 
 MVP dùng cấu hình mặc định cố định ở trên, nhưng data model vẫn có thể đưa các rule này thành settings về sau.
+
+### Timers ở MODERATED (R31)
+
+Đêm KHÔNG có timeout — nhịp đêm là nhịp quản trò, người nhập luôn có mặt.
+Vote tái dùng mốc `waitingDeadlineAt` của R22 nhưng hết hạn chỉ báo động
+(alert-only) trên màn quản trò — không lệnh bot nào được phát; quản trò đôn
+ngoài đời, skip, hoặc nhập kết quả đếm tay. AUTO_SKIP không tồn tại ở
+MODERATED.
 
 ---
 

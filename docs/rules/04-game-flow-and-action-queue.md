@@ -215,3 +215,28 @@ qua thời gian thảo luận tối thiểu (30s) thì bot phát `START_VOTE`. N
 game giữa ván (R23) không mark dead: step/phát bắn của họ bị skip ngay với
 reason `PLAYER_LEFT`, phiếu còn thiếu tự abstain, majority consent không tính
 người rời.
+
+---
+
+## 9. Chế độ quản trò điều phối (MODERATED)
+
+Revamp R25–R31 giữ nguyên queue và transition ở trên, đổi _ai phát lệnh_ và
+_ai thấy gì_. Đêm thuộc quản trò (R25): khi một step ACTIVE, quản trò phát
+`SUBMIT_NIGHT_ACTION` thay chủ role qua picker có validate của rule engine
+(lệnh mang actorId của chủ role, audit `enteredBy: 'MODERATOR'`); player bị
+chặn submit action đêm ở mode này. Ngay sau mỗi lệnh đó, bot phát
+`CONFIRM_STEP` trong cùng transaction (R26) — hàng đợi tự tiến, `REJECT_STEP`
+không tồn tại ở MODERATED. Chọn nhầm thì `UNDO_STEP` (R27): hoàn tác step
+COMPLETED cuối cùng của đêm hiện tại với lý do bắt buộc — hoàn trả tài nguyên
+đã consume, step về ACTIVE, các step ACTIVE phía sau về PENDING; cửa sổ đóng
+khi `CONFIRM_NIGHT_RESOLUTION` được phát.
+
+Đêm không có timeout (R31). Ba mốc công bố là gate người (R26): quản trò bấm
+`CONFIRM_NIGHT_RESOLUTION` (chết chóc mới apply), sau khi vote
+`CONFIRM_VOTE_RESULT` / `CONFIRM_HUNTER_SHOT` — tới đó màn của người chơi mới
+đổi. Vote ban ngày (R29): quản trò bấm `START_VOTE` (không consent R21), phiếu
+qua thiết bị với counts live theo ứng viên (không lộ ai vote ai), đủ phiếu bot
+tally theo R14; `SUBMIT_VOTE_RESULT` trực tiếp là fallback đếm tay. Hunter bị
+vote loại tự bấm phát bắn trên thiết bị ban ngày. Người bỏ về giữa ván qua
+`MODERATOR_OVERRIDE_MARK_DEAD` (R28) — queue tự skip role với
+`ROLE_OWNER_DEAD` như đã có.

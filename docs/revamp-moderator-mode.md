@@ -1,7 +1,10 @@
 # Revamp chế độ MODERATOR — Quản trò điều phối
 
-> **Trạng thái: BẢN KẾ HOẠCH.** Chưa hợp nhất vào `docs/rules/` (khi chốt sẽ lên
-> R25+ ở phần 07–08), chưa tạo task. Mọi quyết định mang mã **M** tạm thời.
+> **Trạng thái: ĐÃ TRIỂN KHAI + ĐÃ HỢP NHẤT.** Quyết định M1–M13 đã hợp nhất
+> thành **R25–R31** trong `docs/rules/08-mvp-rule-decisions.md` (kèm cập nhật
+> `docs/rules/04`, `05`, `07`, `docs/ROADMAP.md` Phase 10). Bài viết dưới giữ
+> nguyên dạng bản kế hoạch để tra ngữ cảnh thiết kế; mã M dưới đây tương ứng
+> R25–R31 (map trong bảng §2).
 
 ## 1. Vấn đề và định hướng
 
