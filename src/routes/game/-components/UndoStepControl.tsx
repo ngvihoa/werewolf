@@ -49,7 +49,7 @@ export function UndoStepControl({
       </button>
       <dialog
         aria-label="Xác nhận hoàn tác bước đêm"
-        className="m-auto bg-transparent p-0 backdrop:bg-black/70"
+        className="m-auto bg-transparent p-0 backdrop:bg-black/85"
         ref={dialogRef}
         onClick={(event) => {
           if (event.target === event.currentTarget) event.currentTarget.close()

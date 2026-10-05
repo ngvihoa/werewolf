@@ -83,6 +83,13 @@ Trạng thái: 🔜 cần làm · ✅ đã làm · 💬 đang bàn
 **Cấu trúc:** một cột trung tâm ~680px (max-w ~42rem) đặt giữa màn; tranh
 thành "cánh gà" hai bên tự do; scrim đậm chỉ phủ vùng cột.
 
+**Rev 7 (2026-10-05): tranh LÙI VAI PHỤ TRỢ.** User chốt background chỉ để tạo
+cảm giác, không được đua với nội dung — kết luận "UI hơi transparent quá" ở
+vòng duyệt ở trên giải quyết tới nơi: `.ink-panel` ĐẶC 100% (chữ không bao giờ
+nằm trên tranh), `.phase-scrim` dìm tranh 58/72/84%, dải đỉnh màn đậm hơn
+(95/70%), backdrop mọi dialog `black/85`, chip mã phòng mực 90%. Surface kính
+5,5%/9% chỉ còn dùng BÊN TRONG panel đặc.
+
 ```
 Desktop 1440
 │·············· tranh ··············│

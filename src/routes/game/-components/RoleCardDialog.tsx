@@ -25,7 +25,7 @@ export function RoleCardDialog({ role }: { role: Role }) {
 
       <dialog
         aria-label={`Thẻ vai ${roleLabel(role)}`}
-        className="m-auto bg-transparent p-0 backdrop:bg-black/70"
+        className="m-auto bg-transparent p-0 backdrop:bg-black/85"
         ref={dialogRef}
         onClick={(event) => {
           if (event.target === event.currentTarget) event.currentTarget.close()

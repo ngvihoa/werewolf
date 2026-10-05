@@ -43,7 +43,7 @@ export function SelfGameControls({
 
       <dialog
         aria-label="Kết thúc ván sớm"
-        className="m-auto bg-transparent p-0 backdrop:bg-black/70"
+        className="m-auto bg-transparent p-0 backdrop:bg-black/85"
         ref={endDialogRef}
         onClick={(event) => {
           if (event.target === event.currentTarget) event.currentTarget.close()

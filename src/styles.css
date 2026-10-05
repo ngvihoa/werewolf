@@ -295,8 +295,8 @@ body {
 }
 
 /*
- * Màn che chung: nhẹ hơn trước — tranh được thở ở rìa, phần đọc chữ giao
- * cho panel mực trung tâm (.ink-panel).
+ * Màn che chung: tranh chỉ là PHỤ TRỢ không khí — bị dìm rõ ràng dưới mọi
+ * nội dung; phần đọc chữ giao trọn cho panel mực trung tâm (.ink-panel).
  */
 .phase-scrim {
   position: fixed;
@@ -305,18 +305,18 @@ body {
   pointer-events: none;
   background: linear-gradient(
     180deg,
-    color-mix(in srgb, var(--color-midnight) 34%, transparent) 0%,
-    color-mix(in srgb, var(--color-midnight) 48%, transparent) 55%,
-    color-mix(in srgb, var(--color-midnight) 68%, transparent) 100%
+    color-mix(in srgb, var(--color-midnight) 58%, transparent) 0%,
+    color-mix(in srgb, var(--color-midnight) 72%, transparent) 55%,
+    color-mix(in srgb, var(--color-midnight) 84%, transparent) 100%
   );
 }
 
 /*
- * Panel mực trung tâm của "sân khấu giữa": gần đặc để chữ luôn nằm trên
- * nền phẳng, hairline đèn lồng trên cạnh trên làm điểm nhận diện.
+ * Panel mực trung tâm của "sân khấu giữa": ĐẶC hoàn toàn — chữ không bao giờ
+ * nằm trên tranh, hairline đèn lồng trên cạnh trên làm điểm nhận diện.
  */
 .ink-panel {
-  background: color-mix(in srgb, var(--color-midnight) 92%, transparent);
+  background: var(--color-midnight);
   box-shadow: 0 24px 60px rgb(0 0 0 / 0.35);
   border-top: 1px solid
     color-mix(in srgb, var(--color-lantern) 35%, transparent);
