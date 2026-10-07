@@ -321,3 +321,91 @@ Exit criteria:
   undo, override, device voting and manual-tally fallback (e2e green).
 - Night screens of players never reveal queue progress or pacing (M13).
 - SELF mode behavior unchanged (regression suite green).
+
+## Phase 11 - Sói họp chọn nạn nhân (wolf pack vote)
+
+Goal: let living wolves agree on ONE victim per night instead of
+first-submit-wins (SELF) hoặc một lựa chọn đơn của quản trò (MODERATED).
+
+Hiện trạng (đã check 2026-10-07): `WEREWOLF_ATTACK` là single-target,
+single-actor. MODERATED có picker "Ai cắn đêm nay?" nhưng chỉ định danh
+người cắn (attribution), quản trò vẫn chọn MỘT mục tiêu cho cả đàn. SELF:
+mọi Sói sống đều thấy form, ai submit trước người đó thắng (bot confirm
+ngay) — không có thảo luận, không xem trước lựa chọn của đồng đội, không
+bỏ phiếu.
+
+- [ ] Chốt thiết kế: per-wolf submission (analog `voteSubmissions`), quy tắc
+      đồng thuận (unanimous / majority / first-locked), hiển thị trạng thái
+      ballot cho đồng đội, quy tắc xử lý hòa.
+- [ ] Model + orchestrator: `pendingNightAction` đa-submission, step hoàn
+      tất khi đàn đạt đồng thuận, tương thích UNDO_STEP (R27).
+- [ ] Projections: trạng thái ballot của đàn (ai đã chọn, còn thiếu) — vẫn
+      không lộ mục tiêu cho người ngoài phòng.
+- [ ] UI SELF: `NightActionForm` hiện phiếu của đàn, khóa sau khi chốt.
+- [ ] UI MODERATED: proxy form tổng hợp phiếu từng Sói (proxy vẫn là đường
+      chính theo R25).
+- [ ] Bot: auto-confirm khi đàn đạt đồng thuận, timeout theo R22 (thiếu
+      phiếu tính theo chính sách đã chốt).
+- [ ] e2e: kịch bản đàn 2 Sói lựa chọn khác nhau → đạt đồng thuận qua ballot.
+
+Exit criteria:
+
+- Đàn nhiều Sói không thể tự động cắn sai mục tiêu vì ai đó bấm nhanh.
+- Người ngoài phòng vẫn không thấy bất kỳ thông tin ballot nào.
+- MODERATED và SELF cùng hành xử theo một cơ chế đã chốt.
+
+## Phase 12 - Realtime v2: private channel + sync không reload
+
+Goal: giảm phụ thuộc polling và đưa kênh realtime sang mô hình xác thực;
+thiết bị cập nhật mà không cần reload.
+
+Hiện trạng (đã check 2026-10-07): có realtime qua **Supabase Realtime
+broadcast (WebSocket của Supabase)** nhưng CHỈ mang tín hiệu invalidation
+`{ gameId, version }`; client refetch toàn bộ view qua oRPC, kèm polling
+dự phòng 4s/12s. Không có custom WebSocket server và không push state —
+đây là quyết định bảo mật có chủ đích (không dữ liệu ẩn trên kênh public).
+
+- [ ] Private/authenticated channel hoặc Realtime JWT minted per session,
+      thay kênh public hiện tại (gói deferred của Phase 6).
+- [ ] e2e multi-context: mutation của Quản trò cập nhật màn mọi Player mà
+      KHÔNG reload (điều kiện chấp nhận Phase 6 còn bỏ trống).
+- [ ] Kiểm chứng mobile background/reconnect/duplicate events hội tụ về
+      version mới nhất.
+- [ ] Mô phỏng Realtime unavailable → polling fallback hoàn thành một ván.
+- [ ] Đánh giá push state an toàn theo viewer sau khi có kênh private; nếu
+      không đáng làm thì giữ invalidation-only và ghi quyết định lại.
+
+Exit criteria:
+
+- Không còn polling định kỳ khi kênh realtime khỏe (chỉ refetch khi có
+  invalidation hoặc tương tác).
+- Một mutation duy nhất khiến mọi thiết bị đồng bộ trong dưới 1 giây.
+- Kênh không thể nghe lén bởi client không có session trong phòng.
+
+## Phase 13 - SEO và định vị lại Moonveil
+
+Goal: định vị Moonveil là nền tảng chơi Ma sói trọn vẹn — chơi tại bàn có
+quản trò HOẶC tự chơi online không quản trò — và dựng nền SEO còn thiếu
+gần như toàn bộ.
+
+Hiện trạng (đã check 2026-10-07): chỉ `/rules` có `head()`; landing không
+có head, H1 "Điều phối Ma Sói mà không đánh mất cuộc chơi", copy định vị
+"Trợ lý quản trò" (không nhắc chế độ tự chơi online). Thiếu: meta
+description, OG/Twitter card + ảnh OG, canonical, robots.txt, sitemap.xml,
+JSON-LD, `html lang`, title theo route. Game/app routes chưa noindex.
+
+- [ ] Chốt bản copy định vị mới (2 chế độ chơi) — cập nhật H1/tagline/
+      feature list landing + title/description gốc.
+- [ ] `head()` đầy đủ cho landing, `/rules`, 404; noindex cho `/play`,
+      `/join/$code`, `/game`, `/lobby`, `/table`.
+- [ ] `html lang="vi"`, meta description, canonical URL.
+- [ ] Open Graph + Twitter card + ảnh OG 1200×630.
+- [ ] robots.txt + sitemap.xml cho các route public tĩnh.
+- [ ] JSON-LD: WebApplication/Game + FAQ (từ trang luật chơi).
+- [ ] Kiểm tra Lighthouse SEO ≥ 90 trên landing.
+
+Exit criteria:
+
+- Landing nói đúng 2 chế độ chơi của sản phẩm.
+- Chia sẻ link social hiện đầy đủ card + ảnh.
+- Lighthouse SEO ≥ 90 và không có cảnh báo missing meta.
