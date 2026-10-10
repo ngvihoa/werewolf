@@ -12,6 +12,8 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as homeRouteRouteImport } from './routes/(home)/route'
 import { Route as GameRouteRouteImport } from './routes/game/route'
 import { Route as LobbyRouteRouteImport } from './routes/lobby/route'
+import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as TableRouteRouteImport } from './routes/table/route'
 import { Route as homeIndexRouteImport } from './routes/(home)/index'
 import { Route as homePlayRouteImport } from './routes/(home)/play'
@@ -31,6 +33,16 @@ const GameRouteRoute = GameRouteRouteImport.update({
 const LobbyRouteRoute = LobbyRouteRouteImport.update({
   id: '/lobby',
   path: '/lobby',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RobotsDottxtRoute = RobotsDottxtRouteImport.update({
+  id: '/robots.txt',
+  path: '/robots.txt',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TableRouteRoute = TableRouteRouteImport.update({
@@ -68,6 +80,8 @@ export interface FileRoutesByFullPath {
   '/game': typeof GameRouteRoute
   '/lobby': typeof LobbyRouteRoute
   '/table': typeof TableRouteRoute
+  '/robots.txt': typeof RobotsDottxtRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/play': typeof homePlayRoute
   '/rules': typeof homeRulesRoute
   '/': typeof homeIndexRoute
@@ -78,6 +92,8 @@ export interface FileRoutesByTo {
   '/game': typeof GameRouteRoute
   '/lobby': typeof LobbyRouteRoute
   '/table': typeof TableRouteRoute
+  '/robots.txt': typeof RobotsDottxtRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/play': typeof homePlayRoute
   '/rules': typeof homeRulesRoute
   '/': typeof homeIndexRoute
@@ -90,6 +106,8 @@ export interface FileRoutesById {
   '/game': typeof GameRouteRoute
   '/lobby': typeof LobbyRouteRoute
   '/table': typeof TableRouteRoute
+  '/robots.txt': typeof RobotsDottxtRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/(home)/play': typeof homePlayRoute
   '/(home)/rules': typeof homeRulesRoute
   '/(home)/': typeof homeIndexRoute
@@ -102,6 +120,8 @@ export interface FileRouteTypes {
     | '/game'
     | '/lobby'
     | '/table'
+    | '/robots.txt'
+    | '/sitemap.xml'
     | '/play'
     | '/rules'
     | '/'
@@ -112,6 +132,8 @@ export interface FileRouteTypes {
     | '/game'
     | '/lobby'
     | '/table'
+    | '/robots.txt'
+    | '/sitemap.xml'
     | '/play'
     | '/rules'
     | '/'
@@ -123,6 +145,8 @@ export interface FileRouteTypes {
     | '/game'
     | '/lobby'
     | '/table'
+    | '/robots.txt'
+    | '/sitemap.xml'
     | '/(home)/play'
     | '/(home)/rules'
     | '/(home)/'
@@ -135,6 +159,8 @@ export interface RootRouteChildren {
   GameRouteRoute: typeof GameRouteRoute
   LobbyRouteRoute: typeof LobbyRouteRoute
   TableRouteRoute: typeof TableRouteRoute
+  RobotsDottxtRoute: typeof RobotsDottxtRoute
+  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   ApiRpcSplatRoute: typeof ApiRpcSplatRoute
 }
 
@@ -159,6 +185,20 @@ declare module '@tanstack/react-router' {
       path: '/lobby'
       fullPath: '/lobby'
       preLoaderRoute: typeof LobbyRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/robots.txt': {
+      id: '/robots.txt'
+      path: '/robots.txt'
+      fullPath: '/robots.txt'
+      preLoaderRoute: typeof RobotsDottxtRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/table': {
@@ -229,6 +269,8 @@ const rootRouteChildren: RootRouteChildren = {
   GameRouteRoute: GameRouteRoute,
   LobbyRouteRoute: LobbyRouteRoute,
   TableRouteRoute: TableRouteRoute,
+  RobotsDottxtRoute: RobotsDottxtRoute,
+  SitemapDotxmlRoute: SitemapDotxmlRoute,
   ApiRpcSplatRoute: ApiRpcSplatRoute,
 }
 export const routeTree = rootRouteImport

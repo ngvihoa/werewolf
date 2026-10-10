@@ -7,6 +7,7 @@ import { createFileRoute, Navigate } from '@tanstack/react-router'
 import { createIdempotencyKey } from '#/lib/create-idempotency-key'
 import { mutationErrorMessage } from '#/game/presentation/mutation-error-message'
 import { PhaseIndicator } from '#/components/ui/PhaseIndicator'
+import { NOINDEX_ROBOTS } from '#/lib/site'
 import { SessionError } from '#/components/SessionError'
 import { PlayerToken } from '#/components/ui/PlayerToken'
 import { AppLoading } from '#/components/AppLoading'
@@ -19,7 +20,10 @@ import { roleLabel } from '#/game/presentation/labels'
 
 import { TableGamePanel } from './-components/TableGamePanel'
 
-export const Route = createFileRoute('/table')({ component: TablePage })
+export const Route = createFileRoute('/table')({
+  component: TablePage,
+  head: () => ({ meta: NOINDEX_ROBOTS }),
+})
 
 /**
  * Revamp MODERATED (M11): trang riêng cho người chơi MODERATED — bàn vật lý

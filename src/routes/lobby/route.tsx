@@ -7,6 +7,7 @@ import { createFileRoute, Navigate } from '@tanstack/react-router'
 import { createIdempotencyKey } from '#/lib/create-idempotency-key'
 import { mutationErrorMessage } from '#/game/presentation/mutation-error-message'
 import { PhaseIndicator } from '#/components/ui/PhaseIndicator'
+import { NOINDEX_ROBOTS } from '#/lib/site'
 import { ThemeSwitcher } from '#/components/ThemeSwitcher'
 import { SessionError } from '#/components/SessionError'
 import { RoomSummary } from '#/components/RoomSummary'
@@ -29,6 +30,7 @@ export const Route = createFileRoute('/lobby')({
       <LobbyPage />
     </>
   ),
+  head: () => ({ meta: NOINDEX_ROBOTS }),
 })
 
 function LobbyPage() {

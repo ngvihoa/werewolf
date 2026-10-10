@@ -7,6 +7,7 @@ import { createFileRoute, Navigate } from '@tanstack/react-router'
 import { createIdempotencyKey } from '#/lib/create-idempotency-key'
 import { mutationErrorMessage } from '#/game/presentation/mutation-error-message'
 import { PhaseIndicator } from '#/components/ui/PhaseIndicator'
+import { NOINDEX_ROBOTS } from '#/lib/site'
 import { SessionError } from '#/components/SessionError'
 import { PlayerToken } from '#/components/ui/PlayerToken'
 import { AppLoading } from '#/components/AppLoading'
@@ -24,7 +25,10 @@ import { SelfGameControls } from './-components/SelfGameControls'
 import { SelfLeaveDialog } from './-components/SelfLeaveDialog'
 import { GameBoard } from './-components/GameBoard'
 
-export const Route = createFileRoute('/game')({ component: GamePage })
+export const Route = createFileRoute('/game')({
+  component: GamePage,
+  head: () => ({ meta: NOINDEX_ROBOTS }),
+})
 
 function GamePage() {
   const { sessionToken, leaveSession } = useLocalSession()

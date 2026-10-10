@@ -1,4 +1,10 @@
+import { useEffect } from 'react'
+
 export function NotFound() {
+  useEffect(() => {
+    document.title = 'Không tìm thấy trang | Moonveil'
+  }, [])
+
   return (
     <main className="grid min-h-dvh place-items-center px-6 text-center">
       <div className="flex max-w-sm flex-col gap-4">

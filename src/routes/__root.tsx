@@ -23,6 +23,12 @@ export const Route = createRootRoute({
         name: 'theme-color',
         content: '#101a2e',
       },
+      // Mặc định chặn đánh chỉ mục; route public ('/' và '/rules') ghi đè
+      // bằng 'index, follow' qua publicHead().
+      {
+        name: 'robots',
+        content: 'noindex, nofollow',
+      },
     ],
     links: [
       {
