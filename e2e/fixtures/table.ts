@@ -59,7 +59,13 @@ export async function createTable(
       await player.page.getByLabel('Mã phòng').fill(roomCode)
       await player.page.getByLabel('Tên hiển thị').fill(player.name)
       await player.page.getByRole('button', { name: 'Vào phòng' }).click()
-      await expect(player.page.getByText('Đang chờ Quản trò')).toBeVisible()
+      // Chờ THỤ ĐỘNG mutation join + refetch — can thiệp sớm (reload/goto)
+      // ngắt mutation, còn retry join cùng tên bị chặn "Display name is
+      // already in use" (lần đầu đã commit server-side dù response mất) —
+      // nên KHÔNG retry được, chỉ chờ đủ dài rồi fail rõ nếu treo.
+      await expect(player.page.getByText('Đang chờ Quản trò')).toBeVisible({
+        timeout: 30_000,
+      })
       return player
     }),
   )
@@ -200,7 +206,10 @@ export async function createSelfTable(
       await player.page.getByLabel('Mã phòng').fill(roomCode)
       await player.page.getByLabel('Tên hiển thị').fill(player.name)
       await player.page.getByRole('button', { name: 'Vào phòng' }).click()
-      await expect(player.page.getByText('Đang chờ chủ phòng')).toBeVisible()
+      // Như createTable: chờ thụ động 30s, không retry (tên trùng bị chặn).
+      await expect(player.page.getByText('Đang chờ chủ phòng')).toBeVisible({
+        timeout: 30_000,
+      })
       return player
     }),
   )

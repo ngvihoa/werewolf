@@ -7,6 +7,10 @@ import viteReact from '@vitejs/plugin-react'
 
 const config = defineConfig({
   resolve: { tsconfigPaths: true },
+  // e2e đóng browser context giữa chừng → ECONNRESET thoáng qua, không đáng
+  // phủ overlay toàn màn chặn mọi click của test đang chạy (e2e chia sẻ
+  // server 3100).
+  server: { hmr: { overlay: false } },
   plugins: [
     devtools(),
     tailwindcss(),

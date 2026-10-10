@@ -35,3 +35,4 @@ captures/
 
 # Ảnh chụp trước/sau các vòng task UI — chỉ để review local
 
+.zcode/

@@ -7,6 +7,10 @@ const e2ePort = Number(process.env.E2E_PORT ?? 3100)
 export default defineConfig({
   testDir: './e2e',
   fullyParallel: false,
+  // Mỗi test tự lập bàn riêng (7–9 browser context/game). Vượt ~2 worker cùng
+  // lúc là ~20+ trang poll getGameView đồng thời → pool DB (max 10) vắt cổ
+  // chai, request treo hàng loạt giữa suite. 2 worker = cân bằng thời gian/ổn.
+  workers: 2,
   timeout: 90_000,
   expect: { timeout: 12_000 },
   retries: process.env.CI ? 2 : 0,
