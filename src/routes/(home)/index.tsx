@@ -5,13 +5,28 @@ import {
   SlidersHorizontal,
   ShieldCheck,
   ArrowRight,
-  RadioTower,
   EyeOff,
   Users,
   Moon,
+  Bot,
 } from 'lucide-react'
+import {
+  SITE_DESCRIPTION,
+  webAppJsonLd,
+  publicHead,
+  SITE_NAME,
+} from '#/lib/site'
 
-export const Route = createFileRoute('/(home)/')({ component: LandingPage })
+export const Route = createFileRoute('/(home)/')({
+  component: LandingPage,
+  head: () =>
+    publicHead({
+      path: '/',
+      title: `${SITE_NAME} — Chơi Ma Sói online hoặc tại bàn có Quản trò`,
+      description: SITE_DESCRIPTION,
+      jsonLd: webAppJsonLd(),
+    }),
+})
 
 type Feature = {
   description: string
@@ -20,6 +35,12 @@ type Feature = {
 }
 
 const FEATURES: Feature[] = [
+  {
+    icon: Bot,
+    title: 'Tự chơi, không cần Quản trò',
+    description:
+      'Hệ thống làm thay phần điều phối: gọi lượt đêm, kiểm tra hành động và công bố kết quả.',
+  },
   {
     icon: EyeOff,
     title: 'Bí mật đúng người',
@@ -30,18 +51,16 @@ const FEATURES: Feature[] = [
     icon: SlidersHorizontal,
     title: 'Quản trò giữ quyền quyết định',
     description:
-      'Xác nhận, từ chối, làm lại hoặc bỏ qua từng bước mà không làm mất dấu lịch sử.',
-  },
-  {
-    icon: RadioTower,
-    title: 'Cả bàn luôn đồng bộ',
-    description:
-      'Thay đổi xuất hiện trên mọi thiết bị ngay lập tức và tự phục hồi khi mất kết nối.',
+      'Chơi tại bàn? Xác nhận, từ chối, làm lại hoặc bỏ qua từng bước mà không làm mất dấu lịch sử.',
   },
 ]
 
 const STEPS = [
-  ['01', 'Tạo phòng', 'Quản trò mở phòng và chia sẻ mã gồm 6 ký tự.'],
+  [
+    '01',
+    'Tạo phòng',
+    'Chọn tự chơi hoặc có Quản trò, rồi chia sẻ mã phòng gồm 6 ký tự.',
+  ],
   [
     '02',
     'Mời người chơi',
@@ -50,7 +69,7 @@ const STEPS = [
   [
     '03',
     'Bắt đầu đêm',
-    'Hệ thống điều phối lượt; cả bàn vẫn trò chuyện ngoài đời.',
+    'Hệ thống điều phối lượt; cả bàn chỉ việc trò chuyện và nghi ngờ nhau.',
   ],
 ] as const
 
@@ -70,7 +89,7 @@ function LandingPage() {
               src="/logo.webp"
             />
             <span className="truncate font-mono text-sm tracking-wide text-stone-300 uppercase">
-              Moonveil / Trợ lý quản trò
+              Moonveil / Ma sói trực tuyến
             </span>
           </Link>
           <nav
@@ -117,12 +136,13 @@ function LandingPage() {
               <Moon aria-hidden="true" className="size-4" />
               Đêm bí mật. Bàn chơi thật.
             </p>
-            <h1 className="max-w-[14ch] text-balance text-5xl font-medium tracking-[-0.045em] text-stone-50 sm:text-6xl lg:text-7xl">
-              Điều phối Ma Sói mà không đánh mất cuộc chơi.
+            <h1 className="max-w-[16ch] text-balance text-5xl font-medium tracking-[-0.045em] text-stone-50 sm:text-6xl lg:text-7xl">
+              Chơi Ma Sói trọn vẹn — tại bàn có Quản trò, hoặc tự chơi online.
             </h1>
             <p className="max-w-[58ch] text-pretty text-lg/8 text-stone-400">
-              Điện thoại lo thứ tự lượt, thông tin bí mật và trạng thái ván. Mọi
-              người vẫn nhìn nhau, tranh luận và bỏ phiếu ngay tại bàn.
+              Moonveil lo vai bí mật, lượt đêm và bỏ phiếu. Chọn chế độ tự chơi
+              để hệ thống điều phối thay Quản trò, hoặc dẫn dắt ván tại bàn từ
+              màn hình Quản trò riêng.
             </p>
             <div className="flex flex-wrap items-center gap-4 pt-2">
               <Link
@@ -158,14 +178,15 @@ function LandingPage() {
           <div className="grid gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:gap-20">
             <div className="flex flex-col items-start gap-5">
               <p className="font-mono text-sm tracking-wide text-red-300 uppercase">
-                Một người dẫn nhịp
+                Hai chế độ chơi, một hệ thống
               </p>
-              <h2 className="max-w-[14ch] text-balance text-4xl font-medium tracking-tight text-stone-50 sm:text-5xl">
-                Công cụ cho Quản trò, không phải người thay thế.
+              <h2 className="max-w-[16ch] text-balance text-4xl font-medium tracking-tight text-stone-50 sm:text-5xl">
+                Có Quản trò hay không, luật vẫn được giữ trọn vẹn.
               </h2>
               <p className="max-w-md text-pretty text-base/7 text-stone-400">
-                Luật và trạng thái được kiểm tra tự động, nhưng những quyết định
-                ngoại lệ vẫn luôn nằm trong tay con người.
+                Ở chế độ tự chơi, hệ thống điều phối từng lượt thay Quản trò. Ở
+                chế độ có Quản trò, những quyết định ngoại lệ vẫn nằm trong tay
+                con người.
               </p>
             </div>
             <div className="grid gap-px overflow-hidden rounded-2xl bg-white/15 ring-1 ring-white/15 sm:grid-cols-3">
@@ -209,7 +230,7 @@ function LandingPage() {
               Khi cả làng đã sẵn sàng
             </p>
             <h2 className="text-balance text-3xl font-medium tracking-tight sm:text-4xl">
-              Mở phòng, cất điện thoại xuống và bắt đầu nghi ngờ nhau.
+              Mở phòng, chia mã và bắt đầu đêm đầu tiên.
             </h2>
           </div>
           <Link
@@ -224,8 +245,8 @@ function LandingPage() {
 
       <footer className="border-t border-white/15 px-5 py-8 sm:px-8 lg:px-12">
         <div className="mx-auto flex max-w-6xl flex-col gap-3 text-sm text-stone-500 sm:flex-row sm:items-center sm:justify-between">
-          <p>Moonveil — Trợ lý quản trò</p>
-          <p className="font-mono">System điều phối · Quản trò quyết định</p>
+          <p>Moonveil — Ma sói trực tuyến</p>
+          <p className="font-mono">2 chế độ chơi · 14 vai trò</p>
         </div>
       </footer>
     </main>
