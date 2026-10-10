@@ -90,3 +90,33 @@ export const VICTORY_RULES = [
     className: 'text-sky-300',
   },
 ] as const
+
+// Câu hỏi thường gặp: hiển thị ở trang luật chơi và xuất ra JSON-LD FAQPage
+// (Phase 13 — nội dung JSON-LD phải khớp nội dung hiển thị).
+export const FAQS: readonly { answer: string; question: string }[] = [
+  {
+    question: 'Ma Sói là trò chơi gì?',
+    answer:
+      'Ma Sói (Werewolf) là trò chơi nhóm nhiều người: phe Ma Sói hoạt động bí mật vào ban đêm, phe Làng quan sát, tranh luận và biểu quyết loại nghi phạm vào ban ngày cho đến khi một phe thắng.',
+  },
+  {
+    question: 'Moonveil cần bao nhiêu người chơi?',
+    answer:
+      'Một ván Moonveil có từ 5 đến 15 người chơi, mỗi người dùng một thiết bị (thường là điện thoại) để nhận vai và gửi hành động bí mật.',
+  },
+  {
+    question: 'Chơi Moonveil có cần Quản trò không?',
+    answer:
+      'Không bắt buộc. Ở chế độ tự chơi, hệ thống điều phối toàn bộ lượt đêm và xác nhận hành động thay Quản trò. Nếu chơi tại bàn, Quản trò dùng màn hình riêng để dẫn dắt và quyết định từng bước.',
+  },
+  {
+    question: 'Mời bạn bè vào phòng bằng cách nào?',
+    answer:
+      'Sau khi tạo phòng, bạn chia sẻ mã phòng gồm 6 ký tự. Mỗi người vào Moonveil bằng điện thoại, nhập mã và nhận phiên bí mật riêng của mình.',
+  },
+  {
+    question: 'Moonveil có bao nhiêu vai trò?',
+    answer:
+      'Moonveil hiện có 14 vai trò chia ba nhóm: Phe Làng, Phe Sói và Biến số. Danh sách vai trò đầy đủ nằm ngay trên trang này.',
+  },
+] as const

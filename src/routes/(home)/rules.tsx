@@ -1,25 +1,55 @@
 import { MotionConfig, domAnimation, LazyMotion } from 'framer-motion'
+import { faqJsonLd, publicHead, SITE_NAME } from '#/lib/site'
 import { ShieldCheck, ArrowRight } from 'lucide-react'
 import { createFileRoute, Link } from '@tanstack/react-router'
 
 import { RulesNightVictory, RulesPhases } from './-components/RulesPhases'
 import { RulesRoleGallery } from './-components/RulesRoleGallery'
 import { RulesHero } from './-components/RulesHero'
+import { FAQS } from './rules-content'
+
+function RulesFaq() {
+  return (
+    <section className="border-y border-white/15 bg-white/[0.03]">
+      <div className="mx-auto max-w-7xl px-5 py-20 sm:px-8 lg:px-12 lg:py-24">
+        <div className="flex flex-col gap-4">
+          <p className="font-mono text-sm tracking-wide text-red-300 uppercase">
+            Giải đáp nhanh
+          </p>
+          <h2 className="text-balance text-4xl font-medium tracking-tight text-stone-50 sm:text-5xl">
+            Câu hỏi thường gặp.
+          </h2>
+        </div>
+        <div className="mt-12 grid gap-6 md:grid-cols-2">
+          {FAQS.map((faq) => (
+            <article
+              className="flex flex-col gap-3 rounded-2xl border border-white/15 bg-stone-950 p-6"
+              key={faq.question}
+            >
+              <h3 className="text-lg font-medium text-stone-50">
+                {faq.question}
+              </h3>
+              <p className="text-sm/6 text-stone-400">{faq.answer}</p>
+            </article>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+const RULES_DESCRIPTION =
+  'Luật chơi Ma Sói, nhịp một ván đấu và chức năng của 14 vai trò trong Moonveil.'
 
 export const Route = createFileRoute('/(home)/rules')({
   component: RulesPage,
-  head: () => ({
-    meta: [
-      {
-        title: 'Luật chơi & Vai trò | Moonveil',
-      },
-      {
-        name: 'description',
-        content:
-          'Luật chơi Ma Sói, nhịp một ván đấu và chức năng của 14 vai trò trong Moonveil.',
-      },
-    ],
-  }),
+  head: () =>
+    publicHead({
+      path: '/rules',
+      title: `Luật chơi & Vai trò | ${SITE_NAME}`,
+      description: RULES_DESCRIPTION,
+      jsonLd: faqJsonLd(FAQS),
+    }),
 })
 
 function RulesPage() {
@@ -69,6 +99,7 @@ function RulesPage() {
           <RulesPhases />
           <RulesNightVictory />
           <RulesRoleGallery />
+          <RulesFaq />
 
           <section className="px-5 py-20 sm:px-8 lg:px-12 lg:py-28">
             <div className="relative mx-auto flex max-w-7xl flex-col items-start justify-between gap-8 overflow-hidden rounded-3xl bg-red-700 px-6 py-10 text-white shadow-2xl shadow-red-950/15 sm:px-10 lg:flex-row lg:items-center lg:px-12 lg:py-12">
@@ -95,7 +126,7 @@ function RulesPage() {
           <footer className="border-t border-white/15 px-5 py-8 sm:px-8 lg:px-12">
             <div className="mx-auto flex max-w-7xl flex-col gap-3 text-sm text-stone-500 sm:flex-row sm:items-center sm:justify-between">
               <Link className="transition-colors hover:text-stone-200" to="/">
-                Moonveil — Trợ lý quản trò
+                Moonveil — Ma sói trực tuyến
               </Link>
               <p className="font-mono">
                 14 vai trò · Một ngôi làng · Rất nhiều bí mật
