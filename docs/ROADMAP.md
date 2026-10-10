@@ -394,15 +394,22 @@ có head, H1 "Điều phối Ma Sói mà không đánh mất cuộc chơi", copy
 description, OG/Twitter card + ảnh OG, canonical, robots.txt, sitemap.xml,
 JSON-LD, `html lang`, title theo route. Game/app routes chưa noindex.
 
-- [ ] Chốt bản copy định vị mới (2 chế độ chơi) — cập nhật H1/tagline/
+- [x] Chốt bản copy định vị mới (2 chế độ chơi) — cập nhật H1/tagline/
       feature list landing + title/description gốc.
-- [ ] `head()` đầy đủ cho landing, `/rules`, 404; noindex cho `/play`,
+- [x] `head()` đầy đủ cho landing, `/rules`, 404; noindex cho `/play`,
       `/join/$code`, `/game`, `/lobby`, `/table`.
-- [ ] `html lang="vi"`, meta description, canonical URL.
-- [ ] Open Graph + Twitter card + ảnh OG 1200×630.
-- [ ] robots.txt + sitemap.xml cho các route public tĩnh.
-- [ ] JSON-LD: WebApplication/Game + FAQ (từ trang luật chơi).
-- [ ] Kiểm tra Lighthouse SEO ≥ 90 trên landing.
+- [x] `html lang="vi"`, meta description, canonical URL.
+- [x] Open Graph + Twitter card + ảnh OG 1200×630.
+- [x] robots.txt + sitemap.xml cho các route public tĩnh.
+- [x] JSON-LD: WebApplication/Game + FAQ (từ trang luật chơi).
+- [x] Kiểm tra Lighthouse SEO ≥ 90 trên landing.
+
+Đã thực hiện 2026-10-10: `src/lib/site.ts` giữ SITE_URL (ghi đè bằng
+`VITE_SITE_URL`, mặc định `https://werewolf-moderator.vercel.app`) + helper
+`publicHead()`/JSON-LD; route gốc mặc định noindex, 2 route public ghi đè
+`index, follow`; robots.txt + sitemap.xml là route server động đọc chung
+SITE_URL; FAQ hiển thị thật ở `/rules` và xuất FAQPage JSON-LD. Lighthouse
+SEO landing: 100/100. Ảnh so sánh: `captures/seo-2026-10-10/`.
 
 Exit criteria:
 
